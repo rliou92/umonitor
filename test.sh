@@ -1,2 +1,4 @@
 #!/bin/bash
-make clean && make && ./display
+clear
+# rm umon.conf
+make clean && make && ./display --save home
