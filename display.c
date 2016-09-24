@@ -90,10 +90,10 @@ int main(int argc, char **argv) {
 						myCrtc2[k] = XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
 					}
 
+					k = 0;
 					// Should use linked lists
 					for (i=0;i<myScreen->noutput;++i) {
 						myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
-						k = 0;
 						// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
 						if (!myOutput->connection) {
 							// TODO Free the list
