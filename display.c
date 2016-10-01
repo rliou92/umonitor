@@ -13,8 +13,9 @@
 //
 struct conOutputs {
 	XRROutputInfo *outputInfo;
+	int outputNum;
 	struct conOutputs *next;
-}
+};
 
 Display* myDisp;
 Window myWin;
@@ -26,6 +27,8 @@ XEvent event;
 Atom edid_atom;
 char* display_name = 0; // TODO is this correct?
 int i,j,k,l,z;
+int *m;
+int **q;
 int save = 0;
 int load = 0;
 int delete = 0;
@@ -60,6 +63,7 @@ int main(int argc, char **argv) {
 			save = 1;
 		}
 		else if (!strcmp("--load", argv[1])) {
+			printf("Argument is to load\n");
 			load = 1;
 		}
 		else if (!strcmp("--delete", argv[1])){
@@ -67,6 +71,7 @@ int main(int argc, char **argv) {
 		}
 
 		profile_name = argv[2];
+		printf("Profile name: %s\n", profile_name);
 
 		config_init(&config);
 
@@ -74,8 +79,11 @@ int main(int argc, char **argv) {
 			printf("Detected existing configuration file\n");
 			// Existing config file to load setting values
 			if (load) {
+				printf("Loading profile\n");
 				list = config_lookup(&config,profile_name);
+				printf("Profile loaded\n");
 				if (list != NULL) {
+					printf("Fetching display status\n");
 					// Construct list of current EDIDS
 					// Fetch current configuration info
 					myDisp = XOpenDisplay(display_name);
@@ -89,6 +97,7 @@ int main(int argc, char **argv) {
 					for(k=0;k<myScreen->ncrtc;++k) {
 						myCrtc2[k] = XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
 					}
+					printf("I should be fine here\n");
 
 					k = 0;
 					// Should use linked lists
@@ -96,15 +105,19 @@ int main(int argc, char **argv) {
 						myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
 						// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
 						if (!myOutput->connection) {
-							// TODO Free the list
-							new_output = malloc(sizeof(struct conOutputs));
+							// TODO Free the list and int
+							new_output = (struct conOutputs*) malloc(sizeof(struct conOutputs));
+							printf("%d\n",i);
 							new_output->outputInfo = myOutput;
 							new_output->next = head;
+							new_output->outputNum = i;
 							head = new_output;
 							++k;
+							printf("Oh where oh where\n");
 						}
 					}
 					cur_output = head;
+					printf("Done constructing linked list of outputs\n");
 
 					l = config_setting_length(list);
 					edid_val = (const char **) malloc(l * sizeof(const char *));
@@ -127,10 +140,11 @@ int main(int argc, char **argv) {
 					// k is the number of connected outputs
 					// l is the number of loaded monitors
 					printf("Trying to find matching monitor...\n");
-					for (i=0,i<k,++i) {
+					for (i=0;i<k;++i) {
 						// Loop around connected outputs
 						// Get edid
-						XRRGetOutputProperty(myDisp,cur_output->outputInfo,edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+						printf("%d\n",cur_output[i].outputNum);
+						XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output[i].outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
 						// Convert edid to how it is stored
 						if (nitems) {
 							// printf("%s: ",edid_name);
@@ -150,9 +164,10 @@ int main(int argc, char **argv) {
 							for (j=0;j<l;++j) {
 									// Now loop around loaded outputs
 									printf("Current output edid: %s\n", edid_string);
-									printf("Matching with loaded output %s\n", edid_val+j);
-									if (strcmp(edid_string,edid_val+j){
-										printf("Match found!!!\n")
+									printf("Matching with loaded output %s\n", *(edid_val+j));
+									printf("Match found? %d\n",strcmp(edid_string,*(edid_val+j)));
+									if (!strcmp(edid_string,*(edid_val+j))){
+										printf("Match found!!!\n");
 										//XRRChangeOutputProperty(myDisp,myOutput,property,type,format,mode,data,nelements);
 									}
 								}
@@ -168,10 +183,12 @@ int main(int argc, char **argv) {
 						free(pos_val);
 					}
 					else {
+						printf("No profile found");
 						exit(2); // No profile with the specified name
 					}
 				}
 				// Overwrite existing profile
+				// printf("Am I here?\n");
 				if (save || delete) {
 
 					list = config_lookup(&config,profile_name);
@@ -185,7 +202,10 @@ int main(int argc, char **argv) {
 				}
 			}
 			else {
-				if (load || delete) exit(1); // No file to load or delete
+				if (load || delete) {
+					printf("No file to load or delete");
+					exit(1); // No file to load or delete
+				}
 			}
 
 			if (save) {

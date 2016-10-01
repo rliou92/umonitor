@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 clear
 # rm umon.conf
 # make clean && make && printf "\n" && ./display --save home
