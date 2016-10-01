@@ -35,15 +35,13 @@ int numMon,nprop;
 int quiet = 0;
 int cfg_idx;
 Bool get_active = 0;
-char edid_name[] = "EDID"; // TODO needed?
 unsigned char* edid,*edid_string;
 Bool only_if_exists = 1;
 unsigned char* prop;
 int actual_format;
 unsigned long nitems,bytes_after;
 Atom actual_type;
-XRRCrtcInfo* myCrtc; // TODO I am allocating the memory twice over must fix
-XRRCrtcInfo **myCrtc2;
+XRRCrtcInfo* myCrtc; 
 char config_file[] = "umon.conf";
 char* profile_name;
 config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting,*pos_group,*root,*group,*list;
@@ -91,12 +89,6 @@ int main(int argc, char **argv) {
 					// TODO Gotta free myScreen probably myCrtc as well XRRFree-something
 					myScreen = XRRGetScreenResources(myDisp,myWin);
 					edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
-					myCrtc2 = (XRRCrtcInfo**) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo*));
-
-					for(k=0;k<myScreen->ncrtc;++k) {
-						myCrtc2[k] = XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
-					}
-					printf("I should be fine here\n");
 
 					k = 0;
 					// Should use linked lists
@@ -186,14 +178,13 @@ int main(int argc, char **argv) {
 							cur_output = cur_output->next;
 						}
 
-						// XRRSetScreenConfigAndRate(myDisp,screen_config,draw,size_index,rotation,rate,timestamp);
 						config_destroy(&config);
 						free(edid_val);
 						free(resolution_str);
 						free(pos_val);
 					}
 					else {
-						printf("No profile found");
+						printf("No profile found\n");
 						exit(2); // No profile with the specified name
 					}
 				}
@@ -306,10 +297,50 @@ int main(int argc, char **argv) {
 		}
 
 
-		// 	while (1){
-		// 		XNextEvent(myDisp, (XEvent *) &event);
-		// 		printf ("Event received, type = %d\n", event.type);
-		// 		XRRUpdateConfiguration?
-		// 	}
+	while (1){
+		XNextEvent(myDisp, (XEvent *) &event);
 
+		printf ("Event received, type = %d\n", event.type);
+		// Get list of connected outputs
+		myDisp = XOpenDisplay(display_name);
+		myWin = DefaultRootWindow(myDisp);
+		edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
+
+		// Get screen configuration
+		// TODO Assume 1 screen?
+		// TODO Gotta free myScreen XRRFree-something
+		myScreen = XRRGetScreenResources(myDisp,myWin);
+		// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
+
+		// myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
+		// for(k=0;k<myScreen->ncrtc;++k) {
+		// 	myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
+		// }
+
+		// printf("Number of outputs: %d\n", myScreen->noutput);
+		for (i=0;i<myScreen->noutput;++i) {
+			myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
+			// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
+			if (!myOutput->connection) {
+				XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+				if (nitems) {
+					// printf("%s: ",edid_name);
+					// Make edid into string
+					edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
+					for (z=0;z<nitems;++z) {
+						if (edid[z] == '\0') {
+							edid_string[z] = '0';
+						}
+						else {
+							edid_string[z] = edid[z];
+						}
+						//printf("%c",edid_string[z]);
+					}
+					printf("\n");
+					edid_string[nitems] = '\0';
+		// Find out which profile matches the list
+		// XRRUpdateConfiguration?
 	}
+
+}
+
