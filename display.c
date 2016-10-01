@@ -24,11 +24,10 @@ XRRScreenResources* myScreen;
 XRROutputInfo* myOutput;
 XRRPropertyInfo* myProp;
 XEvent event;
-Atom edid_atom;
+Atom edid_atom, *temp;
 char* display_name = 0; // TODO is this correct?
 int i,j,k,l,z;
 int *m;
-int **q;
 int save = 0;
 int load = 0;
 int delete = 0;
@@ -165,10 +164,21 @@ int main(int argc, char **argv) {
 									// Now loop around loaded outputs
 									printf("Current output edid: %s\n", edid_string);
 									printf("Matching with loaded output %s\n", *(edid_val+j));
-									printf("Match found? %d\n",strcmp(edid_string,*(edid_val+j)));
 									if (!strcmp(edid_string,*(edid_val+j))){
 										printf("Match found!!!\n");
-										//XRRChangeOutputProperty(myDisp,myOutput,property,type,format,mode,data,nelements);
+										// Now I need to find the current output mode and then change them
+										// Really I only need the display mode (resolution) and ? (position)
+										// So I'm going to temporarily find them out in the following just to find the name and then remove the code
+										// Screen has a list of modes, and so does the output
+										// Must find screen name first
+										for (z=0;z<myScreen->nmode;++z) {
+											if (!strcmp(myScreen->modes[z].name,*(resolution_str+j))) {
+												printf("I know the mode! \n");
+												// Set
+												// TODO Assuming only one output per crtc
+												XRRSetCrtcConfig(myDisp,myScreen,cur_output[i].outputInfo->crtc,CurrentTime,*(pos_val+2*j),*(pos_val+1+2*j),myScreen->modes[z].id,RR_Rotate_0,&myScreen->outputs[cur_output[i].outputNum],1);
+											}
+										}
 									}
 								}
 								free(edid_string);
