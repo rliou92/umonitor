@@ -26,11 +26,12 @@ XRRPropertyInfo* myProp;
 XEvent event;
 Atom edid_atom, *temp;
 char* display_name = 0; // TODO is this correct?
-int i,j,k,l,z;
+int i,j,k,l,z,num_conn_outputs,num_profiles;
 int *m;
 int save = 0;
 int load = 0;
 int delete = 0;
+int test_event = 0;
 int numMon,nprop;
 int quiet = 0;
 int cfg_idx;
@@ -59,6 +60,7 @@ void construct_output_list(void);
 void load_val_from_config(void);
 void edid_to_string(void);
 void save_profile(void);
+void listen_for_event(void);
 
 int main(int argc, char **argv) {
 
@@ -72,6 +74,9 @@ int main(int argc, char **argv) {
 		}
 		else if (!strcmp("--delete", argv[1])){
 			delete = 1;
+		}
+		else if (!strcmp("--test-event", argv[1])){
+			test_event = 1;
 		}
 
 		profile_name = argv[2];
@@ -112,58 +117,66 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (test_event){
+		listen_for_event();
+	}
 
+}
 
-	/*while (1){
-	  XNextEvent(myDisp, (XEvent *) &event);
+void listen_for_event(){
+	// while (1){
+	// Need to find out which profile to load
+	// XNextEvent(myDisp, (XEvent *) &event);
 
-	  printf ("Event received, type = %d\n", event.type);
+	// printf ("Event received, type = %d\n", event.type);
 	// Get list of connected outputs
-	myDisp = XOpenDisplay(display_name);
-	myWin = DefaultRootWindow(myDisp);
-	edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
+	fetch_display_status();	
 
-	// Get screen configuration
-	// TODO Assume 1 screen?
-	// TODO Gotta free myScreen XRRFree-something
-	myScreen = XRRGetScreenResources(myDisp,myWin);
-	// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
+	construct_output_list();
+	// Get list of available profiles
+	num_profiles = config_setting_length(config_root_setting(&config));
+	printf("Num profiles: %d\n", num_profiles);
+	load_val_from_config();
+	
+	// For each profile
+	// Get list of profile outputs
+	// See if the list of connected outputs match the list of profile outputs
+	// If match - load!
 
 	// myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
 	// for(k=0;k<myScreen->ncrtc;++k) {
 	// 	myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
 	// }
 
-	// printf("Number of outputs: %d\n", myScreen->noutput);
-	for (i=0;i<myScreen->noutput;++i) {
-	myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
-	// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
-	if (!myOutput->connection) {
-	XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-	if (nitems) {
-	// printf("%s: ",edid_name);
-	// Make edid into string
-	edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
-	for (z=0;z<nitems;++z) {
-	if (edid[z] == '\0') {
-	edid_string[z] = '0';
-	}
-	else {
-	edid_string[z] = edid[z];
-	}
-	//printf("%c",edid_string[z]);
-	}
-	printf("\n");
-	edid_string[nitems] = '\0';
-	// Find out which profile matches the list
-	// XRRUpdateConfiguration?
-	}
+	// // printf("Number of outputs: %d\n", myScreen->noutput);
+	// for (i=0;i<myScreen->noutput;++i) {
+	// myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
+	// // printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
+	// if (!myOutput->connection) {
+	// XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+	// if (nitems) {
+	// // printf("%s: ",edid_name);
+	// // Make edid into string
+	// edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
+	// for (z=0;z<nitems;++z) {
+	// if (edid[z] == '\0') {
+	// edid_string[z] = '0';
+	// }
+	// else {
+	// edid_string[z] = edid[z];
+	// }
+	// //printf("%c",edid_string[z]);
+	// }
+	// printf("\n");
+	// edid_string[nitems] = '\0';
+	// // Find out which profile matches the list
+	// // XRRUpdateConfiguration?
+	// }
 
-	}
-	}
-	}*/
+	// }
+	// }
+	// }
 }
-
 
 void load_profile(){
 	printf("Loading profile\n");
@@ -180,10 +193,10 @@ void load_profile(){
 		load_val_from_config();
 
 		// Now I have both lists, so can do a double loops arounnd list of connected monitors and the saved monitors
-		// k is the number of connected outputs
+		// num_conn_outputs is the number of connected outputs
 		// l is the number of loaded monitors
 		printf("Trying to find matching monitor...\n");
-		for (i=0;i<k;++i) {
+		for (i=0;i<num_conn_outputs;++i) {
 			// Loop around connected outputs
 			// Get edid
 			printf("%d\n",cur_output[i].outputNum);
@@ -244,7 +257,10 @@ void fetch_display_status(){
 }
 
 void construct_output_list(){
-	k = 0;
+	// Constructs a linked list containing output information
+	// Outputs:	cur_output:		pointer to head of linked list
+	// 		num_conn_outputs:	length of linked list	
+	num_conn_outputs = 0;
 	for (i=0;i<myScreen->noutput;++i) {
 		myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
 		// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
@@ -256,7 +272,7 @@ void construct_output_list(){
 			new_output->next = head;
 			new_output->outputNum = i;
 			head = new_output;
-			++k;
+			++num_conn_outputs;
 			printf("Oh where oh where\n");
 		}
 	}
@@ -265,6 +281,11 @@ void construct_output_list(){
 }
 
 void load_val_from_config(){
+	// Loads all settings from the configuration file 
+	// Inputs: list
+	// Outputs: edid_val, resolution_str, pos_val
+	// 	l: how many saved profiles there are
+	
 	l = config_setting_length(list);
 	edid_val = (const char **) malloc(l * sizeof(const char *));
 	resolution_str = (const char **) malloc(l * sizeof(const char *));
