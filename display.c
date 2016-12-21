@@ -57,6 +57,8 @@ void load_profile(void);
 void fetch_display_status(void);
 void construct_output_list(void);
 void load_val_from_config(void);
+void edid_to_string(void);
+void save_profile(void);
 
 int main(int argc, char **argv) {
 
@@ -84,17 +86,11 @@ int main(int argc, char **argv) {
 				// Load profile
 				load_profile();
 			}
-			else {
-				printf("No profile found\n");
-				exit(2); // No profile with the specified name
-			}
-		}
-		// Overwrite existing profile
-		// printf("Am I here?\n");
-		if (save || delete) {
 
+			if (save || delete) {
 				list = config_lookup(&config,profile_name);
 				if (list != NULL) {
+					// Overwrite existing profile
 					printf("Existing profile found, overwriting\n");
 					cfg_idx = config_setting_index(list);
 					root = config_setting_parent(list);
@@ -103,6 +99,7 @@ int main(int argc, char **argv) {
 				}
 			}
 		}
+
 		else {
 			if (load || delete) {
 				printf("No file to load or delete");
@@ -111,141 +108,61 @@ int main(int argc, char **argv) {
 		}
 
 		if (save) {
-			root = config_root_setting(&config);
-			list = config_setting_add(root,profile_name,CONFIG_TYPE_LIST);
-
-			// Fetch current configuration info
-			myDisp = XOpenDisplay(display_name);
-			myWin = DefaultRootWindow(myDisp);
-			edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
-
-			// Get screen configuration
-			// TODO Assume 1 screen?
-			// TODO Gotta free myScreen XRRFree-something
-			myScreen = XRRGetScreenResources(myDisp,myWin);
-			// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
-
-			myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
-			for(k=0;k<myScreen->ncrtc;++k) {
-				myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
-			}
-
-			// printf("Number of outputs: %d\n", myScreen->noutput);
-			for (i=0;i<myScreen->noutput;++i) {
-				myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
-				// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
-				if (!myOutput->connection) {
-
-					// Setup config
-					group = config_setting_add(list,NULL,CONFIG_TYPE_GROUP);
-					edid_setting = config_setting_add(group,"EDID",CONFIG_TYPE_STRING);
-					resolution_setting = config_setting_add(group,"resolution",CONFIG_TYPE_STRING);
-					pos_group = config_setting_add(group,"pos",CONFIG_TYPE_GROUP);
-					pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
-					pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
-
-					XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-					// printf("%d",nitems);
-					if (nitems) {
-						// printf("%s: ",edid_name);
-						// Make edid into string
-						edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
-						for (z=0;z<nitems;++z) {
-							if (edid[z] == '\0') {
-								edid_string[z] = '0';
-							}
-							else {
-								edid_string[z] = edid[z];
-							}
-							//printf("%c",edid_string[z]);
-						}
-						printf("\n");
-						edid_string[nitems] = '\0';
-						printf("%s",edid_string);
-						// Get current mode
-						for (j=0;j<myOutput->nmode;++j) {
-							// printf("Mode: %d\n",myOutput->modes[j]);
-							// Get crct configuration
-							for(k=0;k<myScreen->ncrtc;++k) {
-								// printf("Crtc mode id: %d\n",myCrtc[k].mode);
-								if (myOutput->modes[j] == myCrtc[k].mode) {
-									// Save current output and mode id
-
-									config_setting_set_string(edid_setting,edid_string);
-									free(edid_string);
-
-									// Have mode number, must find name of mode
-									for (l=0;l<myScreen->nmode;++l) {
-										if (myScreen->modes[l].id == myOutput->modes[j]) {
-											config_setting_set_string(resolution_setting,myScreen->modes[l].name);
-										}
-									}
-
-									config_setting_set_int(pos_x_setting,myCrtc[k].x);
-									config_setting_set_int(pos_y_setting,myCrtc[k].y);
-									// printf("Match!");
-								}
-							}
-						}
-					}
-				}
-			}
-			free(myCrtc);
-			config_write_file(&config,config_file);
-			printf("Destroying config");
-			config_destroy(&config);
+			save_profile();
 		}
 	}
 
 
+
 	/*while (1){
-		XNextEvent(myDisp, (XEvent *) &event);
+	  XNextEvent(myDisp, (XEvent *) &event);
 
-		printf ("Event received, type = %d\n", event.type);
-		// Get list of connected outputs
-		myDisp = XOpenDisplay(display_name);
-		myWin = DefaultRootWindow(myDisp);
-		edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
+	  printf ("Event received, type = %d\n", event.type);
+	// Get list of connected outputs
+	myDisp = XOpenDisplay(display_name);
+	myWin = DefaultRootWindow(myDisp);
+	edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
 
-		// Get screen configuration
-		// TODO Assume 1 screen?
-		// TODO Gotta free myScreen XRRFree-something
-		myScreen = XRRGetScreenResources(myDisp,myWin);
-		// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
+	// Get screen configuration
+	// TODO Assume 1 screen?
+	// TODO Gotta free myScreen XRRFree-something
+	myScreen = XRRGetScreenResources(myDisp,myWin);
+	// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
 
-		// myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
-		// for(k=0;k<myScreen->ncrtc;++k) {
-		// 	myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
-		// }
+	// myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
+	// for(k=0;k<myScreen->ncrtc;++k) {
+	// 	myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
+	// }
 
-		// printf("Number of outputs: %d\n", myScreen->noutput);
-		for (i=0;i<myScreen->noutput;++i) {
-			myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
-			// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
-			if (!myOutput->connection) {
-				XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-				if (nitems) {
-					// printf("%s: ",edid_name);
-					// Make edid into string
-					edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
-					for (z=0;z<nitems;++z) {
-						if (edid[z] == '\0') {
-							edid_string[z] = '0';
-						}
-						else {
-							edid_string[z] = edid[z];
-						}
-						//printf("%c",edid_string[z]);
-					}
-					printf("\n");
-					edid_string[nitems] = '\0';
-					// Find out which profile matches the list
-					// XRRUpdateConfiguration?
-				}
+	// printf("Number of outputs: %d\n", myScreen->noutput);
+	for (i=0;i<myScreen->noutput;++i) {
+	myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
+	// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
+	if (!myOutput->connection) {
+	XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+	if (nitems) {
+	// printf("%s: ",edid_name);
+	// Make edid into string
+	edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
+	for (z=0;z<nitems;++z) {
+	if (edid[z] == '\0') {
+	edid_string[z] = '0';
+	}
+	else {
+	edid_string[z] = edid[z];
+	}
+	//printf("%c",edid_string[z]);
+	}
+	printf("\n");
+	edid_string[nitems] = '\0';
+	// Find out which profile matches the list
+	// XRRUpdateConfiguration?
+	}
 
-			}
-		}
+	}
+	}
 	}*/
+}
 
 
 void load_profile(){
@@ -308,9 +225,16 @@ void load_profile(){
 		free(resolution_str);
 		free(pos_val);
 	}
+
+	else {
+		printf("No profile found\n");
+		exit(2); // No profile with the specified name
+	}
 }
 
 void fetch_display_status(){
+	// Loads current display status
+	// Loads myDisp, myWin, myScreen, and edid_atom
 	myDisp = XOpenDisplay(display_name);
 	myWin = DefaultRootWindow(myDisp);
 	// TODO Assume 1 screen?
@@ -341,23 +265,23 @@ void construct_output_list(){
 }
 
 void load_val_from_config(){
-	 l = config_setting_length(list);
-	 edid_val = (const char **) malloc(l * sizeof(const char *));
-	 resolution_str = (const char **) malloc(l * sizeof(const char *));
-	 pos_val = (int *) malloc(2*l * sizeof(int));
-	 for(i=0;i<l;++i) {
-		 group = config_setting_get_elem(list,i);
-		 pos_group = config_setting_lookup(group,"pos");
-		 config_setting_lookup_string(group,"EDID",edid_val+i);
-		 config_setting_lookup_string(group,"resolution",resolution_str+i);
-		 config_setting_lookup_int(pos_group,"x",pos_val+2*i);
-		 config_setting_lookup_int(pos_group,"y",pos_val+2*i+1);
-		 printf("Loaded values: \n");
-		 printf("EDID: %s\n",*(edid_val+i));
-		 printf("Resolution: %s\n",*(resolution_str+i));
-		 printf("Pos: x=%d y=%d\n",*(pos_val+2*i),*(pos_val+2*i+1));
-	 }
- }
+	l = config_setting_length(list);
+	edid_val = (const char **) malloc(l * sizeof(const char *));
+	resolution_str = (const char **) malloc(l * sizeof(const char *));
+	pos_val = (int *) malloc(2*l * sizeof(int));
+	for(i=0;i<l;++i) {
+		group = config_setting_get_elem(list,i);
+		pos_group = config_setting_lookup(group,"pos");
+		config_setting_lookup_string(group,"EDID",edid_val+i);
+		config_setting_lookup_string(group,"resolution",resolution_str+i);
+		config_setting_lookup_int(pos_group,"x",pos_val+2*i);
+		config_setting_lookup_int(pos_group,"y",pos_val+2*i+1);
+		printf("Loaded values: \n");
+		printf("EDID: %s\n",*(edid_val+i));
+		printf("Resolution: %s\n",*(resolution_str+i));
+		printf("Pos: x=%d y=%d\n",*(pos_val+2*i),*(pos_val+2*i+1));
+	}
+}
 
 void edid_to_string(){
 	edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
@@ -372,3 +296,78 @@ void edid_to_string(){
 	}
 	edid_string[nitems] = '\0';
 }
+
+
+void save_profile(){
+
+	root = config_root_setting(&config);
+	list = config_setting_add(root,profile_name,CONFIG_TYPE_LIST);
+
+	// Fetch current configuration info
+	fetch_display_status();
+
+	// Get screen configuration
+	// TODO Assume 1 screen?
+	// TODO Gotta free myScreen XRRFree-something
+	// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
+
+	myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
+	for(k=0;k<myScreen->ncrtc;++k) {
+		myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
+	}
+
+	// printf("Number of outputs: %d\n", myScreen->noutput);
+	for (i=0;i<myScreen->noutput;++i) {
+		myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
+		// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
+		if (!myOutput->connection) {
+
+			// Setup config
+			group = config_setting_add(list,NULL,CONFIG_TYPE_GROUP);
+			edid_setting = config_setting_add(group,"EDID",CONFIG_TYPE_STRING);
+			resolution_setting = config_setting_add(group,"resolution",CONFIG_TYPE_STRING);
+			pos_group = config_setting_add(group,"pos",CONFIG_TYPE_GROUP);
+			pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
+			pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
+
+			XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+			// printf("%d",nitems);
+			if (nitems) {
+				// printf("%s: ",edid_name);
+				// Make edid into string
+				edid_to_string();
+				printf("%s",edid_string);
+				// Get current mode
+				for (j=0;j<myOutput->nmode;++j) {
+					// printf("Mode: %d\n",myOutput->modes[j]);
+					// Get crct configuration
+					for(k=0;k<myScreen->ncrtc;++k) {
+						// printf("Crtc mode id: %d\n",myCrtc[k].mode);
+						if (myOutput->modes[j] == myCrtc[k].mode) {
+							// Save current output and mode id
+
+							config_setting_set_string(edid_setting,edid_string);
+							free(edid_string);
+
+							// Have mode number, must find name of mode
+							for (l=0;l<myScreen->nmode;++l) {
+								if (myScreen->modes[l].id == myOutput->modes[j]) {
+									config_setting_set_string(resolution_setting,myScreen->modes[l].name);
+								}
+							}
+
+							config_setting_set_int(pos_x_setting,myCrtc[k].x);
+							config_setting_set_int(pos_y_setting,myCrtc[k].y);
+							// printf("Match!");
+						}
+					}
+				}
+			}
+		}
+	}
+	free(myCrtc);
+	config_write_file(&config,config_file);
+	printf("Destroying config");
+	config_destroy(&config);
+}
+
