@@ -6,10 +6,7 @@
 #include <inttypes.h>
 #include <libconfig.h>
 
-// TODO Make everything into functions
-// TODO Optimize for loop variable names
-// TODO Fix * locations for variable declarations
-//
+// TODO: document functions, which variables are input
 //
 struct conOutputs {
 	XRROutputInfo *outputInfo;
@@ -18,38 +15,25 @@ struct conOutputs {
 };
 
 Display* myDisp;
-Window myWin;
-XRRMonitorInfo* myMon;
 XRRScreenResources* myScreen;
 XRROutputInfo* myOutput;
-XRRPropertyInfo* myProp;
-XEvent event;
-Atom edid_atom, *temp;
-char* display_name = 0; // TODO is this correct?
+Atom edid_atom;
 int num_out_pp,num_conn_outputs,num_profiles;
-int *m;
 int save = 0;
 int load = 0;
 int delete = 0;
 int test_event = 0;
-int numMon,nprop;
 int quiet = 0;
-int cfg_idx;
-Bool get_active = 0;
 unsigned char* edid,*edid_string;
-Bool only_if_exists = 1;
-unsigned char* prop;
 int actual_format;
 unsigned long nitems,bytes_after;
 Atom actual_type;
-XRRCrtcInfo* myCrtc; 
 char config_file[] = "umon.conf";
 char* profile_name;
-config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting,*pos_group,*root,*group,*list;
-config_t config;
+config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting,*list;
+config_t config; 
 const char **edid_val,**resolution_str;
 int *pos_val;
-unsigned char **connected_edids;
 struct conOutputs *new_output;
 struct conOutputs *head, *cur_output = NULL;
 char* edid_name = "EDID";
@@ -63,6 +47,8 @@ void save_profile(void);
 void listen_for_event(void);
 
 int main(int argc, char **argv) {
+	int cfg_idx;
+	config_setting_t *root;
 
 	config_init(&config);
 
@@ -132,6 +118,8 @@ int main(int argc, char **argv) {
 void listen_for_event(){
 	// Inputs: num_out_pp
 	int i,k,j,matches;
+	XEvent event;
+	config_setting_t *root;
 
 	printf("Listening for event\n");
 	// while (1){
@@ -256,7 +244,11 @@ void load_profile(){
 
 void fetch_display_status(){
 	// Loads current display status
-	// Loads myDisp, myWin, myScreen, and edid_atom
+	// Loads myDisp, myScreen, and edid_atom
+	char* display_name = 0; // TODO is this correct?
+	Bool only_if_exists = 1;
+	Window myWin;
+
 	myDisp = XOpenDisplay(display_name);
 	myWin = DefaultRootWindow(myDisp);
 	// TODO Assume 1 screen?
@@ -297,6 +289,7 @@ void load_val_from_config(){
 	// Outputs: edid_val, resolution_str, pos_val
 	// 	num_out_pp: how many saved outputs per profile there are
 	int i;
+	config_setting_t *pos_group, *group;
 	
 	num_out_pp = config_setting_length(list);
 	edid_val = (const char **) malloc(num_out_pp * sizeof(const char *));
@@ -337,17 +330,14 @@ void edid_to_string(){
 
 void save_profile(){
 	int i,j,k,l;
+	XRRCrtcInfo* myCrtc; 
+	config_setting_t *pos_group, *group, *root;
 
 	root = config_root_setting(&config);
 	list = config_setting_add(root,profile_name,CONFIG_TYPE_LIST);
 
 	// Fetch current configuration info
 	fetch_display_status();
-
-	// Get screen configuration
-	// TODO Assume 1 screen?
-	// TODO Gotta free myScreen XRRFree-something
-	// XRRSelectInput(myDisp,myWin,RROutputChangeNotifyMask);
 
 	myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
 	for(k=0;k<myScreen->ncrtc;++k) {
