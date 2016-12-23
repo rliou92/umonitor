@@ -26,7 +26,7 @@ XRRPropertyInfo* myProp;
 XEvent event;
 Atom edid_atom, *temp;
 char* display_name = 0; // TODO is this correct?
-int i,j,k,l,z,num_conn_outputs,num_profiles;
+int num_out_pp,num_conn_outputs,num_profiles;
 int *m;
 int save = 0;
 int load = 0;
@@ -64,6 +64,8 @@ void listen_for_event(void);
 
 int main(int argc, char **argv) {
 
+	config_init(&config);
+
 	if (argc == 3) {
 		if (!strcmp("--save", argv[1])) {
 			save = 1;
@@ -75,20 +77,17 @@ int main(int argc, char **argv) {
 		else if (!strcmp("--delete", argv[1])){
 			delete = 1;
 		}
-		else if (!strcmp("--test-event", argv[1])){
-			test_event = 1;
-		}
 
 		profile_name = argv[2];
 		printf("Profile name: %s\n", profile_name);
 
-		config_init(&config);
 
 		if (config_read_file(&config, config_file)) {
 			printf("Detected existing configuration file\n");
 			// Existing config file to load setting values
 			if (load) {
 				// Load profile
+				list = config_lookup(&config,profile_name);
 				load_profile();
 			}
 
@@ -112,18 +111,29 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		// Doesn't need to be in the above conditions because will create the config file if doesn't exist
 		if (save) {
 			save_profile();
 		}
 	}
 
-	if (test_event){
-		listen_for_event();
+	if (!strcmp("--test-event", argv[1])){
+		if (config_read_file(&config, config_file)) {
+			listen_for_event();
+		}
+		else {
+			printf("No file to load when event is triggered\n");
+			exit(3);
+		}
 	}
 
 }
 
 void listen_for_event(){
+	// Inputs: num_out_pp
+	int i,k,j,matches;
+
+	printf("Listening for event\n");
 	// while (1){
 	// Need to find out which profile to load
 	// XNextEvent(myDisp, (XEvent *) &event);
@@ -134,53 +144,51 @@ void listen_for_event(){
 
 	construct_output_list();
 	// Get list of available profiles
-	num_profiles = config_setting_length(config_root_setting(&config));
+	root = config_root_setting(&config);
+	num_profiles = config_setting_length(root);
 	printf("Num profiles: %d\n", num_profiles);
-	load_val_from_config();
-	
-	// For each profile
-	// Get list of profile outputs
-	// See if the list of connected outputs match the list of profile outputs
-	// If match - load!
+	for (i=0;i<num_profiles;++i){
+		// For each profile
+		printf("i=%d\n",i);
+		list = config_setting_get_elem(root,i);
+		// Get list of profile outputs
+		load_val_from_config();
+		// Config data is now stored in edid_val, resolution_str, pos_val
+		printf("Profile number %d\n",i);
 
-	// myCrtc = (XRRCrtcInfo*) malloc(myScreen->ncrtc * sizeof(XRRCrtcInfo));
-	// for(k=0;k<myScreen->ncrtc;++k) {
-	// 	myCrtc[k] = *XRRGetCrtcInfo(myDisp,myScreen,myScreen->crtcs[k]);
-	// }
+		// See if the list of connected outputs match the list of profile outputs
+		// Assuming there is only one edid per profile in configuration
+		matches = 0;
+		for (k=0;k<num_out_pp;++k){
+			for (j=0;j<num_conn_outputs;++j){
+				// Fetch edid and turn it into a string
+				XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output[j].outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+				// Convert edid to how it is stored
+				// Assuming edid exists!!
+				// if (nitems) {
+				// Make edid into string
+				edid_to_string();
+				// If match - load!
+				if (!strcmp(edid_string,*(edid_val+k))){
+					++matches;
+					printf("Found a match! Match: %d\n",matches);
+				}
+			}
+		}
 
-	// // printf("Number of outputs: %d\n", myScreen->noutput);
-	// for (i=0;i<myScreen->noutput;++i) {
-	// myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
-	// // printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
-	// if (!myOutput->connection) {
-	// XRRGetOutputProperty(myDisp,myScreen->outputs[i],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-	// if (nitems) {
-	// // printf("%s: ",edid_name);
-	// // Make edid into string
-	// edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
-	// for (z=0;z<nitems;++z) {
-	// if (edid[z] == '\0') {
-	// edid_string[z] = '0';
-	// }
-	// else {
-	// edid_string[z] = edid[z];
-	// }
-	// //printf("%c",edid_string[z]);
-	// }
-	// printf("\n");
-	// edid_string[nitems] = '\0';
-	// // Find out which profile matches the list
-	// // XRRUpdateConfiguration?
-	// }
-
-	// }
-	// }
-	// }
+		if (matches == num_conn_outputs) {
+			printf("Found the profile!\n");
+			load_profile();
+		}
+	}
 }
 
 void load_profile(){
+	// Inputs: list, num_out_pp
+	int i,j,z; 
+
 	printf("Loading profile\n");
-	list = config_lookup(&config,profile_name);
+	// list = config_lookup(&config,profile_name);
 	printf("Profile loaded\n");
 	if (list != NULL) {
 		printf("Fetching display status\n");
@@ -207,7 +215,7 @@ void load_profile(){
 				// Make edid into string
 				edid_to_string();
 
-				for (j=0;j<l;++j) {
+				for (j=0;j<num_out_pp;++j) {
 					// Now loop around loaded outputs
 					printf("Current output edid: %s\n", edid_string);
 					printf("Matching with loaded output %s\n", *(edid_val+j));
@@ -230,7 +238,8 @@ void load_profile(){
 				}
 				free(edid_string);
 			}
-			cur_output = cur_output->next;
+			// Not need I think
+			// cur_output = cur_output->next;
 		}
 
 		config_destroy(&config);
@@ -260,6 +269,8 @@ void construct_output_list(){
 	// Constructs a linked list containing output information
 	// Outputs:	cur_output:		pointer to head of linked list
 	// 		num_conn_outputs:	length of linked list	
+	int i;
+
 	num_conn_outputs = 0;
 	for (i=0;i<myScreen->noutput;++i) {
 		myOutput = XRRGetOutputInfo(myDisp,myScreen,myScreen->outputs[i]);
@@ -281,16 +292,17 @@ void construct_output_list(){
 }
 
 void load_val_from_config(){
-	// Loads all settings from the configuration file 
+	// Loads all settings from one profile
 	// Inputs: list
 	// Outputs: edid_val, resolution_str, pos_val
-	// 	l: how many saved profiles there are
+	// 	num_out_pp: how many saved outputs per profile there are
+	int i;
 	
-	l = config_setting_length(list);
-	edid_val = (const char **) malloc(l * sizeof(const char *));
-	resolution_str = (const char **) malloc(l * sizeof(const char *));
-	pos_val = (int *) malloc(2*l * sizeof(int));
-	for(i=0;i<l;++i) {
+	num_out_pp = config_setting_length(list);
+	edid_val = (const char **) malloc(num_out_pp * sizeof(const char *));
+	resolution_str = (const char **) malloc(num_out_pp * sizeof(const char *));
+	pos_val = (int *) malloc(2*num_out_pp * sizeof(int));
+	for(i=0;i<num_out_pp;++i) {
 		group = config_setting_get_elem(list,i);
 		pos_group = config_setting_lookup(group,"pos");
 		config_setting_lookup_string(group,"EDID",edid_val+i);
@@ -305,6 +317,10 @@ void load_val_from_config(){
 }
 
 void edid_to_string(){
+	//Inputs: edid: the bits return from X11 server
+	//Outputs: edid_string: edid in string form
+	int z;
+	
 	edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
 	for (z=0;z<nitems;++z) {
 		if (edid[z] == '\0') {
@@ -320,6 +336,7 @@ void edid_to_string(){
 
 
 void save_profile(){
+	int i,j,k,l;
 
 	root = config_root_setting(&config);
 	list = config_setting_add(root,profile_name,CONFIG_TYPE_LIST);
