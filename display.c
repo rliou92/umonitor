@@ -7,7 +7,7 @@
 #include <libconfig.h>
 
 // TODO: document functions, which variables are input
-//
+// TODO: initialization syntax doesn't appear to work at all
 struct conOutputs {
 	XRROutputInfo *outputInfo;
 	int outputNum;
@@ -34,13 +34,12 @@ config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting
 config_t config; 
 const char **edid_val,**resolution_str;
 int *pos_val;
-struct conOutputs *new_output;
-struct conOutputs *head, *cur_output = NULL;
 char* edid_name = "EDID";
 
 void load_profile(void);
 void fetch_display_status(void);
-void construct_output_list(void);
+struct conOutputs *construct_output_list(void);
+void free_output_list(struct conOutputs *);
 void load_val_from_config(void);
 void edid_to_string(void);
 void save_profile(void);
@@ -51,6 +50,7 @@ int main(int argc, char **argv) {
 	config_setting_t *root;
 
 	config_init(&config);
+	printf("save: %d\n",save);
 
 	if (argc == 3) {
 		if (!strcmp("--save", argv[1])) {
@@ -120,6 +120,7 @@ void listen_for_event(){
 	int i,k,j,matches;
 	XEvent event;
 	config_setting_t *root;
+	struct conOutputs *cur_output, *head;
 
 	printf("Listening for event\n");
 	// while (1){
@@ -130,7 +131,8 @@ void listen_for_event(){
 	// Get list of connected outputs
 	fetch_display_status();	
 
-	construct_output_list();
+	head = construct_output_list();
+	cur_output = head;
 	// Get list of available profiles
 	root = config_root_setting(&config);
 	num_profiles = config_setting_length(root);
@@ -150,7 +152,7 @@ void listen_for_event(){
 		for (k=0;k<num_out_pp;++k){
 			for (j=0;j<num_conn_outputs;++j){
 				// Fetch edid and turn it into a string
-				XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output[j].outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+				XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output->outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
 				// Convert edid to how it is stored
 				// Assuming edid exists!!
 				// if (nitems) {
@@ -161,7 +163,9 @@ void listen_for_event(){
 					++matches;
 					printf("Found a match! Match: %d\n",matches);
 				}
+				cur_output = cur_output->next;
 			}
+			cur_output = head;
 		}
 
 		if (matches == num_conn_outputs) {
@@ -169,11 +173,13 @@ void listen_for_event(){
 			load_profile();
 		}
 	}
+	free_output_list(head);
 }
 
 void load_profile(){
 	// Inputs: list, num_out_pp
-	int i,j,z; 
+	int i,j,z;  
+	struct conOutputs *cur_output, *head;
 
 	printf("Loading profile\n");
 	// list = config_lookup(&config,profile_name);
@@ -184,7 +190,8 @@ void load_profile(){
 		// Fetch current configuration info
 		fetch_display_status();
 
-		construct_output_list();
+		head = construct_output_list();
+		cur_output = head;
 
 		load_val_from_config();
 
@@ -195,8 +202,8 @@ void load_profile(){
 		for (i=0;i<num_conn_outputs;++i) {
 			// Loop around connected outputs
 			// Get edid
-			printf("%d\n",cur_output[i].outputNum);
-			XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output[i].outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+			printf("%d\n",cur_output->outputNum);
+			XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output->outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
 			// Convert edid to how it is stored
 			if (nitems) {
 				// printf("%s: ",edid_name);
@@ -219,21 +226,22 @@ void load_profile(){
 								printf("I know the mode! \n");
 								// Set
 								// TODO Assuming only one output per crtc
-								XRRSetCrtcConfig(myDisp,myScreen,cur_output[i].outputInfo->crtc,CurrentTime,*(pos_val+2*j),*(pos_val+1+2*j),myScreen->modes[z].id,RR_Rotate_0,&myScreen->outputs[cur_output[i].outputNum],1);
+								XRRSetCrtcConfig(myDisp,myScreen,cur_output->outputInfo->crtc,CurrentTime,*(pos_val+2*j),*(pos_val+1+2*j),myScreen->modes[z].id,RR_Rotate_0,&myScreen->outputs[cur_output->outputNum],1);
+								printf("XRRSetCrtcConfig success\n");
 							}
 						}
 					}
 				}
 				free(edid_string);
 			}
-			// Not need I think
-			// cur_output = cur_output->next;
+			cur_output = cur_output->next;
 		}
 
 		config_destroy(&config);
 		free(edid_val);
 		free(resolution_str);
 		free(pos_val);
+		free_output_list(head);
 	}
 
 	else {
@@ -257,11 +265,16 @@ void fetch_display_status(){
 	edid_atom = XInternAtom(myDisp,edid_name,only_if_exists);
 }
 
-void construct_output_list(){
+struct conOutputs* construct_output_list(){
 	// Constructs a linked list containing output information
+	// TODO: Should probably optmize usage of global variables here
 	// Outputs:	cur_output:		pointer to head of linked list
 	// 		num_conn_outputs:	length of linked list	
 	int i;
+	struct conOutputs *new_output;
+	struct conOutputs *head, *cur_output;
+
+	head = NULL; cur_output = NULL;
 
 	num_conn_outputs = 0;
 	for (i=0;i<myScreen->noutput;++i) {
@@ -273,6 +286,7 @@ void construct_output_list(){
 			printf("%d\n",i);
 			new_output->outputInfo = myOutput;
 			new_output->next = head;
+			printf("new_output->next: %d\n",new_output->next);
 			new_output->outputNum = i;
 			head = new_output;
 			++num_conn_outputs;
@@ -280,7 +294,20 @@ void construct_output_list(){
 		}
 	}
 	cur_output = head;
+	return cur_output;
 	printf("Done constructing linked list of outputs\n");
+}
+
+void free_output_list(struct conOutputs *cur_output){
+	struct conOutputs *temp;
+
+	while(cur_output){
+		temp = cur_output->next;
+		free(cur_output);
+		cur_output = temp;
+	}
+
+	return;
 }
 
 void load_val_from_config(){
