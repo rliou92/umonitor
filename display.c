@@ -7,7 +7,7 @@
 #include <libconfig.h>
 
 // TODO: document functions, which variables are input
-// TODO: initialization syntax doesn't appear to work at all
+//
 struct conOutputs {
 	XRROutputInfo *outputInfo;
 	int outputNum;
@@ -15,10 +15,12 @@ struct conOutputs {
 };
 
 Display* myDisp;
+Window myWin;
 XRRScreenResources* myScreen;
 XRROutputInfo* myOutput;
 Atom edid_atom;
 int num_out_pp,num_conn_outputs,num_profiles;
+// I think the following initialization syntax works
 int save = 0;
 int load = 0;
 int delete = 0;
@@ -50,7 +52,7 @@ int main(int argc, char **argv) {
 	config_setting_t *root;
 
 	config_init(&config);
-	printf("save: %d\n",save);
+	// printf("save: %d\n",save);
 
 	if (argc == 3) {
 		if (!strcmp("--save", argv[1])) {
@@ -117,64 +119,76 @@ int main(int argc, char **argv) {
 
 void listen_for_event(){
 	// Inputs: num_out_pp
-	int i,k,j,matches;
+	int i,k,j,matches,event_num,event_base,ignore;
 	XEvent event;
 	config_setting_t *root;
 	struct conOutputs *cur_output, *head;
+	char *profile_match;
 
-	printf("Listening for event\n");
-	// while (1){
-	// Need to find out which profile to load
-	// XNextEvent(myDisp, (XEvent *) &event);
+	while (1){
+		// Need to find out which profile to load
+		
+		fetch_display_status();
+		XRRQueryExtension(myDisp,&event_base,&ignore);
+		XRRSelectInput(myDisp,myWin,RRScreenChangeNotifyMask);
+		printf("Listening for event\n");
+		XNextEvent(myDisp, (XEvent *) &event);
 
-	// printf ("Event received, type = %d\n", event.type);
-	// Get list of connected outputs
-	fetch_display_status();	
+		printf ("Event received, type = %d\n", event.type);
+		XRRUpdateConfiguration(&event);
+		event_num = event.type - event_base;
+		if (event_num == RRScreenChangeNotify){
+			printf("Screen event change received\n");
+			// Get list of connected outputs
+			//fetch_display_status();	
 
-	head = construct_output_list();
-	cur_output = head;
-	// Get list of available profiles
-	root = config_root_setting(&config);
-	num_profiles = config_setting_length(root);
-	printf("Num profiles: %d\n", num_profiles);
-	for (i=0;i<num_profiles;++i){
-		// For each profile
-		printf("i=%d\n",i);
-		list = config_setting_get_elem(root,i);
-		// Get list of profile outputs
-		load_val_from_config();
-		// Config data is now stored in edid_val, resolution_str, pos_val
-		printf("Profile number %d\n",i);
-
-		// See if the list of connected outputs match the list of profile outputs
-		// Assuming there is only one edid per profile in configuration
-		matches = 0;
-		for (k=0;k<num_out_pp;++k){
-			for (j=0;j<num_conn_outputs;++j){
-				// Fetch edid and turn it into a string
-				XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output->outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-				// Convert edid to how it is stored
-				// Assuming edid exists!!
-				// if (nitems) {
-				// Make edid into string
-				edid_to_string();
-				// If match - load!
-				if (!strcmp(edid_string,*(edid_val+k))){
-					++matches;
-					printf("Found a match! Match: %d\n",matches);
-				}
-				cur_output = cur_output->next;
-			}
+			head = construct_output_list();
 			cur_output = head;
-		}
+			// Get list of available profiles
+			root = config_root_setting(&config);
+			num_profiles = config_setting_length(root);
+			printf("Num profiles: %d\n", num_profiles);
+			for (i=0;i<num_profiles;++i){
+				// For each profile
+				printf("i=%d\n",i);
+				list = config_setting_get_elem(root,i);
+				profile_match = config_setting_name(list);
+				// Get list of profile outputs
+				load_val_from_config();
+				// Config data is now stored in edid_val, resolution_str, pos_val
+				printf("Profile number %d\n",i);
 
-		if (matches == num_conn_outputs) {
-			printf("Found the profile!\n");
-			load_profile();
+				// See if the list of connected outputs match the list of profile outputs
+				// Assuming there is only one edid per profile in configuration
+				matches = 0;
+				for (k=0;k<num_out_pp;++k){
+					for (j=0;j<num_conn_outputs;++j){
+						// Fetch edid and turn it into a string
+						XRRGetOutputProperty(myDisp,myScreen->outputs[cur_output->outputNum],edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
+						// Convert edid to how it is stored
+						// Assuming edid exists!!
+						// if (nitems) {
+						// Make edid into string
+						edid_to_string();
+						// If match - load!
+						if (!strcmp(edid_string,*(edid_val+k))){
+							++matches;
+							printf("Found a match! Match: %d\n",matches);
+						}
+						cur_output = cur_output->next;
+					}
+					cur_output = head;
+					}
+
+					if (matches == num_conn_outputs) {
+						printf("Profile %s matches!!\n", profile_match );
+						load_profile();
+					}
+				}
+				free_output_list(head);
+			}
 		}
 	}
-	free_output_list(head);
-}
 
 void load_profile(){
 	// Inputs: list, num_out_pp
@@ -253,9 +267,9 @@ void load_profile(){
 void fetch_display_status(){
 	// Loads current display status
 	// Loads myDisp, myScreen, and edid_atom
+	// TODO Free myDisp,myWin, myScreen, atom??
 	char* display_name = 0; // TODO is this correct?
 	Bool only_if_exists = 1;
-	Window myWin;
 
 	myDisp = XOpenDisplay(display_name);
 	myWin = DefaultRootWindow(myDisp);
