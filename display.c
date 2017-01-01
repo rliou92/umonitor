@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 	int test_event = 0;
 	int quiet = 0;
 	int cfg_idx;
-	config_setting_t *root, *list;
+	config_setting_t *root, *profile_group;
 	struct disp_info myDisp_info;
 	config_t config; 
 	char* profile_name;
@@ -93,12 +93,11 @@ int main(int argc, char **argv) {
 			// Existing config file to load setting values
 			if (load) {
 				// Load profile
-				list = config_lookup(&config,profile_name);
+				profile_group = config_lookup(&config,profile_name);
 
-
-				if (list != NULL) {
+				if (profile_group != NULL) {
 					fetch_display_status(&myDisp_info);
-					load_profile(myDisp_info,list);
+					load_profile(myDisp_info,profile_group);
 				}
 				else {
 					printf("No profile found");
@@ -109,13 +108,13 @@ int main(int argc, char **argv) {
 			}
 
 			if (save || delete) {
-				list = config_lookup(&config,profile_name);
-				if (list != NULL) {
+				profile_group = config_lookup(&config,profile_name);
+				if (profile_group != NULL) {
 					// Overwrite existing profile
 					printf("Existing profile found, overwriting\n");
-					cfg_idx = config_setting_index(list);
-					root = config_setting_parent(list);
-					printf("Configuration index: %d\n",cfg_idx);
+					cfg_idx = config_setting_index(profile_group);
+					root = config_setting_parent(profile_group);
+					//printf("Configuration index: %d\n",cfg_idx);
 					config_setting_remove_elem(root,cfg_idx);
 					printf("Removed profile\n");
 				}
@@ -130,10 +129,10 @@ int main(int argc, char **argv) {
 		}
 
 		if (save) {
-			// Always create the new profile list because above code has already deleted it if it existed before
-			list = config_setting_add(root,profile_name,CONFIG_TYPE_LIST);
-			printf("Checking list: %d\n", list);
-			save_profile(&config,list);
+			// Always create the new profile group because above code has already deleted it if it existed before
+			profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
+			printf("Checking group: %d\n", profile_group);
+			save_profile(&config,profile_group);
 		}
 	}
 
@@ -234,7 +233,7 @@ void listen_for_event(config_t *config_p){
 		}
 	}
 
-void load_profile(struct disp_info myDisp_info, config_setting_t *list){
+void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){
 	// TODO Possible optimization, bring fetch_display_status out of this function
 	// Inputs: list, num_out_pp
 	int i, j, z, xrrset_status, num_conn_outputs, num_out_pp;
@@ -256,7 +255,7 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *list){
 	construct_output_list(myDisp_info.myDisp,myDisp_info.myScreen,&head,&num_conn_outputs);
 	cur_output = head;
 
-	load_val_from_config(list,&mySett,&num_out_pp);
+	load_val_from_config(profile_group,&mySett,&num_out_pp);
 
 	// Now I have both lists, so can do a double loops arounnd list of connected monitors and the saved monitors
 	// num_conn_outputs is the number of connected outputs
@@ -289,21 +288,36 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *list){
 							printf("I know the mode!: %s \n",*(mySett.resolution_str+j));
 							printf("Position %dx%d\n",*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j));
 							// Set
-							// TODO Assuming only one output per crtc
-							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
-							printf("XRRSetCrtcConfig success? %d\n",xrrset_status);
-							// Have to change screen size now
 							screen = DefaultScreen(myDisp_info.myDisp);
 							printf("Screen: %d\n", screen);
-							printf("DisplayWidth %d\n", DisplayWidth (myDisp_info.myDisp, screen));
-							printf("DisplayHeight %d\n", DisplayHeight (myDisp_info.myDisp, screen));
-							printf("DisplayWidthMM %d\n", DisplayWidthMM (myDisp_info.myDisp, screen));
-							printf("DisplayHeightMM %d\n", DisplayHeightMM (myDisp_info.myDisp, screen));
- 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,
- 									DisplayWidth (myDisp_info.myDisp, screen),
- 									DisplayHeight (myDisp_info.myDisp, screen),
- 									DisplayWidthMM (myDisp_info.myDisp, screen),
- 									DisplayHeightMM (myDisp_info.myDisp, screen));
+							printf("DisplayWidth %d\n", *(mySett.disp_val));
+							printf("DisplayHeight %d\n", *(mySett.disp_val+1));
+							printf("DisplayWidthMM %d\n", *(mySett.disp_val+2));
+							printf("DisplayHeightMM %d\n", *(mySett.disp_val+3));
+							// Check to see if current display width height is bigger than setting width height
+							printf("setting res: %d\n",(*(mySett.disp_val)) * (*(mySett.disp_val+1)));
+							printf("current res: %d\n",DisplayWidth(myDisp_info.myDisp,screen) * DisplayHeight(myDisp_info.myDisp,screen));
+							// Looks like the way xrandr does it is to disable crtcs first
+							XRRSetCrtcConfig (myDisp_info.myDisp, myDisp_info.myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+ 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
+							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
+							/*
+							if ((*(mySett.disp_val)) * (*(mySett.disp_val+1)) > DisplayWidth(myDisp_info.myDisp,screen) * DisplayHeight(myDisp_info.myDisp,screen)) {
+								printf("Expanding screen first\n");
+ 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
+							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
+								
+							}
+							else {
+								printf("Shrinking crtc first\n");
+ 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
+							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
+
+							}
+							*/
+							// TODO Assuming only one output per crtc
+							printf("XRRSetCrtcConfig success? %d\n",xrrset_status);
+							// Have to change screen size now
 
 						}
 					}
@@ -382,22 +396,27 @@ void free_output_list(struct conOutputs *cur_output){
 	return;
 }
 
-void load_val_from_config(config_setting_t *list, struct conf_sett_struct *mySett, int *num_out_pp){
+void load_val_from_config(config_setting_t *profile_group, struct conf_sett_struct *mySett, int *num_out_pp){
 	// Loads all settings from one profile
 	// Inputs: list
 	// Outputs: edid_val, resolution_str, pos_val
 	// 	num_out_pp: how many saved outputs per profile there are
 	int i;
-	config_setting_t *pos_group, *group;
+	config_setting_t *pos_group, *group, *mon_group;
 	
-	*num_out_pp = config_setting_length(list) - 1;
+	printf("am i here\n");
+	mon_group = config_setting_lookup(profile_group,"Monitors");
+	printf("Checking group %d\n",mon_group);
+	*num_out_pp = config_setting_length(mon_group);
 	mySett->edid_val = (const char **) malloc(*num_out_pp * sizeof(const char *));
 	mySett->resolution_str = (const char **) malloc(*num_out_pp * sizeof(const char *));
 	mySett->pos_val = (int *) malloc(2*(*num_out_pp) * sizeof(int));
 	mySett->disp_val = (int *) malloc(4*sizeof(int));
+	printf("am i here\n");
 
-	for(i=1;i<*num_out_pp+1;++i) {
-		group = config_setting_get_elem(list,i);
+	for(i=0;i<*num_out_pp;++i) {
+		group = config_setting_get_elem(mon_group,i);
+		printf("Checking group %d\n",group);
 		pos_group = config_setting_lookup(group,"pos");
 		config_setting_lookup_string(group,"EDID",mySett->edid_val+i);
 		config_setting_lookup_string(group,"resolution",mySett->resolution_str+i);
@@ -409,7 +428,12 @@ void load_val_from_config(config_setting_t *list, struct conf_sett_struct *mySet
 		printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
 	}
 
-	//group = config_setting_get_elem(list,0)
+	printf("am i here\n");
+	group = config_setting_lookup(profile_group,"Screen");
+	config_setting_lookup_int(group,"width",mySett->disp_val);
+	config_setting_lookup_int(group,"height",mySett->disp_val+1);
+	config_setting_lookup_int(group,"widthMM",mySett->disp_val+2);
+	config_setting_lookup_int(group,"heightMM",mySett->disp_val+3);
 }
 
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){
@@ -433,7 +457,7 @@ void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **e
 }
 
 
-void save_profile(config_t *config_p, config_setting_t *list){
+void save_profile(config_t *config_p, config_setting_t *profile_group){
 	int i,j,k,l,screen;
 	XRRCrtcInfo* myCrtc; 
 	config_setting_t *pos_group, *group;
@@ -444,6 +468,7 @@ void save_profile(config_t *config_p, config_setting_t *list){
 	Atom actual_type;
 	XRROutputInfo *myOutput;
 	config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting,*disp_group,*disp_width_setting,*disp_height_setting,*disp_widthMM_setting,*disp_heightMM_setting;
+	config_setting_t *mon_group,*output_group;
 
 	// Fetch current configuration info
 	// fetch_display_status();
@@ -458,8 +483,7 @@ void save_profile(config_t *config_p, config_setting_t *list){
 
 	printf("Number of outputs: %d\n", myDisp_info.myScreen->noutput);
 
-	group = config_setting_add(list,NULL,CONFIG_TYPE_GROUP);
-	disp_group = config_setting_add(group,"Screen",CONFIG_TYPE_GROUP);
+	disp_group = config_setting_add(profile_group,"Screen",CONFIG_TYPE_GROUP);
 	disp_width_setting = config_setting_add(disp_group,"width",CONFIG_TYPE_INT);
 	disp_height_setting = config_setting_add(disp_group,"height",CONFIG_TYPE_INT);
 	disp_widthMM_setting = config_setting_add(disp_group,"widthMM",CONFIG_TYPE_INT);
@@ -471,17 +495,17 @@ void save_profile(config_t *config_p, config_setting_t *list){
 	config_setting_set_int(disp_widthMM_setting,DisplayWidthMM(myDisp_info.myDisp,screen));
 	config_setting_set_int(disp_heightMM_setting,DisplayHeightMM(myDisp_info.myDisp,screen));
 
+	mon_group = config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
 	for (i=0;i<myDisp_info.myScreen->noutput;++i) {
 		myOutput = XRRGetOutputInfo(myDisp_info.myDisp,myDisp_info.myScreen,(myDisp_info.myScreen)->outputs[i]);
 		printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
 		if (!myOutput->connection) {
 
 			// Setup config
-			group = config_setting_add(list,NULL,CONFIG_TYPE_GROUP);
-			group = config_setting_add(group,"Profiles",CONFIG_TYPE_GROUP);
-			edid_setting = config_setting_add(group,"EDID",CONFIG_TYPE_STRING);
-			resolution_setting = config_setting_add(group,"resolution",CONFIG_TYPE_STRING);
-			pos_group = config_setting_add(group,"pos",CONFIG_TYPE_GROUP);
+			output_group = config_setting_add(mon_group,myOutput->name,CONFIG_TYPE_GROUP);
+			edid_setting = config_setting_add(output_group,"EDID",CONFIG_TYPE_STRING);
+			resolution_setting = config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
+			pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
 			pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
 			pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
 
