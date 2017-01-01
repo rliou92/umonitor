@@ -17,7 +17,6 @@ struct conOutputs {
 
 // Outputs: edid_val, resolution_str, pos_val
 struct conf_sett_struct {
-	//config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,*pos_y_setting;
 	const char **edid_val,**resolution_str;
 	int *pos_val,*disp_val;
 };
@@ -29,19 +28,6 @@ struct disp_info {
 	Atom edid_atom;
 };
 
-// Display* myDisp;
-// Window myWin;
-// XRRScreenResources* myScreen;
-// XRROutputInfo* myOutput;
-// Atom edid_atom;
-// int num_out_pp,num_conn_outputs,num_profiles;
-// I think the following initialization syntax works
-// unsigned char* edid,*edid_string;
-// int actual_format;
-// unsigned long nitems,bytes_after;
-// Atom actual_type;
-// const char **edid_val,**resolution_str;
-// int *pos_val;
 char config_file[] = "umon.conf";
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *list);
@@ -149,10 +135,16 @@ int main(int argc, char **argv) {
 }
 
 void listen_for_event(config_t *config_p){
-	// Inputs: num_out_pp
+
+	/*
+	 * Listens for a screen change event. When the event occurs, find the profile that matches the current configuration. When the matching profile is found, call load_profile to apply the setting
+	 * Inputs;	config_p	pointer to the configuration file that is being read
+	 * Outputs:	none
+	 */	
+
 	int i,k,j,matches,event_num,event_base,ignore,num_conn_outputs,num_out_pp,num_profiles;
 	XEvent event;
-	config_setting_t *root, *list;
+	config_setting_t *root, *profile_group;
 	struct conOutputs *cur_output, *head;
 	char *profile_match;
 	struct disp_info myDisp_info;
@@ -192,10 +184,10 @@ void listen_for_event(config_t *config_p){
 			for (i=0;i<num_profiles;++i){
 				// For each profile
 				printf("i=%d\n",i);
-				list = config_setting_get_elem(root,i);
-				profile_match = config_setting_name(list);
+				profile_group = config_setting_get_elem(root,i);
+				profile_match = config_setting_name(profile_group);
 				// Get list of profile outputs
-				load_val_from_config(list,&mySett,&num_out_pp);
+				load_val_from_config(profile_group,&mySett,&num_out_pp);
 				// Config data is now stored in mySett (edid_val, resolution_str, pos_val)
 				printf("Profile number %d\n",i);
 
@@ -223,19 +215,26 @@ void listen_for_event(config_t *config_p){
 
 					if (matches == num_conn_outputs) {
 						printf("Profile %s matches!!\n", profile_match );
-						load_profile(myDisp_info,list);
+						load_profile(myDisp_info,profile_group);
 					}
 				}
 				free_output_list(head);
 			}
 			// Prepare to listen for another event
+			fetch_display_status(&myDisp_info);
 			XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
 		}
 	}
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){
-	// TODO Possible optimization, bring fetch_display_status out of this function
-	// Inputs: list, num_out_pp
+
+	/* 
+	 * Applies profile settings to given display given the profile
+	 * Inputs: 	myDisp_info	Display structure information
+	 * 		profile_group	Profile containing the settings that should be loaded
+	 * Outputs: 	none
+	 */
+
 	int i, j, z, xrrset_status, num_conn_outputs, num_out_pp;
 	struct conOutputs *cur_output, *head;
 	struct conf_sett_struct mySett;
@@ -301,23 +300,8 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 							XRRSetCrtcConfig (myDisp_info.myDisp, myDisp_info.myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
  							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
 							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
-							/*
-							if ((*(mySett.disp_val)) * (*(mySett.disp_val+1)) > DisplayWidth(myDisp_info.myDisp,screen) * DisplayHeight(myDisp_info.myDisp,screen)) {
-								printf("Expanding screen first\n");
- 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
-							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
-								
-							}
-							else {
-								printf("Shrinking crtc first\n");
- 							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
-							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
-
-							}
-							*/
 							// TODO Assuming only one output per crtc
 							printf("XRRSetCrtcConfig success? %d\n",xrrset_status);
-							// Have to change screen size now
 
 						}
 					}
