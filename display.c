@@ -7,20 +7,30 @@
 #include <libconfig.h>
 #include <unistd.h>
 
-// TODO: document functions, which variables are input
-//
+/* This program is intended to manage monitor hotplugging. It is able to save the current display settings and load them automatically when monitors are added/removed. In the future might be able run a script as well when monitors are hotplugged to extend this programs functionality. Should there be a Wayland version of this?
+ * Ricky
+ */
+
+/* TODO: free the variables, README
+ */
+
+/* Structure for saving the list of connected outputs
+ */
 struct conOutputs {
 	XRROutputInfo *outputInfo;
 	int outputNum;
 	struct conOutputs *next;
 };
 
-// Outputs: edid_val, resolution_str, pos_val
+/* Structure for loading and saving the configuration file
+ */
 struct conf_sett_struct {
 	const char **edid_val,**resolution_str;
 	int *pos_val,*disp_val;
 };
 
+/* Structure for saving the current display settings
+ */
 struct disp_info {
 	Display *myDisp;
 	Window myWin;
@@ -44,7 +54,7 @@ int main(int argc, char **argv) {
 	int load = 0;
 	int delete = 0;
 	int test_event = 0;
-	int quiet = 0;
+	int quiet = 0; // TODO implement a verbose mode
 	int cfg_idx;
 	config_setting_t *root, *profile_group;
 	struct disp_info myDisp_info;
@@ -132,12 +142,13 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	config_destroy(&config);
+
 }
 
 void listen_for_event(config_t *config_p){
 
-	/*
-	 * Listens for a screen change event. When the event occurs, find the profile that matches the current configuration. When the matching profile is found, call load_profile to apply the setting
+	/* Listens for a screen change event. When the event occurs, find the profile that matches the current configuration. When the matching profile is found, call load_profile to apply the setting
 	 * Inputs;	config_p	pointer to the configuration file that is being read
 	 * Outputs:	none
 	 */	
@@ -186,7 +197,7 @@ void listen_for_event(config_t *config_p){
 				printf("i=%d\n",i);
 				profile_group = config_setting_get_elem(root,i);
 				profile_match = config_setting_name(profile_group);
-				// Get list of profile outputs
+				// Get profile group of profile outputs
 				load_val_from_config(profile_group,&mySett,&num_out_pp);
 				// Config data is now stored in mySett (edid_val, resolution_str, pos_val)
 				printf("Profile number %d\n",i);
@@ -210,6 +221,7 @@ void listen_for_event(config_t *config_p){
 						}
 						cur_output = cur_output->next;
 					}
+
 					cur_output = head;
 					}
 
@@ -218,18 +230,18 @@ void listen_for_event(config_t *config_p){
 						load_profile(myDisp_info,profile_group);
 					}
 				}
-				free_output_list(head);
 			}
 			// Prepare to listen for another event
 			fetch_display_status(&myDisp_info);
 			XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
+
+			free_output_list(head);
 		}
 	}
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){
 
-	/* 
-	 * Applies profile settings to given display given the profile
+	/* Applies profile settings to given display given the profile
 	 * Inputs: 	myDisp_info	Display structure information
 	 * 		profile_group	Profile containing the settings that should be loaded
 	 * Outputs: 	none
@@ -320,9 +332,13 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 }
 
 void fetch_display_status(struct disp_info *myDisp_info){
-	// Loads current display status
-	// Loads myDisp, myScreen, and edid_atom
-	// TODO Free myDisp,myWin, myScreen, atom??
+
+	/* Loads current display status into myDisp_info struct
+	 * TODO Free myDisp,myWin, myScreen, atom??
+	 * Inputs: 	none
+	 * Outputs:	myDisp_info	structure containing display information
+	 */
+
 	char *display_name = 0; // TODO is this correct?
 	Bool only_if_exists = 1;
 	char *edid_name = "EDID";
@@ -336,10 +352,15 @@ void fetch_display_status(struct disp_info *myDisp_info){
 }
 
 void  construct_output_list(Display *myDisp, XRRScreenResources *myScreen, struct conOutputs **head, int *num_conn_outputs){
-	// Constructs a linked list containing output information
-	// TODO: Should probably optmize usage of global variables here
-	// Outputs:	cur_output:		pointer to head of linked list
-	// 		num_conn_outputs:	length of linked list	
+
+	/* Constructs a linked list containing output information
+	 * TODO: Should probably optmize usage of global variables here
+	 * Inputs:	myDisp			current display 
+	 * 		myScreen		current screen
+	 * Outputs:	head			pointer to head of linked list
+	 * 		num_conn_outputs:	length of linked list	
+	 */
+
 	int i;
 	struct conOutputs *new_output;
 	struct conOutputs *cur_output;
@@ -368,11 +389,17 @@ void  construct_output_list(Display *myDisp, XRRScreenResources *myScreen, struc
 }
 
 void free_output_list(struct conOutputs *cur_output){
-	//TODO Free myOutput
+
+	/* Frees the connected output list
+	 * Inputs:	cur_output	pointer to the head of the connected output linked list
+	 * Outputs:	none
+	 */
+	
 	struct conOutputs *temp;
 
 	while(cur_output){
 		temp = cur_output->next;
+		XFree(cur_output->outputInfo); // Umm 
 		free(cur_output);
 		cur_output = temp;
 	}
@@ -381,10 +408,13 @@ void free_output_list(struct conOutputs *cur_output){
 }
 
 void load_val_from_config(config_setting_t *profile_group, struct conf_sett_struct *mySett, int *num_out_pp){
-	// Loads all settings from one profile
-	// Inputs: list
-	// Outputs: edid_val, resolution_str, pos_val
-	// 	num_out_pp: how many saved outputs per profile there are
+
+	/* Loads all configuration settings from one profile into mySett
+	 * Inputs:	profile_group	configuration group that is to be loaded
+	 * Outputs: 	mySett		structure containing the values of the profile
+	 * 		num_out_pp	number of outputs per profile
+	 */
+	
 	int i;
 	config_setting_t *pos_group, *group, *mon_group;
 	
@@ -421,8 +451,12 @@ void load_val_from_config(config_setting_t *profile_group, struct conf_sett_stru
 }
 
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){
-	//Inputs: edid: the bits return from X11 server
-	//Outputs: edid_string: edid in string form
+
+	/* Converts the edid that is returned from the X11 server into a string
+	 * Inputs: 	edid	 	the bits return from X11 server
+	 * Outputs: 	edid_string	 edid in string form
+	 */
+
 	int z;
 	
 	*edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
@@ -442,6 +476,12 @@ void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **e
 
 
 void save_profile(config_t *config_p, config_setting_t *profile_group){
+
+	/* Saves the current display settings into the configuration file
+	 * Inputs:	config_p	pointer to the configuration file
+	 * 		profile_group	the profile to which the current display settings are saved
+	 */
+
 	int i,j,k,l,screen;
 	XRRCrtcInfo* myCrtc; 
 	config_setting_t *pos_group, *group;
@@ -530,6 +570,5 @@ void save_profile(config_t *config_p, config_setting_t *profile_group){
 	free(myCrtc);
 	config_write_file(config_p,config_file);
 	printf("Destroying config\n");
-	config_destroy(config_p);
 }
 
