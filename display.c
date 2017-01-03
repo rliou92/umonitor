@@ -7,7 +7,7 @@
 #include <libconfig.h>
 #include <unistd.h>
 
-/* This program is intended to manage monitor hotplugging. It is able to save the current display settings and load them automatically when monitors are added/removed. In the future might be able run a script as well when monitors are hotplugged to extend this programs functionality. Should there be a Wayland version of this?
+/* This program is intended to manage monitor hotplugging. It is able to save the current display settings and load them automatically when monitors are added/removed. In the future might be able run a script as well when monitors are hotplugged to extend this program's functionality. Should there be a Wayland version of this?
  * Ricky
  */
 
@@ -43,9 +43,11 @@ char config_file[] = "umon.conf";
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *list);
 void fetch_display_status(struct disp_info *myDisp_info);
+void free_display_status(struct disp_info *myDisp_info);
 void construct_output_list(struct disp_info, struct conOutputs **head, int *num_conn_outputs);
 void free_output_list(struct conOutputs *);
 void load_val_from_config(config_setting_t *list, struct conf_sett_struct *mySett, int *num_out_pp);
+void free_val_from_config(struct conf_sett_struct *mySett);
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string);
 void save_profile(config_t *config,config_setting_t *list);
 void listen_for_event(config_t *);
@@ -110,7 +112,7 @@ int main(int argc, char **argv) {
 					// Overwrite existing profile
 					printf("Existing profile found, overwriting\n");
 					cfg_idx = config_setting_index(profile_group);
-					root = config_setting_parent(profile_group);
+					root = config_root_setting(&config);
 					//printf("Configuration index: %d\n",cfg_idx);
 					config_setting_remove_elem(root,cfg_idx);
 					printf("Removed profile\n");
@@ -163,7 +165,7 @@ void listen_for_event(config_t *config_p){
 	struct disp_info myDisp_info;
 	struct conf_sett_struct mySett;
 
-	fetch_display_status(&myDisp_info);
+	fetch_display_status(&myDisp_info); // No need to free?
 	XRRQueryExtension(myDisp_info.myDisp,&event_base,&ignore);
 	XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
 
@@ -183,7 +185,7 @@ void listen_for_event(config_t *config_p){
 			// Get list of connected outputs
 			fetch_display_status(&myDisp_info);
 
-			construct_output_list(myDisp_info,&head,&num_conn_outputs);
+			construct_output_list(myDisp_info,&head,&num_conn_outputs); // Free
 			cur_output = head;
 			// Get list of available profiles
 			// Cannot free config
@@ -193,8 +195,8 @@ void listen_for_event(config_t *config_p){
 			for (i=0;i<num_profiles;++i){
 				// For each profile
 				printf("i=%d\n",i);
-				profile_group = config_setting_get_elem(root,i);
-				profile_match = config_setting_name(profile_group);
+				profile_group = config_setting_get_elem(root,i); // I believe not freeing these config_setting_t won't become a memory leak
+				profile_match = config_setting_name(profile_group); // Is assuming that these functions are not allocating additional memory
 				// Get profile group of profile outputs
 				load_val_from_config(profile_group,&mySett,&num_out_pp);
 				// Config data is now stored in mySett (edid_val, resolution_str, pos_val)
@@ -221,21 +223,24 @@ void listen_for_event(config_t *config_p){
 					}
 
 					cur_output = head;
-					}
-
-					if (matches == num_conn_outputs) {
-						printf("Profile %s matches!!\n", profile_match );
-						load_profile(myDisp_info,profile_group);
-					}
 				}
+
+				if (matches == num_conn_outputs) {
+					printf("Profile %s matches!!\n", profile_match );
+					load_profile(myDisp_info,profile_group);
+				}
+
+				free_val_from_config(&mySett);
 			}
-			// Prepare to listen for another event
-			fetch_display_status(&myDisp_info);
-			XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
 
 			free_output_list(head);
 		}
+		// Prepare to listen for another event
+		fetch_display_status(&myDisp_info);
+		XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
+
 	}
+}
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){
 
@@ -257,7 +262,7 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 	// Fetch current configuration info
 	// Assume display info is already fetched
 
-	construct_output_list(myDisp_info,&head,&num_conn_outputs);
+	construct_output_list(myDisp_info,&head,&num_conn_outputs); // Free
 	cur_output = head;
 
 	load_val_from_config(profile_group,&mySett,&num_out_pp);
@@ -311,22 +316,18 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 					}
 				}
 			}
-			// free(edid_string);
 		}
 		cur_output = cur_output->next;
 	}
 
-// 	free(edid_val);
-// 	free(resolution_str);
-// 	free(pos_val);
-// 	free_output_list(head);
+ 	free_output_list(head);
+	free_val_from_config(&mySett);
 
 }
 
 void fetch_display_status(struct disp_info *myDisp_info){
 
 	/* Loads current display status into myDisp_info struct
-	 * TODO Free myDisp,myWin, myScreen, atom??
 	 * Inputs: 	none
 	 * Outputs:	myDisp_info	structure containing display information
 	 */
@@ -338,16 +339,21 @@ void fetch_display_status(struct disp_info *myDisp_info){
 	myDisp_info->myDisp = XOpenDisplay(display_name);
 	myDisp_info->myWin = DefaultRootWindow(myDisp_info->myDisp);
 	// TODO Assume 1 screen?
-	// TODO Gotta free myScreen probably myCrtc as well XRRFree-something
 	myDisp_info->myScreen = XRRGetScreenResources(myDisp_info->myDisp,myDisp_info->myWin);
 	myDisp_info->edid_atom = XInternAtom(myDisp_info->myDisp,edid_name,only_if_exists);
+}
+
+void free_display_status(struct disp_info *myDisp_info){
+	XFree(myDisp_info->myDisp);
+	XFree(myDisp_info->myScreen);
+	free(myDisp_info);
 }
 
 void  construct_output_list(struct disp_info myDisp_info, struct conOutputs **head, int *num_conn_outputs){
 
 	/* Constructs a linked list containing output information
-	 * TODO: Should probably optmize usage of global variables here
-	 * Inputs:	myDisp			current display 
+	 * TODO: Change input myDisp_info into a pointer to save some memory
+	 * Inputs:	myDisp_info			current display 
 	 * 		myScreen		current screen
 	 * Outputs:	head			pointer to head of linked list
 	 * 		num_conn_outputs:	length of linked list	
@@ -453,6 +459,13 @@ void load_val_from_config(config_setting_t *profile_group, struct conf_sett_stru
 	config_setting_lookup_int(group,"height",mySett->disp_val+1);
 	config_setting_lookup_int(group,"widthMM",mySett->disp_val+2);
 	config_setting_lookup_int(group,"heightMM",mySett->disp_val+3);
+}
+
+void free_val_from_config(struct conf_sett_struct *mySett){
+	free(mySett->edid_val);
+	free(mySett->resolution_str);
+	free(mySett->pos_val);
+	free(mySett->disp_val);
 }
 
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){
@@ -570,7 +583,10 @@ void save_profile(config_t *config_p, config_setting_t *profile_group){
 		cur_output = cur_output->next;
 	}
 	// Need to free myCrtc
-	// free(myCrtc); // It's more complicated than this 
+	for(k=0;k<myDisp_info.myScreen->ncrtc;++k) {
+		free(myCrtc[k]);
+	}
+	free_output_list(head);
 	config_write_file(config_p,config_file);
 	printf("Updating config\n");
 }
