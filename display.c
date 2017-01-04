@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
 	int load = 0;
 	int delete = 0;
 	int test_event = 0;
-	int quiet = 0; // TODO implement a verbose mode
-	int cfg_idx;
+	int verbose = 0; // TODO implement a verbose mode
+	int cfg_idx,i;
 	config_setting_t *root, *profile_group;
 	struct disp_info myDisp_info;
 	config_t config; 
@@ -67,78 +67,83 @@ int main(int argc, char **argv) {
 	config_init(&config);
 	// printf("save: %d\n",save);
 
-	if (argc == 3) {
-		if (!strcmp("--save", argv[1])) {
+	for(i=1;i<argc;++i) {
+		if (!strcmp("--save", argv[i])) {
+			profile_name = argv[++i];
+			printf("Saving current settings into profile: %s\n", profile_name);
 			save = 1;
 		}
-		else if (!strcmp("--load", argv[1])) {
-			printf("Argument is to load\n");
+		else if (!strcmp("--load", argv[i])) {
+			profile_name = argv[++i];
+			printf("Loading profile: %s\n", profile_name);
 			load = 1;
 		}
-		else if (!strcmp("--delete", argv[1])){
+		else if (!strcmp("--delete", argv[i])){
+			profile_name = argv[++i];
+			printf("Deleting profile: %s\n", profile_name);
 			delete = 1;
 		}
+		else if (!strcmp("--verbose", argv[i])){
+			verbose = 1;
+		}
+		else if (!strcmp("--test-event", argv[i])){
+			test_event = 1;
+		}
 		else {
-			printf("Unrecognized second argument");
+			printf("Unrecognized arguments");
 			exit(5);
-		}
-
-		profile_name = argv[2];
-		printf("Profile name: %s\n", profile_name);
-
-
-		if (config_read_file(&config, config_file)) {
-			printf("Detected existing configuration file\n");
-			// Existing config file to load setting values
-			if (load) {
-				// Load profile
-				profile_group = config_lookup(&config,profile_name);
-
-				if (profile_group != NULL) {
-					fetch_display_status(&myDisp_info);
-					load_profile(myDisp_info,profile_group);
-				}
-				else {
-					printf("No profile found");
-					exit(2);
-				}
-
-				config_destroy(&config);
-			}
-
-			if (save || delete) {
-				profile_group = config_lookup(&config,profile_name);
-				if (profile_group != NULL) {
-					// Overwrite existing profile
-					printf("Existing profile found, overwriting\n");
-					cfg_idx = config_setting_index(profile_group);
-					root = config_root_setting(&config);
-					//printf("Configuration index: %d\n",cfg_idx);
-					config_setting_remove_elem(root,cfg_idx);
-					printf("Removed profile\n");
-				}
-			}
-		}
-
-		else {
-			if (load || delete) {
-				printf("No file to load or delete");
-				exit(1); // No file to load or delete
-			}
-		}
-
-		if (save) {
-			// Always create the new profile group because above code has already deleted it if it existed before
-			root = config_root_setting(&config);
-			profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
-			printf("Checking group: %d\n", profile_group);
-			save_profile(&config,profile_group);
 		}
 	}
 
-	if (!strcmp("--test-event", argv[1])){
+
+
+	if (config_read_file(&config, config_file)) {
+		printf("Detected existing configuration file\n");
+		// Existing config file to load setting values
+		if (load) {
+			// Load profile
+			profile_group = config_lookup(&config,profile_name);
+
+			if (profile_group != NULL) {
+				fetch_display_status(&myDisp_info);
+				load_profile(myDisp_info,profile_group);
+			}
+			else {
+				printf("No profile found");
+				exit(2);
+			}
+		}
+
+		if (save || delete) {
+			profile_group = config_lookup(&config,profile_name);
+			if (profile_group != NULL) {
+				// Overwrite existing profile
+				cfg_idx = config_setting_index(profile_group);
+				root = config_root_setting(&config);
+				//printf("Configuration index: %d\n",cfg_idx);
+				config_setting_remove_elem(root,cfg_idx);
+				printf("Deleted existing profile\n");
+			}
+		}
+	}
+
+	else {
+		if (load || delete) {
+			printf("No file to load or delete");
+			exit(1); // No file to load or delete
+		}
+	}
+
+	if (save) {
+		// Always create the new profile group because above code has already deleted it if it existed before
+		root = config_root_setting(&config);
+		profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
+		save_profile(&config,profile_group);
+	}
+
+	if (test_event){
 		if (config_read_file(&config, config_file)) {
-			listen_for_event(&config);
+			listen_for_event(&config); // Will not use new configuration file if it is changed 
 		}
 		else {
 			printf("No file to load when event is triggered\n");
@@ -191,16 +196,14 @@ void listen_for_event(config_t *config_p){
 			// Cannot free config
 			root = config_root_setting(config_p);
 			num_profiles = config_setting_length(root);
-			printf("Num profiles: %d\n", num_profiles);
+			printf("Number of profiles in configuration file: %d\n", num_profiles);
 			for (i=0;i<num_profiles;++i){
 				// For each profile
-				printf("i=%d\n",i);
 				profile_group = config_setting_get_elem(root,i); // I believe not freeing these config_setting_t won't become a memory leak
 				profile_match = config_setting_name(profile_group); // Is assuming that these functions are not allocating additional memory
 				// Get profile group of profile outputs
 				load_val_from_config(profile_group,&mySett,&num_out_pp);
 				// Config data is now stored in mySett (edid_val, resolution_str, pos_val)
-				printf("Profile number %d\n",i);
 
 				// See if the list of connected outputs match the list of profile outputs
 				// Assuming there is only one edid per profile in configuration
@@ -217,7 +220,7 @@ void listen_for_event(config_t *config_p){
 						// If match - load!
 						if (!strcmp(cur_output->edid_string,*(mySett.edid_val+k))){
 							++matches;
-							printf("Found a match! Match: %d\n",matches);
+							// printf("Found a match! Match: %d\n",matches);
 						}
 						cur_output = cur_output->next;
 					}
@@ -226,8 +229,11 @@ void listen_for_event(config_t *config_p){
 				}
 
 				if (matches == num_conn_outputs) {
-					printf("Profile %s matches!!\n", profile_match );
+					printf("Profile %s matches current configuration\n", profile_match);
 					load_profile(myDisp_info,profile_group);
+				}
+				else {
+					printf("Profile %s does not match current configuration\n", profile_match);
 				}
 
 				free_val_from_config(&mySett);
@@ -240,6 +246,7 @@ void listen_for_event(config_t *config_p){
 		XRRSelectInput(myDisp_info.myDisp,myDisp_info.myWin,RRScreenChangeNotifyMask);
 
 	}
+		printf("Done listening for event\n");
 }
 
 void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){
@@ -255,9 +262,7 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 	struct conf_sett_struct mySett;
 	int screen;
 
-	printf("Loading profile\n");
 	// list = config_lookup(&config,profile_name);
-	printf("Fetching display status\n");
 	// Construct list of current EDIDS
 	// Fetch current configuration info
 	// Assume display info is already fetched
@@ -267,14 +272,14 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 
 	load_val_from_config(profile_group,&mySett,&num_out_pp);
 
-	// Now I have both lists, so can do a double loops arounnd list of connected monitors and the saved monitors
+	// Now I have both lists, so can do a double loops around list of connected monitors and the saved monitors
 	// num_conn_outputs is the number of connected outputs
 	// l is the number of loaded monitors
 	printf("Trying to find matching monitor...\n");
 	for (i=0;i<num_conn_outputs;++i) {
 		// Loop around connected outputs
 		// Get edid
-		printf("%d\n",cur_output->outputNum);
+		// printf("%d\n",cur_output->outputNum);
 		// XRRGetOutputProperty(myDisp_info.myDisp,myDisp_info.myScreen->outputs[cur_output->outputNum],myDisp_info.edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
 		// Convert edid to how it is stored
 		if (cur_output->edid_string) {
@@ -282,10 +287,10 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 
 			for (j=0;j<num_out_pp;++j) {
 				// Now loop around loaded outputs
-				printf("Current output edid: %s\n", cur_output->edid_string);
-				printf("Matching with loaded output %s\n", *(mySett.edid_val+j));
+				// printf("Current output edid: %s\n", cur_output->edid_string);
+				// printf("Matching with loaded output %s\n", *(mySett.edid_val+j));
 				if (!strcmp(cur_output->edid_string,*(mySett.edid_val+j))){
-					printf("Match found!!!\n");
+					// printf("Match found!!!\n");
 					// Now I need to find the current output mode and then change them
 					// Really I only need the display mode (resolution) and ? (position)
 					// So I'm going to temporarily find them out in the following just to find the name and then remove the code
@@ -293,24 +298,21 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 					// Must find screen name first
 					for (z=0;z<myDisp_info.myScreen->nmode;++z) {
 						if (!strcmp(myDisp_info.myScreen->modes[z].name,*(mySett.resolution_str+j))) {
-							printf("I know the mode!: %s \n",*(mySett.resolution_str+j));
-							printf("Position %dx%d\n",*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j));
+							// printf("I know the mode!: %s \n",*(mySett.resolution_str+j));
+							// printf("Position %dx%d\n",*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j));
 							// Set
 							screen = DefaultScreen(myDisp_info.myDisp);
-							printf("Screen: %d\n", screen);
-							printf("DisplayWidth %d\n", *(mySett.disp_val));
-							printf("DisplayHeight %d\n", *(mySett.disp_val+1));
-							printf("DisplayWidthMM %d\n", *(mySett.disp_val+2));
-							printf("DisplayHeightMM %d\n", *(mySett.disp_val+3));
-							// Check to see if current display width height is bigger than setting width height
-							printf("setting res: %d\n",(*(mySett.disp_val)) * (*(mySett.disp_val+1)));
-							printf("current res: %d\n",DisplayWidth(myDisp_info.myDisp,screen) * DisplayHeight(myDisp_info.myDisp,screen));
+							// printf("Screen: %d\n", screen);
+							// printf("DisplayWidth %d\n", *(mySett.disp_val));
+							// printf("DisplayHeight %d\n", *(mySett.disp_val+1));
+							// printf("DisplayWidthMM %d\n", *(mySett.disp_val+2));
+							// printf("DisplayHeightMM %d\n", *(mySett.disp_val+3));
 							// Looks like the way xrandr does it is to disable crtcs first
 							XRRSetCrtcConfig (myDisp_info.myDisp, myDisp_info.myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
  							XRRSetScreenSize (myDisp_info.myDisp, myDisp_info.myWin,*(mySett.disp_val),*(mySett.disp_val+1),*(mySett.disp_val+2),*(mySett.disp_val+3));
 							xrrset_status = XRRSetCrtcConfig(myDisp_info.myDisp,myDisp_info.myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett.pos_val+2*j),*(mySett.pos_val+1+2*j),myDisp_info.myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info.myScreen->outputs[cur_output->outputNum]),1);
 							// TODO Assuming only one output per crtc
-							printf("XRRSetCrtcConfig success? %d\n",xrrset_status);
+							printf("Setting monitor %s\n",cur_output->outputInfo->name);
 
 						}
 					}
@@ -322,6 +324,7 @@ void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group)
 
  	free_output_list(head);
 	free_val_from_config(&mySett);
+	printf("Done loading profile\n");
 
 }
 
@@ -341,12 +344,14 @@ void fetch_display_status(struct disp_info *myDisp_info){
 	// TODO Assume 1 screen?
 	myDisp_info->myScreen = XRRGetScreenResources(myDisp_info->myDisp,myDisp_info->myWin);
 	myDisp_info->edid_atom = XInternAtom(myDisp_info->myDisp,edid_name,only_if_exists);
+	printf("Done fetching display status\n");
 }
 
 void free_display_status(struct disp_info *myDisp_info){
 	XFree(myDisp_info->myDisp);
 	XFree(myDisp_info->myScreen);
 	free(myDisp_info);
+	printf("Done freeing display status\n");
 }
 
 void  construct_output_list(struct disp_info myDisp_info, struct conOutputs **head, int *num_conn_outputs){
@@ -380,7 +385,7 @@ void  construct_output_list(struct disp_info myDisp_info, struct conOutputs **he
 			// printf("%d\n",i);
 			new_output->outputInfo = myOutput;
 			new_output->next = *head;
-			printf("new_output->next: %d\n",new_output->next);
+			// printf("new_output->next: %d\n",new_output->next);
 			new_output->outputNum = i;
 			*head = new_output;
 			XRRGetOutputProperty(myDisp_info.myDisp,myDisp_info.myScreen->outputs[i],myDisp_info.edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
@@ -415,7 +420,7 @@ void free_output_list(struct conOutputs *cur_output){
 		cur_output = temp;
 	}
 
-	return;
+	printf("Done freeing linked list of outputs\n");
 }
 
 void load_val_from_config(config_setting_t *profile_group, struct conf_sett_struct *mySett, int *num_out_pp){
@@ -431,34 +436,34 @@ void load_val_from_config(config_setting_t *profile_group, struct conf_sett_stru
 	
 	// printf("am i here\n");
 	mon_group = config_setting_lookup(profile_group,"Monitors");
-	printf("Checking group %d\n",mon_group);
+	// printf("Checking group %d\n",mon_group);
 	*num_out_pp = config_setting_length(mon_group);
 	mySett->edid_val = (const char **) malloc(*num_out_pp * sizeof(const char *));
 	mySett->resolution_str = (const char **) malloc(*num_out_pp * sizeof(const char *));
 	mySett->pos_val = (int *) malloc(2*(*num_out_pp) * sizeof(int));
 	mySett->disp_val = (int *) malloc(4*sizeof(int));
-	printf("am i here\n");
 
 	for(i=0;i<*num_out_pp;++i) {
 		group = config_setting_get_elem(mon_group,i);
-		printf("Checking group %d\n",group);
+		// printf("Checking group %d\n",group);
 		pos_group = config_setting_lookup(group,"pos");
 		config_setting_lookup_string(group,"EDID",mySett->edid_val+i);
 		config_setting_lookup_string(group,"resolution",mySett->resolution_str+i);
 		config_setting_lookup_int(pos_group,"x",mySett->pos_val+2*i);
 		config_setting_lookup_int(pos_group,"y",mySett->pos_val+2*i+1);
-		printf("Loaded values: \n");
-		printf("EDID: %s\n",*(mySett->edid_val+i));
-		printf("Resolution: %s\n",*(mySett->resolution_str+i));
-		printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
+		// printf("Loaded values: \n");
+		// printf("EDID: %s\n",*(mySett->edid_val+i));
+		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
+		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
 	}
 
-	// printf("am i here\n");
 	group = config_setting_lookup(profile_group,"Screen");
 	config_setting_lookup_int(group,"width",mySett->disp_val);
 	config_setting_lookup_int(group,"height",mySett->disp_val+1);
 	config_setting_lookup_int(group,"widthMM",mySett->disp_val+2);
 	config_setting_lookup_int(group,"heightMM",mySett->disp_val+3);
+
+	printf("Done loading values from configuration file\n");
 }
 
 void free_val_from_config(struct conf_sett_struct *mySett){
@@ -466,6 +471,8 @@ void free_val_from_config(struct conf_sett_struct *mySett){
 	free(mySett->resolution_str);
 	free(mySett->pos_val);
 	free(mySett->disp_val);
+
+	printf("Done freeing values from configuration file\n");
 }
 
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){
@@ -489,7 +496,8 @@ void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **e
 		//printf("%c",*((*edid_string)+z));
 	}
 	*((*edid_string)+z) = '\0';
-	// printf("Finished edid_to_string\n");
+
+	printf("Finished edid_to_string\n");
 }
 
 
@@ -536,24 +544,21 @@ void save_profile(config_t *config_p, config_setting_t *profile_group){
 	config_setting_set_int(disp_heightMM_setting,DisplayHeightMM(myDisp_info.myDisp,screen));
 
 	mon_group = config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
-	printf("Done with setting up config\n");
+	// printf("Done with setting up config\n");
 	for (i=0;i<num_conn_outputs;++i) {
 		// Setup config
-		printf("ohiihi\n");
 		output_group = config_setting_add(mon_group,cur_output->outputInfo->name,CONFIG_TYPE_GROUP);
-		printf("ohiihi\n");
 		edid_setting = config_setting_add(output_group,"EDID",CONFIG_TYPE_STRING);
 		resolution_setting = config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
 		pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
 		pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
 		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
-		printf("edid");
-		printf(" %s\n", cur_output->edid_string);
+		// printf(" %s\n", cur_output->edid_string);
 
 		if (cur_output->edid_string) {
 			// Make edid into string
 			// edid_to_string(edid,nitems,&edid_string);
-			printf("edid %s\n",cur_output->edid_string);
+			// printf("edid %s\n",cur_output->edid_string);
 			// Get current mode
 			for (j=0;j<cur_output->outputInfo->nmode;++j) {
 				// printf("Mode: %d\n",myOutput->modes[j]);
@@ -589,6 +594,8 @@ void save_profile(config_t *config_p, config_setting_t *profile_group){
 	free_output_list(head);
 	config_write_file(config_p,config_file);
 	printf("Updating config\n");
+
+	printf("Done saving settings to profile\n");
 }
 
 

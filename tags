@@ -1,0 +1,31 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+conOutputs	display.c	/^struct conOutputs {$/;"	s	file:
+conf_sett_struct	display.c	/^struct conf_sett_struct {$/;"	s	file:
+config_file	display.c	/^char config_file[] = "umon.conf";$/;"	v
+construct_output_list	display.c	/^void  construct_output_list(struct disp_info myDisp_info, struct conOutputs **head, int *num_conn_outputs){$/;"	f
+disp_info	display.c	/^struct disp_info {$/;"	s	file:
+disp_val	display.c	/^	int *pos_val,*disp_val;$/;"	m	struct:conf_sett_struct	file:
+edid_atom	display.c	/^	Atom edid_atom;$/;"	m	struct:disp_info	file:
+edid_string	display.c	/^	char *edid_string;$/;"	m	struct:conOutputs	file:
+edid_to_string	display.c	/^void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){$/;"	f
+edid_val	display.c	/^	const char **edid_val,**resolution_str;$/;"	m	struct:conf_sett_struct	file:
+fetch_display_status	display.c	/^void fetch_display_status(struct disp_info *myDisp_info){$/;"	f
+free_output_list	display.c	/^void free_output_list(struct conOutputs *cur_output){$/;"	f
+listen_for_event	display.c	/^void listen_for_event(config_t *config_p){$/;"	f
+load_profile	display.c	/^void load_profile(struct disp_info myDisp_info, config_setting_t *profile_group){$/;"	f
+load_val_from_config	display.c	/^void load_val_from_config(config_setting_t *profile_group, struct conf_sett_struct *mySett, int *num_out_pp){$/;"	f
+main	display.c	/^int main(int argc, char **argv) {$/;"	f
+myDisp	display.c	/^	Display *myDisp;$/;"	m	struct:disp_info	file:
+myScreen	display.c	/^	XRRScreenResources *myScreen;$/;"	m	struct:disp_info	file:
+myWin	display.c	/^	Window myWin;$/;"	m	struct:disp_info	file:
+next	display.c	/^	struct conOutputs *next;$/;"	m	struct:conOutputs	typeref:struct:conOutputs::conOutputs	file:
+outputInfo	display.c	/^	XRROutputInfo *outputInfo;$/;"	m	struct:conOutputs	file:
+outputNum	display.c	/^	int outputNum;$/;"	m	struct:conOutputs	file:
+pos_val	display.c	/^	int *pos_val,*disp_val;$/;"	m	struct:conf_sett_struct	file:
+resolution_str	display.c	/^	const char **edid_val,**resolution_str;$/;"	m	struct:conf_sett_struct	file:
+save_profile	display.c	/^void save_profile(config_t *config_p, config_setting_t *profile_group){$/;"	f
