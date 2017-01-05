@@ -7,11 +7,30 @@
 #include <libconfig.h>
 #include <unistd.h>
 
-/* This program is intended to manage monitor hotplugging. It is able to save the current display settings and load them automatically when monitors are added/removed. In the future might be able run a script as well when monitors are hotplugged to extend this program's functionality. Should there be a Wayland version of this?
+/* This program is intended to manage monitor hotplugging. It is able to save
+ * the current display settings and load them automatically when monitors are
+ * added/removed. In the future might be able run a script as well when
+ * monitors are hotplugged to extend this program's functionality. Should there
+ * be a Wayland version of this?
+ *
+ * README
+ * 1. Set up the display configuration however you want. 
+ * 2. Save the settings into a profile called profile_name:
+ * 	display --save profile_name
+ * Configuration settings are saved in the same location as the program in a file called "umon.conf". This will be changed to follow the XDG config directory in the future.
+ * 3. In order to automatically detect and manage display settings, you can run:
+ * 	display --test-event
+ * 4. Deleting a profile from the configuration file can be done by
+ * 	display --delete profile_name
+ * 5. Manually loading a profile:
+ * 	display --load profile_name
+ *
  * Ricky
  */
 
-/* TODO: README
+/* TODO:	README
+ * 		test duplicate displays
+ * 		XDG config file storage
  */
 
 /* Structure for saving the list of connected outputs
@@ -347,13 +366,13 @@ void fetch_display_status(struct disp_info *myDisp_info){
 	 * Outputs:	myDisp_info	structure containing display information
 	 */
 
-	char *display_name = 0; // TODO is this correct?
+	char *display_name = 0; // Is this correct?
 	Bool only_if_exists = 1;
 	char *edid_name = "EDID";
 
 	myDisp_info->myDisp = XOpenDisplay(display_name);
 	myDisp_info->myWin = DefaultRootWindow(myDisp_info->myDisp);
-	// TODO Assume 1 screen?
+	// Assuming only one screen
 	myDisp_info->myScreen = XRRGetScreenResources(myDisp_info->myDisp,myDisp_info->myWin);
 	myDisp_info->edid_atom = XInternAtom(myDisp_info->myDisp,edid_name,only_if_exists);
 	if (verbose) printf("Done fetching display status\n");
@@ -369,7 +388,6 @@ void free_display_status(struct disp_info *myDisp_info){
 void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **head,int *num_conn_outputs){
 
 	/* Constructs a linked list containing output information
-	 * TODO: Change input myDisp_info into a pointer to save some memory
 	 * Inputs:	myDisp_info			current display 
 	 * 		myScreen		current screen
 	 * Outputs:	head			pointer to head of linked list
@@ -391,7 +409,6 @@ void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **h
 		myOutput = XRRGetOutputInfo(myDisp_info->myDisp,myDisp_info->myScreen,myDisp_info->myScreen->outputs[i]);
 		// printf("Name: %s Connection %d\n",myOutput->name,myOutput->connection);
 		if (!myOutput->connection) {
-			// TODO Free the list and int
 			new_output = (struct conOutputs*) malloc(sizeof(struct conOutputs));
 			// printf("%d\n",i);
 			new_output->outputInfo = myOutput;
