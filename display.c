@@ -68,7 +68,7 @@ void construct_output_list(struct disp_info *, struct conOutputs **head,int *);
 void free_output_list(struct conOutputs *);
 void load_val_from_config(config_setting_t *list, struct conf_sett_struct *mySett, int *num_out_pp);
 void free_val_from_config(struct conf_sett_struct *mySett);
-void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string);
+void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char *edid_string);
 void save_profile(config_t *config,config_setting_t *,struct disp_info *, struct conOutputs *);
 void listen_for_event(config_t *config_p,struct disp_info *myDisp_info,int,struct conOutputs *head,struct conf_sett_struct *mySett);
 
@@ -229,8 +229,8 @@ void listen_for_event(config_t *config_p,struct disp_info *myDisp_info,int num_c
 				// See if the list of connected outputs match the list of profile outputs
 				// Assuming there is only one edid per profile in configuration
 				matches = 0;
-				printf("num_conn_outputs: %d\n",num_conn_outputs);
-				printf("num_out_pp: %d\n",num_out_pp);
+				if (verbose) printf("num_conn_outputs: %d\n",num_conn_outputs);
+				if (verbose) printf("num_out_pp: %d\n",num_out_pp);
 				if (num_conn_outputs == num_out_pp) {
 					for (k=0;k<num_out_pp;++k) {
 						for (cur_output=head;cur_output;cur_output=cur_output->next) {
@@ -342,6 +342,9 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 							XRRSetCrtcConfig (myDisp_info->myDisp, myDisp_info->myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
  							XRRSetScreenSize (myDisp_info->myDisp, myDisp_info->myWin,*(mySett->disp_val),*(mySett->disp_val+1),*(mySett->disp_val+2),*(mySett->disp_val+3));
 							// TODO Assuming only one output per crtc
+							// For duplicating displays I think this will work by creating two crtcs on top of each other
+							// Probably not ideal, but my implementation of this program has been flawed from the beginning in how I store the configuration file, my understanding at that time of the X11 protocol was not so clear
+							// printf("number of outputs per crtc: %d\n",cur_output->outputInfo->crtc.crtc_info->noutput);
 							xrrset_status = XRRSetCrtcConfig(myDisp_info->myDisp,myDisp_info->myScreen,cur_output->outputInfo->crtc,CurrentTime,*(mySett->pos_val+2*j),*(mySett->pos_val+1+2*j),myDisp_info->myScreen->modes[z].id,RR_Rotate_0,&(myDisp_info->myScreen->outputs[cur_output->outputNum]),1);
 							if (verbose) printf("Setting monitor %s\n",cur_output->outputInfo->name);
 
@@ -418,7 +421,8 @@ void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **h
 			*head = new_output;
 			XRRGetOutputProperty(myDisp_info->myDisp,myDisp_info->myScreen->outputs[i],myDisp_info->edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
 			if (nitems) {
-				edid_to_string(edid,nitems,&edid_string);
+				edid_string = (char *) malloc((nitems+1)*sizeof(char));
+				edid_to_string(edid,nitems,edid_string);
 				new_output->edid_string = edid_string;
 			}
 			else {
@@ -504,7 +508,7 @@ void free_val_from_config(struct conf_sett_struct *mySett){
 	if (verbose) 	printf("Done freeing values from configuration file\n");
 }
 
-void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **edid_string){
+void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char *edid_string){
 
 	/* Converts the edid that is returned from the X11 server into a string
 	 * Inputs: 	edid	 	the bits return from X11 server
@@ -513,18 +517,17 @@ void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char **e
 
 	int z;
 	
-	*edid_string = (unsigned char *) malloc((nitems+1) * sizeof(char));
 	for (z=0;z<nitems;++z) {
 		if (edid[z] == '\0') {
-			*((*edid_string)+z) = '0';
+			edid_string[z] = '0';
 		}
 		else {
-			*((*edid_string)+z) = edid[z];
+			edid_string[z] = edid[z];
 		}
 		//printf("\n");
 		//printf("%c",*((*edid_string)+z));
 	}
-	*((*edid_string)+z) = '\0';
+	edid_string[z] = '\0';
 
 	if (verbose) printf("Finished edid_to_string\n");
 }
@@ -571,16 +574,16 @@ void save_profile(config_t *config_p, config_setting_t *profile_group, struct di
 	config_setting_set_int(disp_widthMM_setting,DisplayWidthMM(myDisp_info->myDisp,screen));
 	config_setting_set_int(disp_heightMM_setting,DisplayHeightMM(myDisp_info->myDisp,screen));
 
+	// crtc_group = config_setting_add(profile_group,"Crtc",CONFIG_TYPE_GROUP);
 	mon_group = config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
 	// printf("Done with setting up config\n");
 	for (cur_output=head;cur_output;cur_output=cur_output->next) {
-		// Setup config
 		output_group = config_setting_add(mon_group,cur_output->outputInfo->name,CONFIG_TYPE_GROUP);
 		edid_setting = config_setting_add(output_group,"EDID",CONFIG_TYPE_STRING);
 		resolution_setting = config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
 		pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
 		pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
-		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
+		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);	 
 		// printf("cur_output %s\n", cur_output->edid_string);
 
 		if (cur_output->edid_string) {
@@ -595,7 +598,6 @@ void save_profile(config_t *config_p, config_setting_t *profile_group, struct di
 					// printf("Crtc mode id: %d\n",myCrtc[k].mode);
 					if (cur_output->outputInfo->modes[j] == myCrtc[k]->mode) {
 						// Save current output and mode id
-
 						config_setting_set_string(edid_setting,cur_output->edid_string);
 						// free(edid_string);
 
@@ -608,7 +610,6 @@ void save_profile(config_t *config_p, config_setting_t *profile_group, struct di
 
 						config_setting_set_int(pos_x_setting,myCrtc[k]->x);
 						config_setting_set_int(pos_y_setting,myCrtc[k]->y);
-						// printf("Match!");
 					}
 				}
 			}
