@@ -289,8 +289,8 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 	 * Outputs: 	none
 	 */
 
-	int j, z, xrrset_status, screen;
-	struct conOutputs *cur_output;
+	int j, z, xrrset_status, screen, match;
+	struct conOutputs *cur_output, *cur_output2;
 	// struct conf_sett_struct mySett;
 
 	// list = config_lookup(&config,profile_name);
@@ -298,21 +298,44 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 	// Fetch current configuration info
 	// Assume display info is already fetched
 
-	// construct_output_list(myDisp_info,&head,&num_conn_outputs); // Free
-	// cur_output = head;
+	for (cur_output=head;cur_output;cur_output=cur_output->next) {
+		if (!cur_output->outputInfo->crtc) {
+			cur_output2 = cur_output->next;
+			match = 0;
+			while (!match) {
+				if (cur_output2->outputInfo->crtc) {
+					cur_output->outputInfo->crtc = cur_output2->outputInfo->crtc;
+					match = 1;
+				}
+				cur_output2 = cur_output2->next;
+			}
+		}
+	}
 
-	// load_val_from_config(profile_group,&mySett,&num_out_pp);
+
 
 	// Now I have both lists, so can do a double loops around list of connected monitors and the saved monitors
 	// num_conn_outputs is the number of connected outputs
-	// l is the number of loaded monitors
 	if (verbose) printf("Trying to find matching monitor...\n");
 	for (cur_output=head;cur_output;cur_output=cur_output->next) {
 		// Loop around connected outputs
-		// Get edid
-		 //printf("%d\n",cur_output->outputNum);
-		// XRRGetOutputProperty(myDisp_info.myDisp,myDisp_info.myScreen->outputs[cur_output->outputNum],myDisp_info.edid_atom,0,100,False,False,AnyPropertyType,&actual_type,&actual_format,&nitems,&bytes_after,&edid);
-		// Convert edid to how it is stored
+		// Cannot disable if already disabled
+		printf("Current output edid: %s\n", cur_output->edid_string);
+		printf("checking if output is used: %d\n",myDisp_info->myScreen->outputs[cur_output->outputNum]);
+		printf("checking if output is used: %d\n",cur_output->outputInfo->crtc);
+		//if (cur_output->outputInfo->crtc) {
+			XRRSetCrtcConfig (myDisp_info->myDisp, myDisp_info->myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+		// }
+		// else {
+		// 	// Create a new crtc
+		// 	// Add output to existing crtc
+		// 	XRRSetCrtcConfig(myDisp_info->myDisp,myDisp_info->myScreen,cur_output->outputInfo->cr)
+		// 	cur_output->outputInfo->crtc->outputs = 
+		// 	//cur_output->outputInfo->crtc = malloc(sizeof(XRRCrtcInfo *));
+		// 	//XRRSetCrtcConfig (myDisp_info->myDisp, myDisp_info->myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+		// }
+		 printf("cur_output num: %d\n",cur_output->outputNum);
+		// TODO Should disable outputs that are not listed in the profile
 		if (cur_output->edid_string) {
 			 //printf("%s\n",cur_output->edid_string);
 
@@ -322,11 +345,13 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 				// printf("Matching with loaded output %s\n", *(mySett->edid_val+j));
 				if (!strcmp(cur_output->edid_string,*(mySett->edid_val+j))){
 					// printf("Match found!!!\n");
+					// match = 1;
 					// Now I need to find the current output mode and then change them
 					// Really I only need the display mode (resolution) and ? (position)
 					// So I'm going to temporarily find them out in the following just to find the name and then remove the code
 					// Screen has a list of modes, and so does the output
 					// Must find screen name first
+					XRRSetScreenSize (myDisp_info->myDisp, myDisp_info->myWin,*(mySett->disp_val),*(mySett->disp_val+1),*(mySett->disp_val+2),*(mySett->disp_val+3));
 					for (z=0;z<myDisp_info->myScreen->nmode;++z) {
 						if (!strcmp(myDisp_info->myScreen->modes[z].name,*(mySett->resolution_str+j))) {
 							// printf("I know the mode!: %s \n",*(mySett.resolution_str+j));
@@ -339,8 +364,6 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 							// printf("DisplayWidthMM %d\n", *(mySett.disp_val+2));
 							// printf("DisplayHeightMM %d\n", *(mySett.disp_val+3));
 							// Looks like the way xrandr does it is to disable crtcs first
-							XRRSetCrtcConfig (myDisp_info->myDisp, myDisp_info->myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
- 							XRRSetScreenSize (myDisp_info->myDisp, myDisp_info->myWin,*(mySett->disp_val),*(mySett->disp_val+1),*(mySett->disp_val+2),*(mySett->disp_val+3));
 							// TODO Assuming only one output per crtc
 							// For duplicating displays I think this will work by creating two crtcs on top of each other
 							// Probably not ideal, but my implementation of this program has been flawed from the beginning in how I store the configuration file, my understanding at that time of the X11 protocol was not so clear
@@ -352,6 +375,11 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 					}
 				}
 			}
+			// if (!match) {
+			// 	// Disable this output because this output has no configuration
+
+
+			// }
 		}
 		// cur_output = cur_output->next;
 	}
