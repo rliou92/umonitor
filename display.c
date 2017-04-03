@@ -14,7 +14,7 @@
  * be a Wayland version of this?
  *
  * README
- * 1. Set up the display configuration however you want. 
+ * 1. Set up the display configuration however you want.
  * 2. Save the settings into a profile called profile_name:
  * 	display --save profile_name
  * Configuration settings are saved in the same location as the program in a file called "umon.conf". This will be changed to follow the XDG config directory in the future.
@@ -31,6 +31,7 @@
 /* TODO:	README
  * 		test duplicate displays
  * 		XDG config file storage
+ * 		replace if (verbose) printf with a macro
  */
 
 /* Structure for saving the list of connected outputs
@@ -59,7 +60,7 @@ struct disp_info {
 };
 
 char config_file[] = "umon.conf";
-int verbose = 0; 
+int verbose = 0;
 
 void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct conf_sett_struct *mySett, int num_out_pp, config_setting_t *profile_group);
 void fetch_display_status(struct disp_info *myDisp_info);
@@ -82,7 +83,7 @@ int main(int argc, char **argv) {
 	struct disp_info myDisp_info;
 	struct conOutputs *head;
 	struct conf_sett_struct mySett;
-	config_t config; 
+	config_t config;
 	char* profile_name;
 
 	config_init(&config);
@@ -90,14 +91,26 @@ int main(int argc, char **argv) {
 
 	for(i=1;i<argc;++i) {
 		if (!strcmp("--save", argv[i])) {
-			profile_name = argv[++i];
+			if (++i >= argc) {
+                printf("Saving needs an argument!\n");
+                exit(6);
+            }
+            profile_name = argv[i];
 			save = 1;
 		}
 		else if (!strcmp("--load", argv[i])) {
-			profile_name = argv[++i];
+			if (++i >= argc) {
+                printf("Loading needs an argument!\n");
+                exit(6);
+            }
+            profile_name = argv[i];
 			load = 1;
 		}
 		else if (!strcmp("--delete", argv[i])){
+            if (++i >= argc) {
+                printf("Deleting needs an argument!\n");
+                exit(6);
+            }
 			profile_name = argv[++i];
 			delete = 1;
 		}
@@ -166,7 +179,7 @@ int main(int argc, char **argv) {
 
 	if (test_event){
 		if (config_read_file(&config, config_file)) {
-			listen_for_event(&config,&myDisp_info,num_conn_outputs,head,&mySett); // Will not use new configuration file if it is changed 
+			listen_for_event(&config,&myDisp_info,num_conn_outputs,head,&mySett); // Will not use new configuration file if it is changed
 		}
 		else {
 			printf("No file to load when event is triggered\n");
@@ -186,7 +199,7 @@ void listen_for_event(config_t *config_p,struct disp_info *myDisp_info,int num_c
 	/* Listens for a screen change event. When the event occurs, find the profile that matches the current configuration. When the matching profile is found, call load_profile to apply the setting
 	 * Inputs;	config_p	pointer to the configuration file that is being read
 	 * Outputs:	none
-	 */	
+	 */
 
 	int i,k,matches,event_num,event_base,ignore,num_out_pp,num_profiles;
 	XEvent event;
@@ -284,10 +297,10 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 
 	// Output list, configuration file values
 	/* Applies profile settings to given display given the profile
-	 * Inputs: 	myDisp_info	Display structure information
-	 * 		profile_group	Profile containing the settings that should be loaded
-	 * Outputs: 	none
-	 */
+	* Inputs: 	myDisp_info	Display structure information
+	* 		profile_group	Profile containing the settings that should be loaded
+	* Outputs: 	none
+	*/
 
 	int j, z, xrrset_status, screen, match;
 	struct conOutputs *cur_output, *cur_output2;
@@ -330,14 +343,14 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 		// 	// Create a new crtc
 		// 	// Add output to existing crtc
 		// 	XRRSetCrtcConfig(myDisp_info->myDisp,myDisp_info->myScreen,cur_output->outputInfo->cr)
-		// 	cur_output->outputInfo->crtc->outputs = 
+		// 	cur_output->outputInfo->crtc->outputs =
 		// 	//cur_output->outputInfo->crtc = malloc(sizeof(XRRCrtcInfo *));
 		// 	//XRRSetCrtcConfig (myDisp_info->myDisp, myDisp_info->myScreen, cur_output->outputInfo->crtc, CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
 		// }
-		 printf("cur_output num: %d\n",cur_output->outputNum);
+		// printf("cur_output num: %d\n",cur_output->outputNum);
 		// TODO Should disable outputs that are not listed in the profile
 		if (cur_output->edid_string) {
-			 //printf("%s\n",cur_output->edid_string);
+			//printf("%s\n",cur_output->edid_string);
 
 			for (j=0;j<num_out_pp;++j) {
 				// Now loop around loaded outputs
@@ -384,7 +397,7 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 		// cur_output = cur_output->next;
 	}
 
- 	// free_output_list(head);
+	// free_output_list(head);
 	// free_val_from_config(&mySett);
 	if (verbose) printf("Done loading profile\n");
 
@@ -392,10 +405,11 @@ void load_profile(struct disp_info *myDisp_info, struct conOutputs *head, struct
 
 void fetch_display_status(struct disp_info *myDisp_info){
 
-	/* Loads current display status into myDisp_info struct
-	 * Inputs: 	none
-	 * Outputs:	myDisp_info	structure containing display information
-	 */
+	/*
+	* Loads current display status into myDisp_info struct
+	* Inputs: 	none
+	* Outputs:	myDisp_info	structure containing display information
+	*/
 
 	char *display_name = 0; // Is this correct?
 	Bool only_if_exists = 1;
@@ -418,11 +432,12 @@ void free_display_status(struct disp_info *myDisp_info){
 
 void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **head,int *num_conn_outputs){
 
-	/* Constructs a linked list containing output information
-	 * Inputs:	myDisp_info			current display 
-	 * 		myScreen		current screen
-	 * Outputs:	head			pointer to head of linked list
-	 */
+	/*
+	* Constructs a linked list containing output information
+	* Inputs:	myDisp_info		current display
+	* 		myScreen		current screen
+	* Outputs:	head			pointer to head of linked list
+	*/
 
 	int i;
 	struct conOutputs *new_output;
@@ -457,7 +472,7 @@ void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **h
 				new_output->edid_string = NULL;
 			}
 			//printf("Oh where oh where\n");
-			*num_conn_outputs = *num_conn_outputs + 1; 
+			*num_conn_outputs = *num_conn_outputs + 1;
 		}
 	}
 	if (verbose) printf("Number of outputs: %d\n", *num_conn_outputs);
@@ -466,16 +481,17 @@ void  construct_output_list(struct disp_info *myDisp_info, struct conOutputs **h
 
 void free_output_list(struct conOutputs *cur_output){
 
-	/* Frees the connected output list
-	 * Inputs:	cur_output	pointer to the head of the connected output linked list
-	 * Outputs:	none
-	 */
-	
+	/*
+	* Frees the connected output list
+	* Inputs:	cur_output	pointer to the head of the connected output linked list
+	* Outputs:	none
+	*/
+
 	struct conOutputs *temp;
 
 	while(cur_output){
 		temp = cur_output->next;
-		XFree(cur_output->outputInfo); // Umm 
+		XFree(cur_output->outputInfo); // Umm
 		free(cur_output->edid_string);
 		free(cur_output);
 		cur_output = temp;
@@ -486,15 +502,16 @@ void free_output_list(struct conOutputs *cur_output){
 
 void load_val_from_config(config_setting_t *profile_group, struct conf_sett_struct *mySett, int *num_out_pp){
 
-	/* Loads all configuration settings from one profile into mySett
-	 * Inputs:	profile_group	configuration group that is to be loaded
-	 * Outputs: 	mySett		structure containing the values of the profile
-	 * 		num_out_pp	number of outputs per profile
-	 */
-	
+	/*
+	* Loads all configuration settings from one profile into mySett
+	* Inputs:	profile_group	configuration group that is to be loaded
+	* Outputs: 	mySett		structure containing the values of the profile
+	* 		num_out_pp	number of outputs per profile
+	*/
+
 	int i;
 	config_setting_t *pos_group, *group, *mon_group;
-	
+
 	// printf("am i here\n");
 	mon_group = config_setting_lookup(profile_group,"Monitors");
 	// printf("Checking group %d\n",mon_group);
@@ -539,12 +556,12 @@ void free_val_from_config(struct conf_sett_struct *mySett){
 void edid_to_string(unsigned char *edid, unsigned long nitems, unsigned char *edid_string){
 
 	/* Converts the edid that is returned from the X11 server into a string
-	 * Inputs: 	edid	 	the bits return from X11 server
-	 * Outputs: 	edid_string	 edid in string form
-	 */
+	* Inputs: 	edid	 	the bits return from X11 server
+	* Outputs: 	edid_string	 edid in string form
+	*/
 
 	int z;
-	
+
 	for (z=0;z<nitems;++z) {
 		if (edid[z] == '\0') {
 			edid_string[z] = '0';
@@ -569,7 +586,7 @@ void save_profile(config_t *config_p, config_setting_t *profile_group, struct di
 	 */
 
 	int i,j,k,l,screen,num_conn_outputs;
-	XRRCrtcInfo **myCrtc; 
+	XRRCrtcInfo **myCrtc;
 	config_setting_t *pos_group, *group;
 	// struct disp_info myDisp_info;
 	struct conOutputs *cur_output;
@@ -611,14 +628,15 @@ void save_profile(config_t *config_p, config_setting_t *profile_group, struct di
 		resolution_setting = config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
 		pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
 		pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
-		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);	 
-		// printf("cur_output %s\n", cur_output->edid_string);
+		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
+		printf("cur_output %s\n", cur_output->edid_string);
 
-		if (cur_output->edid_string) {
+		if (cur_output->edid_string || !strcmp(cur_output->outputInfo->name,"VIRTUAL1")) {
 			// Make edid into string
 			// edid_to_string(edid,nitems,&edid_string);
 			// printf("edid %s\n",cur_output->edid_string);
 			// Get current mode
+			// printf("Number of modes: %d\n", cur_output->outputInfo->nmode);
 			for (j=0;j<cur_output->outputInfo->nmode;++j) {
 				// printf("Mode: %d\n",myOutput->modes[j]);
 				// Get crct configuration
