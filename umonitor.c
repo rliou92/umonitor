@@ -1,10 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <libconfig.h>
 #include <unistd.h>
 #include <X11/extensions/Xrandr.h>
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
+
 
 	/*
 	 * Structure for loading and saving the configuration file
@@ -25,26 +28,40 @@ void connect_to_server(void);
 //void free_display_status(void);
 //void construct_output_list(void;
 //void free_output_list(void);
-void edid_to_string(void);
+void edid_to_string(uint8_t *edid, int length, char **edid_string);
 void save_profile(void);
+void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void (*discon)(void));
+void output_info_to_config(void);
+void for_each_output_mode(void (*output_mode_action)(void));
+void res_string_to_config(void);
+void disabled_to_config();
+void do_nothing(void);
 //void listen_for_event(void);
 
 
 static xcb_generic_error_t **e;
 static xcb_connection_t *c;
-static const xcb_setup_t *setup;
-static xcb_screen_iterator_t iter;
 static xcb_screen_t *screen;
-static xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
-static xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
 
+xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+xcb_randr_get_output_info_reply_t *output_info_reply;
+xcb_randr_output_t *output_p;
+xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
+xcb_randr_mode_t *mode_id_p;
 
 config_t config;
 config_setting_t *root, *profile_group;
 char* profile_name;
 
-static char config_file[] = "umon.conf";
+static char config_file[] = "umon2.conf";
 static int verbose = 0;
+
+config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,
+	*pos_y_setting,*disp_group,*disp_width_setting,*disp_height_setting,
+	*disp_widthMM_setting,*disp_heightMM_setting,*mon_group,*output_group,
+	*pos_group,*status_setting;
+
+
 
 int main(int argc, char **argv) {
 	int save = 0;
@@ -105,9 +122,9 @@ int main(int argc, char **argv) {
 			profile_group = config_lookup(&config,profile_name);
 
 			if (profile_group != NULL) {
-				load_val_from_config();
-				load_profile();
-				free_val_from_config();
+				// load_val_from_config();
+				// load_profile();
+				// free_val_from_config();
 			}
 			else {
 				printf("No profile found\n");
@@ -147,7 +164,7 @@ int main(int argc, char **argv) {
 
 	if (test_event){
 		if (config_read_file(&config, config_file)) {
-			listen_for_event(); // Will not use new configuration file if it is changed
+			//listen_for_event(); // Will not use new configuration file if it is changed
 		}
 		else {
 			printf("No file to load when event is triggered\n");
@@ -197,7 +214,9 @@ int main(int argc, char **argv) {
 
 void connect_to_server(){
 
-	int i;
+	int i,screenNum;
+	static const xcb_setup_t *setup;
+	static xcb_screen_iterator_t iter;
 	/* Open the connection to the X server. Use the DISPLAY environment variable */
 	c = xcb_connect (NULL, &screenNum);
 
@@ -213,7 +232,7 @@ void connect_to_server(){
 	}
 
 	screen = iter.data;
-
+	if (verbose) printf("Connected to server\n");
 	//screen_resources_cookie = xcb_randr_get_screen_resources(c,screen->root);
 
 	//screen_resources_reply =
@@ -222,19 +241,14 @@ void connect_to_server(){
 
 void save_profile(){
 
-	int i;
+	int j,k,num_output_modes,num_screen_modes;
 
-	config_setting_t *edid_setting,*resolution_setting,*pos_x_setting,
-	*pos_y_setting,*disp_group,*disp_width_setting,*disp_height_setting,
-	*disp_widthMM_setting,*disp_heightMM_setting,*mon_group,*output_group;
-
-	xcb_randr_get_screen_info_cookie_t screen_info_cookie;
-	xcb_randr_get_screen_info_reply_t *screen_info_reply;
-	xcb_randr_screen_size_iterator_t screen_size_iterator;
+	// xcb_randr_get_screen_info_cookie_t screen_info_cookie;
+	// xcb_randr_get_screen_info_reply_t *screen_info_reply;
+	// xcb_randr_screen_size_iterator_t screen_size_iterator;
 	xcb_randr_screen_size_t screen_size;
-	xcb_randr_output_t *output_p;
-	xcb_randr_get_output_info_cookie_t output_info_cookie;
-	xcb_randr_get_output_info_reply_t *output_info_reply;
+
+	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
 
 	disp_group = config_setting_add(profile_group,"Screen",CONFIG_TYPE_GROUP);
 	disp_width_setting = config_setting_add(disp_group,"width",CONFIG_TYPE_INT);
@@ -257,24 +271,213 @@ void save_profile(){
 	screen_resources_reply =
 		xcb_randr_get_screen_resources_reply(c,screen_resources_cookie,e);
 
+	for_each_output(&output_info_to_config,&disabled_to_config,
+		&do_nothing);
+
+	if (verbose) printf("About to write to config file\n");
+	config_write_file(&config,config_file);
+
+	if (verbose) printf("Done saving settings to profile\n");
+
+}
+
+void do_nothing(){
+
+}
+
+
+void edid_to_string(uint8_t *edid, int length, char **edid_string){
+
+	/*
+	 * Converts the edid that is returned from the X11 server into a string
+	 * Inputs: 	edid	 	the bits return from X11 server
+	 * Outputs: 	edid_string	 edid in string form
+	 */
+
+	int z;
+
+	if (verbose) printf("Starting edid_to_string\n");
+	*edid_string = (char *) malloc((length+1)*sizeof(char));
+	for (z=0;z<length;++z) {
+		if ((char) edid[z] == '\0') {
+			*(*edid_string+z) = '0';
+		}
+		else {
+			*(*edid_string+z) = (char) edid[z];
+		}
+		//printf("\n");
+		//printf("%c",*((*edid_string)+z));
+	}
+	*(*edid_string+z) = '\0';
+
+	if (verbose) printf("Finished edid_to_string\n");
+}
+
+void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void (*discon)(void)){
+
+	int i;
+
+	int outputs_length;
+
+	xcb_randr_get_output_info_cookie_t output_info_cookie;
+
 	output_p = xcb_randr_get_screen_resources_outputs(screen_resources_reply);
 	outputs_length =
 		xcb_randr_get_screen_resources_outputs_length(screen_resources_reply);
 
 	for (i=0; i<outputs_length; ++i){
-		output_p = output_p + i;
-		output_info_cookie = xcb_randr_get_output_info(c, *output_p, XCB_CURRENT_TIME);
+
+		output_info_cookie =
+		xcb_randr_get_output_info(c, *output_p, XCB_CURRENT_TIME);
 		output_info_reply =
 			xcb_randr_get_output_info_reply (c, output_info_cookie, e);
-		output_group =
-			config_setting_add(mon_group,cur_output->outputInfo->name,CONFIG_TYPE_GROUP);
-		edid_setting = config_setting_add(output_group,"EDID",CONFIG_TYPE_STRING);
-		resolution_setting = config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
-		pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
-		pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
-		pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
+		if (verbose) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
+		if (!output_info_reply->connection){
+			if (verbose) printf("Found output that is connected\n");
 
+			if (output_info_reply->crtc){
+				(*con_enabled)();
+			}
+			else {
+				(*con_disabled)();
+			}
 
+		}
+		else {
+			(*discon)();
+		}
 
+		++output_p;
 	}
+
+
+}
+
+void output_info_to_config(){
+
+	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
+	xcb_randr_get_output_property_cookie_t output_property_cookie;
+	xcb_randr_get_output_property_reply_t *output_property_reply;
+	xcb_intern_atom_cookie_t atom_cookie;
+	xcb_intern_atom_reply_t *atom_reply;
+
+	char *edid_string;
+	uint8_t *output_property_data;
+	int output_property_length;
+	uint8_t delete = 0;
+	uint8_t pending = 0;
+	uint8_t only_if_exists = 1;
+	const char *edid_name = "EDID";
+	uint16_t name_len = strlen(edid_name);
+
+	atom_cookie = xcb_intern_atom(c,only_if_exists,name_len,edid_name);
+	output_group =
+		config_setting_add(mon_group,
+											xcb_randr_get_output_info_name(output_info_reply),
+											CONFIG_TYPE_GROUP);
+	if (verbose) printf("Found output that is enabled\n");
+	edid_setting =
+	config_setting_add(output_group,"EDID",CONFIG_TYPE_STRING);
+	resolution_setting =
+	config_setting_add(output_group,"resolution",CONFIG_TYPE_STRING);
+	pos_group = config_setting_add(output_group,"pos",CONFIG_TYPE_GROUP);
+	pos_x_setting = config_setting_add(pos_group,"x",CONFIG_TYPE_INT);
+	pos_y_setting = config_setting_add(pos_group,"y",CONFIG_TYPE_INT);
+	if (verbose) printf("Finish setting up settings\n");
+	atom_reply = xcb_intern_atom_reply(c,atom_cookie,e);
+	output_property_cookie = xcb_randr_get_output_property(c,
+		*output_p, atom_reply->atom, AnyPropertyType, 0, 100, delete,
+		pending);
+
+	crtc_info_cookie = xcb_randr_get_crtc_info(c,output_info_reply->crtc,
+			XCB_CURRENT_TIME);
+
+			if (verbose) printf("cookies done\n");
+	crtc_info_reply = xcb_randr_get_crtc_info_reply(c,crtc_info_cookie,e);
+	output_property_reply = xcb_randr_get_output_property_reply(
+		c,output_property_cookie,e);
+
+	if (verbose) printf("output_property_reply %d\n",output_property_reply);
+	output_property_data = xcb_randr_get_output_property_data(
+		output_property_reply);
+	output_property_length = xcb_randr_get_output_property_data_length(
+		output_property_reply);
+
+	if (verbose) printf("Finish fetching info from server\n");
+	edid_to_string(output_property_data,output_property_length,
+		&edid_string);
+	config_setting_set_string(edid_setting,edid_string);
+	// Free edid_string?
+
+	// Need to find the mode info now
+	// Look at output crtc
+	if (verbose) printf("finished edid_setting config\n");
+	for_each_output_mode(&res_string_to_config);
+
+	config_setting_set_int(pos_x_setting,crtc_info_reply->x);
+	config_setting_set_int(pos_y_setting,crtc_info_reply->y);
+
+
+}
+
+void for_each_output_mode(void (*output_mode_action)(void)){
+
+	int j,num_output_modes;
+
+
+
+	num_output_modes =
+		xcb_randr_get_output_info_modes_length(output_info_reply);
+	if (verbose) printf("number of modes %d\n",num_output_modes);
+	mode_id_p = xcb_randr_get_output_info_modes(output_info_reply);
+	if (verbose) printf("First mode id %d\n",*mode_id_p);
+	if (verbose) printf("current crtc mode id %d\n",crtc_info_reply->mode);
+	for (j=0;j<num_output_modes;++j){
+		(*output_mode_action)();
+		++mode_id_p;
+	}
+
+
+}
+
+
+void res_string_to_config(){
+
+	int num_screen_modes,k;
+	char res_string[10];
+	xcb_randr_mode_info_iterator_t mode_info_iterator;
+	//if (verbose) printf("current mode id %d\n",*mode_id_p);
+	if (*mode_id_p == crtc_info_reply->mode){
+		if (verbose) printf("Found current mode id\n");
+		// Get output info iterator
+		 mode_info_iterator =
+	xcb_randr_get_screen_resources_modes_iterator(screen_resources_reply);
+		num_screen_modes = xcb_randr_get_screen_resources_modes_length(
+			screen_resources_reply);
+		 for (k=0;k<num_screen_modes;++k){
+			 if (mode_info_iterator.data->id == *mode_id_p){
+				 if (verbose) printf("Found current mode info\n");
+				 sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
+				 config_setting_set_string(resolution_setting,res_string);
+			 }
+			xcb_randr_mode_info_next(&mode_info_iterator);
+
+		 }
+	}
+
+
+}
+
+void disabled_to_config(){
+
+	output_group =
+		config_setting_add(mon_group,
+											xcb_randr_get_output_info_name(output_info_reply),
+											CONFIG_TYPE_GROUP);
+	if (verbose) printf("Found output that is disabled\n");
+	status_setting =
+	config_setting_add(output_group,"Status",CONFIG_TYPE_STRING);
+	config_setting_set_string(status_setting,"Disabled");
+
+
 }
