@@ -7,6 +7,7 @@
 #include <X11/extensions/Xrandr.h>
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
+#include <stdarg.h>
 
 
 	/*
@@ -30,11 +31,20 @@ void connect_to_server(void);
 //void free_output_list(void);
 void edid_to_string(uint8_t *edid, int length, char **edid_string);
 void save_profile(void);
-void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void (*discon)(void));
-void output_info_to_config(void);
-void for_each_output_mode(void (*output_mode_action)(void));
-void res_string_to_config(void);
-void disabled_to_config();
+void for_each_output(void (*con_enabled)(xcb_randr_get_output_info_reply_t *,
+	xcb_randr_output_t *),
+	void (*con_disabled)(xcb_randr_get_output_info_reply_t *),
+	void (*discon)(void));
+void output_info_to_config(xcb_randr_get_output_info_reply_t *,
+	xcb_randr_output_t *);
+void for_each_output_mode(
+	void (*output_mode_action)(xcb_randr_get_crtc_info_reply_t *,
+	xcb_randr_mode_t *),
+xcb_randr_get_output_info_reply_t *output_info_reply,
+xcb_randr_get_crtc_info_reply_t *crtc_info_reply);
+void find_res_string_to_config(xcb_randr_get_crtc_info_reply_t *,
+	xcb_randr_mode_t *);
+void disabled_to_config(xcb_randr_get_output_info_reply_t *);
 void do_nothing(void);
 //void listen_for_event(void);
 
@@ -42,12 +52,7 @@ void do_nothing(void);
 static xcb_generic_error_t **e;
 static xcb_connection_t *c;
 static xcb_screen_t *screen;
-
-xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
-xcb_randr_get_output_info_reply_t *output_info_reply;
-xcb_randr_output_t *output_p;
-xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
-xcb_randr_mode_t *mode_id_p;
+static xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
 
 config_t config;
 config_setting_t *root, *profile_group;
@@ -123,7 +128,7 @@ int main(int argc, char **argv) {
 
 			if (profile_group != NULL) {
 				// load_val_from_config();
-				// load_profile();
+				//load_profile();
 				// free_val_from_config();
 			}
 			else {
@@ -250,6 +255,7 @@ void save_profile(){
 
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
 
+
 	disp_group = config_setting_add(profile_group,"Screen",CONFIG_TYPE_GROUP);
 	disp_width_setting = config_setting_add(disp_group,"width",CONFIG_TYPE_INT);
 	disp_height_setting = config_setting_add(disp_group,"height",CONFIG_TYPE_INT);
@@ -313,13 +319,19 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 	if (verbose) printf("Finished edid_to_string\n");
 }
 
-void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void (*discon)(void)){
+void for_each_output(void (*con_enabled)(xcb_randr_get_output_info_reply_t *,
+	xcb_randr_output_t *),
+void (*con_disabled)(xcb_randr_get_output_info_reply_t *),
+void (*discon)(void)){
 
 	int i;
 
 	int outputs_length;
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
+	xcb_randr_get_output_info_reply_t *output_info_reply;
+
+	xcb_randr_output_t *output_p;
 
 	output_p = xcb_randr_get_screen_resources_outputs(screen_resources_reply);
 	outputs_length =
@@ -336,10 +348,10 @@ void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void 
 			if (verbose) printf("Found output that is connected\n");
 
 			if (output_info_reply->crtc){
-				(*con_enabled)();
+				(*con_enabled)(output_info_reply,output_p);
 			}
 			else {
-				(*con_disabled)();
+				(*con_disabled)(output_info_reply);
 			}
 
 		}
@@ -353,13 +365,14 @@ void for_each_output(void (*con_enabled)(void), void (*con_disabled)(void),void 
 
 }
 
-void output_info_to_config(){
+void output_info_to_config(xcb_randr_get_output_info_reply_t *output_info_reply, xcb_randr_output_t *output_p){
 
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
 	xcb_randr_get_output_property_cookie_t output_property_cookie;
 	xcb_randr_get_output_property_reply_t *output_property_reply;
 	xcb_intern_atom_cookie_t atom_cookie;
 	xcb_intern_atom_reply_t *atom_reply;
+	xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
 
 	char *edid_string;
 	uint8_t *output_property_data;
@@ -412,7 +425,8 @@ void output_info_to_config(){
 	// Need to find the mode info now
 	// Look at output crtc
 	if (verbose) printf("finished edid_setting config\n");
-	for_each_output_mode(&res_string_to_config);
+	for_each_output_mode(&find_res_string_to_config,output_info_reply,
+		crtc_info_reply);
 
 	config_setting_set_int(pos_x_setting,crtc_info_reply->x);
 	config_setting_set_int(pos_y_setting,crtc_info_reply->y);
@@ -420,11 +434,15 @@ void output_info_to_config(){
 
 }
 
-void for_each_output_mode(void (*output_mode_action)(void)){
+void for_each_output_mode(
+	void (*output_mode_action)(xcb_randr_get_crtc_info_reply_t *,
+		xcb_randr_mode_t *),
+xcb_randr_get_output_info_reply_t *output_info_reply,
+xcb_randr_get_crtc_info_reply_t *crtc_info_reply){
 
 	int j,num_output_modes;
 
-
+	xcb_randr_mode_t *mode_id_p;
 
 	num_output_modes =
 		xcb_randr_get_output_info_modes_length(output_info_reply);
@@ -433,7 +451,7 @@ void for_each_output_mode(void (*output_mode_action)(void)){
 	if (verbose) printf("First mode id %d\n",*mode_id_p);
 	if (verbose) printf("current crtc mode id %d\n",crtc_info_reply->mode);
 	for (j=0;j<num_output_modes;++j){
-		(*output_mode_action)();
+		(*output_mode_action)(crtc_info_reply,mode_id_p);
 		++mode_id_p;
 	}
 
@@ -441,7 +459,8 @@ void for_each_output_mode(void (*output_mode_action)(void)){
 }
 
 
-void res_string_to_config(){
+void find_res_string_to_config(xcb_randr_get_crtc_info_reply_t *crtc_info_reply,
+	xcb_randr_mode_t *mode_id_p){
 
 	int num_screen_modes,k;
 	char res_string[10];
@@ -468,7 +487,7 @@ void res_string_to_config(){
 
 }
 
-void disabled_to_config(){
+void disabled_to_config(xcb_randr_get_output_info_reply_t *output_info_reply){
 
 	output_group =
 		config_setting_add(mon_group,
@@ -481,3 +500,37 @@ void disabled_to_config(){
 
 
 }
+/*
+void load_profile(){
+
+	int num_out_pp;
+	mon_group = config_setting_lookup(profile_group,"Monitors");
+	// printf("Checking group %d\n",mon_group);
+	*num_out_pp = config_setting_length(mon_group);
+	mySett->edid_val = (const char **) malloc(*num_out_pp * sizeof(const char *));
+	mySett->resolution_str = (const char **) malloc(*num_out_pp * sizeof(const char *));
+	mySett->pos_val = (int *) malloc(2*(*num_out_pp) * sizeof(int));
+	mySett->disp_val = (int *) malloc(4*sizeof(int));
+
+	for(i=0;i<*num_out_pp;++i) {
+		group = config_setting_get_elem(mon_group,i);
+		// printf("Checking group %d\n",group);
+		pos_group = config_setting_lookup(group,"pos");
+		config_setting_lookup_string(group,"EDID",mySett->edid_val+i);
+		config_setting_lookup_string(group,"resolution",mySett->resolution_str+i);
+		config_setting_lookup_int(pos_group,"x",mySett->pos_val+2*i);
+		config_setting_lookup_int(pos_group,"y",mySett->pos_val+2*i+1);
+		// printf("Loaded values: \n");
+		// printf("EDID: %s\n",*(mySett->edid_val+i));
+		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
+		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
+	}
+
+	group = config_setting_lookup(profile_group,"Screen");
+	config_setting_lookup_int(group,"width",mySett->disp_val);
+	config_setting_lookup_int(group,"height",mySett->disp_val+1);
+	config_setting_lookup_int(group,"widthMM",mySett->disp_val+2);
+	config_setting_lookup_int(group,"heightMM",mySett->disp_val+3);
+
+	if (verbose) printf("Done loading values from configuration file\n");
+}*/
