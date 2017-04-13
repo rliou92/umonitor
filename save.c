@@ -82,8 +82,9 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 	self->screen_resources_reply =
 		xcb_randr_get_screen_resources_reply(c,screen_resources_cookie,e);
 
-	for_each_output((void *) self,&output_info_to_config,&disabled_to_config,
-		&do_nothing);
+	// for_each_output(self->screen_resources_reply,
+    //&output_info_to_config,&disabled_to_config,&do_nothing);
+     for_each_output((void *) self,check_output_status);
 
 	if (verbose) printf("About to write to config file\n");
 	config_write_file(&config,config_file);
@@ -93,6 +94,12 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 }
 
 void do_nothing(void *self){
+
+}
+
+void check_output_status(void *self_void,xcb_randr_output_t *output_p){
+
+
 
 }
 
@@ -176,13 +183,13 @@ static void output_info_to_config(void *self_void,xcb_randr_output_t *output_p){
 		*output_p,self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
     delete,pending);
 
-	crtc_info_cookie = xcb_randr_get_crtc_info(c,output_info_reply->crtc,
-			screen_resources_reply->config_timestamp);
+	crtc_info_cookie = xcb_randr_get_crtc_info(self->screen_t_p->c,output_info_reply->crtc,
+			self->screen_resources_reply->config_timestamp);
 
 			if (verbose) printf("cookies done\n");
-	crtc_info_reply = xcb_randr_get_crtc_info_reply(c,crtc_info_cookie,e);
+	crtc_info_reply = xcb_randr_get_crtc_info_reply(self->screen_t_p->c,crtc_info_cookie,e);
 	output_property_reply = xcb_randr_get_output_property_reply(
-		c,output_property_cookie,e);
+		self->screen_t_p->c,output_property_cookie,self->screen_t_p->e);
 
 	if (verbose) printf("output_property_reply %d\n",output_property_reply);
 	output_property_data = xcb_randr_get_output_property_data(
@@ -279,6 +286,54 @@ void disabled_to_config(xcb_randr_get_output_info_reply_t *output_info_reply){
 	status_setting =
 	config_setting_add(output_group,"Status",CONFIG_TYPE_STRING);
 	config_setting_set_string(status_setting,"Disabled");
+
+
+}
+
+
+void for_each_output(
+	void *self,
+	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
+  void (*con_enabled)(void *,xcb_randr_output_t *),
+  void (*con_disabled)(void *,xcb_randr_output_t *),
+  void (*discon)(void *)){
+
+	int i;
+
+	int outputs_length;
+
+	xcb_randr_output_t *output_p;
+	xcb_randr_get_output_info_cookie_t output_info_cookie;
+	xcb_randr_get_output_info_reply_t *output_info_reply;
+
+	output_p = xcb_randr_get_screen_resources_outputs(screen_resources_reply);
+	outputs_length =
+		xcb_randr_get_screen_resources_outputs_length(screen_resources_reply);
+
+	for (i=0; i<outputs_length; ++i){
+		output_info_cookie =
+		xcb_randr_get_output_info(c, output_p, XCB_CURRENT_TIME);
+		output_info_reply =
+			xcb_randr_get_output_info_reply (c, output_info_cookie, e);
+
+		if (verbose) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
+		if (!output_info_reply->connection){
+			if (verbose) printf("Found output that is connected\n");
+
+			if (output_info_reply->crtc){
+				(*con_enabled)(self,output_p);
+			}
+			else {
+				(*con_disabled)(self,output_p);
+			}
+
+		}
+		else {
+			(*discon)(self);
+		}
+
+		++output_p;
+	}
 
 
 }

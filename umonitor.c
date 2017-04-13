@@ -26,6 +26,7 @@ typedef struct {
 		*pos_group,*status;
 }umon_setting_t;
 
+
 /*
  * Prototypes
  */
@@ -40,10 +41,10 @@ typedef struct {
 
 //void listen_for_event(void);
 void for_each_output(
-  void *self,
-  void (*con_enabled)(self,xcb_randr_output_t *),
-	void (*con_disabled)(self,xcb_randr_output_t *),
-	void (*discon)(self)
+  xcb_randr_get_screen_resources_reply_t *,
+  void (*con_enabled)(void *,xcb_randr_output_t *),
+	void (*con_disabled)(void *,xcb_randr_output_t *),
+	void (*discon)(void *)
 );
 
 static xcb_timestamp_t timestamp;
@@ -184,44 +185,23 @@ int main(int argc, char **argv) {
 
 void for_each_output(
 	void *self,
-  void (*con_enabled)(self,xcb_randr_output_t *),
-  void (*con_disabled)(self,xcb_randr_output_t *),
-  void (*discon)(self)){
+	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
+	void (*callback)(void *,xcb_randr_output_t *){
 
-	int i;
+		int i;
 
-	int outputs_length;
+		int outputs_length;
 
-	xcb_randr_output_t *output_p;
+		xcb_randr_output_t *output_p;
 
-	output_p = xcb_randr_get_screen_resources_outputs(self->screen_resources_reply);
-	outputs_length =
-		xcb_randr_get_screen_resources_outputs_length(self->screen_resources_reply);
+		output_p = xcb_randr_get_screen_resources_outputs(screen_resources_reply);
+		outputs_length =
+			xcb_randr_get_screen_resources_outputs_length(screen_resources_reply);
 
-	for (i=0; i<outputs_length; ++i){
-
-		if (verbose) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
-		if (!output_info_reply->connection){
-			if (verbose) printf("Found output that is connected\n");
-
-			if (output_info_reply->crtc){
-				(*con_enabled)(self,output_p);
-			}
-			else {
-				(*con_disabled)(self,output_p);
-			}
-
-		}
-		else {
-			(*discon)(self);
-		}
-
-		++output_p;
-	}
-
-
+		for (i=0; i<outputs_length; ++i){
+			callback(self,output_p);
+			++output_p;
 }
-
 
 /*
 	xcb_randr_select_input(c, screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
