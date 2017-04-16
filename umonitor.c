@@ -1,31 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-#include <libconfig.h>
-#include <unistd.h>
-#include <X11/extensions/Xrandr.h>
-#include <xcb/xcb.h>
-#include <xcb/randr.h>
-#include <stdarg.h>
-
-
-typedef struct {
-	const char **edid_val;
-	int *pos_x,*pos_y,*width,*height,*widthMM,*heightMM,*res_x,*res_y;
-}umon_setting_val_t;
-
-/*
- * Structure for loading and saving the configuration file
- */
-
-typedef struct {
-	config_setting_t *edid,*res_group,*res_x,*res_y,*pos_x,
-		*pos_y,*disp_group,*disp_width,*disp_height,
-		*disp_widthMM,*disp_heightMM,*mon_group,*output_group,
-		*pos_group,*status;
-}umon_setting_t;
-
+#include "umonitor.h"
 
 /*
  * Prototypes
@@ -40,25 +13,15 @@ typedef struct {
 //void free_output_list(void);
 
 //void listen_for_event(void);
-void for_each_output(
-  xcb_randr_get_screen_resources_reply_t *,
-  void (*con_enabled)(void *,xcb_randr_output_t *),
-	void (*con_disabled)(void *,xcb_randr_output_t *),
-	void (*discon)(void *)
-);
 
-static xcb_timestamp_t timestamp;
+
+//static xcb_timestamp_t timestamp;
 
 
 
 
-static char config_file[] = "umon2.conf";
-static int verbose = 0;
 
-void edid_to_string(uint8_t *edid, int length, char **edid_string);
-
-
-int num_out_pp;
+// int num_out_pp;
 
 
 
@@ -68,7 +31,7 @@ int main(int argc, char **argv) {
 	int load = 0;
 	int delete = 0;
 	int test_event = 0;
-	void *action_p;
+	save_profile_class *save_profile_o;
 
 	config_t config;
 	config_setting_t *root, *profile_group;
@@ -76,7 +39,7 @@ int main(int argc, char **argv) {
 
 	int i, cfg_idx;
 
-	screen_class screen_t;
+	screen_class screen_o;
 
 	config_init(&config);
 
@@ -106,25 +69,24 @@ int main(int argc, char **argv) {
 			delete = 1;
 		}
 		else if (!strcmp("--verbose", argv[i])){
-			verbose = 1;
+			VERBOSE = 1;
 		}
 		else if (!strcmp("--test-event", argv[i])){
 			test_event = 1;
 		}
 		else {
-			printf("Unrecognized arguments");
-			exit(5);
+			printf("Unrecognized argument: %s\n",argv[i]);
 		}
 	}
 
-	screen_class_constructor(&screen_t);
+	screen_class_constructor(&screen_o);
 
 
-	if (config_read_file(&config, config_file)) {
-		if (verbose) printf("Detected existing configuration file\n");
+	if (config_read_file(&config, CONFIG_FILE)) {
+		if (VERBOSE) printf("Detected existing configuration file\n");
 		// Existing config file to load setting values
 		if (load) {
-			if (verbose) printf("Loading profile: %s\n", profile_name);
+			if (VERBOSE) printf("Loading profile: %s\n", profile_name);
 			// Load profile
 			profile_group = config_lookup(&config,profile_name);
 
@@ -146,7 +108,7 @@ int main(int argc, char **argv) {
 				cfg_idx = config_setting_index(profile_group);
 				root = config_root_setting(&config);
 				config_setting_remove_elem(root,cfg_idx);
-				if (verbose) printf("Deleted profile %s\n", profile_name);
+				if (VERBOSE) printf("Deleted profile %s\n", profile_name);
 			}
 		}
 	}
@@ -159,21 +121,20 @@ int main(int argc, char **argv) {
 	}
 
 	if (save) {
-		if (verbose) printf("Saving current settings into profile: %s\n", profile_name);
+		if (VERBOSE) printf("Saving current settings into profile: %s\n", profile_name);
 		/*
 		 * Always create the new profile group because above code has already
 		 * deleted it if it existed before
 		*/
 		root = config_root_setting(&config);
 		profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
-		(save_profile_class *) action_p =
-			(save_profile_class *) malloc(sizeof(save_profile_class));
-		save_profile_class_constructor(action_p,screen_t);
-		action_p->save_profile(action_p,profile_group);
+		save_profile_o = (save_profile_class *) malloc(sizeof(save_profile_class));
+		save_profile_class_constructor(save_profile_o,&screen_o,&config);
+		save_profile_o->save_profile(save_profile_o,profile_group);
 	}
 
 	if (test_event){
-		if (config_read_file(&config, config_file)) {
+		if (config_read_file(&config, CONFIG_FILE)) {
 			//listen_for_event(); // Will not use new configuration file if it is changed
 		}
 		else {
@@ -186,7 +147,7 @@ int main(int argc, char **argv) {
 void for_each_output(
 	void *self,
 	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
-	void (*callback)(void *,xcb_randr_output_t *){
+	void (*callback)(void *,xcb_randr_output_t *)){
 
 		int i;
 
@@ -201,6 +162,55 @@ void for_each_output(
 		for (i=0; i<outputs_length; ++i){
 			callback(self,output_p);
 			++output_p;
+		}
+}
+
+void for_each_output_mode(
+  void *self,
+  xcb_randr_get_output_info_reply_t *output_info_reply,
+	void (*callback)(void *,xcb_randr_mode_t *)){
+
+	int j,num_output_modes;
+
+	xcb_randr_mode_t *mode_id_p;
+
+	num_output_modes =
+		xcb_randr_get_output_info_modes_length(output_info_reply);
+	if (VERBOSE) printf("number of modes %d\n",num_output_modes);
+	mode_id_p = xcb_randr_get_output_info_modes(output_info_reply);
+
+	for (j=0;j<num_output_modes;++j){
+		callback(self,mode_id_p);
+		++mode_id_p;
+	}
+
+}
+
+void edid_to_string(uint8_t *edid, int length, char **edid_string){
+
+	/*
+	 * Converts the edid that is returned from the X11 server into a string
+	 * Inputs: 	edid	 	the bits return from X11 server
+	 * Outputs: 	edid_string	 edid in string form
+	 */
+
+	int z;
+
+	if (VERBOSE) printf("Starting edid_to_string\n");
+	*edid_string = (char *) malloc((length+1)*sizeof(char));
+	for (z=0;z<length;++z) {
+		if ((char) edid[z] == '\0') {
+			*(*edid_string+z) = '0';
+		}
+		else {
+			*(*edid_string+z) = (char) edid[z];
+		}
+		//printf("\n");
+		//printf("%c",*((*edid_string)+z));
+	}
+	*(*edid_string+z) = '\0';
+
+	if (VERBOSE) printf("Finished edid_to_string\n");
 }
 
 /*
@@ -240,7 +250,7 @@ void for_each_output(
 
 	return 0;*/
 
-}
+
 
 
 
@@ -291,9 +301,9 @@ void load_profile(config_setting_t *profile_group){
 	config_setting_lookup_int(group,"widthMM",mySett.widthMM);
 	config_setting_lookup_int(group,"heightMM",mySett.heightMM);
 
-	if (verbose) printf("Done loading values from configuration file\n");
+	if (VERBOSE) printf("Done loading values from configuration file\n");
 
-	/*
+
 	 * Plan of attack
 	 * 1. Disable all crtcs
 	 * 2. Resize the screen

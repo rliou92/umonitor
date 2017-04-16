@@ -1,11 +1,24 @@
- .PHONY: display
+TARGET = umonitor
+LIBS = -lX11 -lxcb-randr -lxcb -lconfig
+CC = gcc
+CFLAGS = -Wall
 
-all: display.o display
-	gcc display.o -o display -lX11 -lXrandr -lconfig
-display.o:
-	gcc -o display.o -c display.c
-udev: 
-	gcc -oumonitor -ludev umonitor.c
+.PHONY: default all clean
+
+default: $(TARGET)
+all: default
+
+OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+HEADERS = $(wildcard *.h)
+
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PRECIOUS: $(TARGET) $(OBJECTS)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
 
 clean:
-	rm -f *.o umonitor display
+	-rm -f *.o
+	-rm -f $(TARGET)
