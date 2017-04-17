@@ -89,16 +89,16 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     }
 	}
 
-	for(i=0;i<screen_resources_reply->num_crtcs;++i){
-		if (!VERBOSE) {
-      crtc_config_reply_pp[i] =
-    xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p[i],
-      self->screen_t_p->e);
-    }
-    else {
-      printf("Would disable crtcs here\n");
-    }
-	}
+// 	for(i=0;i<screen_resources_reply->num_crtcs;++i){
+// 		if (!VERBOSE) {
+//       crtc_config_reply_pp[i] =
+//     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p[i],
+//       self->screen_t_p->e);
+//     }
+//     else {
+//       printf("Would disable crtcs here\n");
+//     }
+// 	}
 
 	if (!VERBOSE) {
     xcb_randr_set_screen_size(self->screen_t_p->c,
@@ -197,6 +197,8 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
     crtc_info_reply =
       xcb_randr_get_crtc_info_reply(self->screen_t_p->c,crtc_info_cookie,
          self->screen_t_p->e);
+    printf("crtc_info_reply->mode: %d\n",crtc_info_reply->mode);
+    printf("mode_id_p: %d\n",*mode_id_p);
 
 
     if (crtc_info_reply->mode==*mode_id_p){
@@ -212,6 +214,8 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
         self->umon_setting_val.pos_x[self->conf_output_idx],
         self->umon_setting_val.pos_x[self->conf_output_idx],
         crtc_info_reply->mode,0, 1, self->cur_output);
+        printf("I found the crtc\n");
+        printf("pos_x: %d\n",self->umon_setting_val.pos_x[self->conf_output_idx]);
       }
     }
 		++crtc_p;
