@@ -6,6 +6,7 @@ void load_class_constructor(load_class *self,
   self->load_profile = load_profile;
   self->screen_t_p = screen_t;
   self->config = config;
+  self->crtc_param_head = NULL;
 }
 
 
@@ -15,10 +16,11 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
 	config_setting_t *pos_group,*group,*mon_group,*res_group;
 	xcb_randr_crtc_t *crtcs_p;
-	xcb_randr_set_crtc_config_cookie_t *crtc_config_p;
-	xcb_randr_set_crtc_config_reply_t **crtc_config_reply_pp;
+	//xcb_randr_set_crtc_config_cookie_t *crtc_config_p;
+	//xcb_randr_set_crtc_config_reply_t **crtc_config_reply_pp;
   xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
   xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+  set_crtc_param *cur_crtc_param;
 
 	mon_group = config_setting_lookup(profile_group,"Monitors");
 	// printf("Checking group %d\n",mon_group);
@@ -73,14 +75,17 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
       screen_resources_cookie,self->screen_t_p->e);
 
 	crtcs_p = xcb_randr_get_screen_resources_crtcs(screen_resources_reply);
-	crtc_config_p = (xcb_randr_set_crtc_config_cookie_t *)
-    malloc(
-      screen_resources_reply->num_crtcs*sizeof(
-      xcb_randr_set_crtc_config_cookie_t));
+	//crtc_config_p = (xcb_randr_set_crtc_config_cookie_t *)
+    //malloc(
+      //screen_resources_reply->num_crtcs*sizeof(
+      //xcb_randr_set_crtc_config_cookie_t));
+
+	for_each_output((void *) self,screen_resources_reply,match_with_config);
 
 	for(i=0;i<screen_resources_reply->num_crtcs;++i){
     if (!VERBOSE) {
-		crtc_config_p[i] = xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
+		//crtc_config_p[i] =
+    xcb_randr_set_crtc_config_unchecked(self->screen_t_p->c,crtcs_p[i],
       XCB_CURRENT_TIME, screen_resources_reply->config_timestamp,0,0,XCB_NONE,
       XCB_RANDR_ROTATION_ROTATE_0,0,0);
     }
@@ -110,7 +115,23 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     printf("Would change screen size here\n");
   }
 
-	for_each_output((void *) self,screen_resources_reply,match_with_config);
+  if (!VERBOSE) {
+    for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;cur_crtc_param=cur_crtc_param->next){
+
+      xcb_randr_set_crtc_config_unchecked(self->screen_t_p->c,
+        *(cur_crtc_param->crtc_p),
+        XCB_CURRENT_TIME,XCB_CURRENT_TIME,
+        cur_crtc_param->pos_x,
+        cur_crtc_param->pos_y,
+        *(cur_crtc_param->mode_id_p),0, 1, cur_crtc_param->output_p);
+
+    }
+	}
+  else{
+    printf("Would enable crtcs here\n");
+  }
+
+
 }
 
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
@@ -178,10 +199,11 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
   //xcb_randr_mode_t *crtc_mode;
   xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
-  xcb_randr_set_crtc_config_cookie_t set_crtc_cookie;
-  xcb_randr_set_crtc_config_reply_t *set_crtc_reply;
+  //xcb_randr_set_crtc_config_cookie_t set_crtc_cookie;
+  //xcb_randr_set_crtc_config_reply_t *set_crtc_reply;
 	int i,num_crtcs;
   load_class *self = (load_class *) self_void;
+  set_crtc_param *new_crtc_param;
 
 
 
@@ -208,14 +230,27 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
       }
       else{
 
-      set_crtc_cookie =
-      xcb_randr_set_crtc_config_unchecked(self->screen_t_p->c,*crtc_p,
-        XCB_CURRENT_TIME,XCB_CURRENT_TIME,
-        self->umon_setting_val.pos_x[self->conf_output_idx],
-        self->umon_setting_val.pos_x[self->conf_output_idx],
-        crtc_info_reply->mode,0, 1, self->cur_output);
+      //set_crtc_cookie =
+      new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
+      new_crtc_param->crtc_p = crtc_p;
+      new_crtc_param->pos_x =
+        self->umon_setting_val.pos_x[self->conf_output_idx];
+      new_crtc_param->pos_y =
+        self->umon_setting_val.pos_y[self->conf_output_idx];
+      new_crtc_param->mode_id_p = mode_id_p;
+      new_crtc_param->output_p = self->cur_output;
+      new_crtc_param->next = self->crtc_param_head;
+      self->crtc_param_head = new_crtc_param;
+
+
+      // xcb_randr_set_crtc_config_unchecked(self->screen_t_p->c,*crtc_p,
+      //   XCB_CURRENT_TIME,XCB_CURRENT_TIME,
+      //   self->umon_setting_val.pos_x[self->conf_output_idx],
+      //   self->umon_setting_val.pos_y[self->conf_output_idx],
+      //   crtc_info_reply->mode,0, 1, self->cur_output);
         printf("I found the crtc\n");
-        printf("pos_x: %d\n",self->umon_setting_val.pos_x[self->conf_output_idx]);
+        printf(
+          "pos_x: %d\n",self->umon_setting_val.pos_x[self->conf_output_idx]);
       }
     }
 		++crtc_p;

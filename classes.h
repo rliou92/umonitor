@@ -20,6 +20,15 @@ typedef struct {
 
 }screen_class;
 
+typedef struct _set_crtc_param{
+  xcb_randr_crtc_t *crtc_p;
+  int pos_x,pos_y;
+  xcb_randr_mode_t *mode_id_p;
+  xcb_randr_output_t *output_p;
+  struct _set_crtc_param *next;
+
+}set_crtc_param;
+
 /*
  * Structures for loading and saving the configuration file
  */
@@ -65,6 +74,7 @@ typedef struct _load_class{
   config_t *config;
   int conf_output_idx,num_out_pp;
   xcb_randr_get_output_info_reply_t *output_info_reply;
+  set_crtc_param *crtc_param_head;
 
   // Methods
   void (*load_profile)(struct _load_class *,config_setting_t *);
