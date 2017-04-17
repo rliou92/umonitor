@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	int delete = 0;
 	int test_event = 0;
 	save_profile_class *save_profile_o;
+	load_class *load_o;
 
 	config_t config;
 	config_setting_t *root, *profile_group;
@@ -94,6 +95,9 @@ int main(int argc, char **argv) {
 				// load_val_from_config();
 				//load_profile(profile_group);
 				// free_val_from_config();
+				load_o = (load_class *) malloc(sizeof(load_class));
+				load_class_constructor(load_o,&screen_o,&config);
+				load_o->load_profile(load_o,profile_group);
 			}
 			else {
 				printf("No profile found\n");
@@ -249,162 +253,3 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 	printf ("\n");
 
 	return 0;*/
-
-
-
-
-
-
-/*
-void load_profile(config_setting_t *profile_group){
-
-	int i;
-
-	struct conf_sett_struct mySett;
-	config_setting_t *pos_group,*group,*mon_group,*res_group;
-	xcb_randr_crtc_t *crtcs_p;
-	xcb_randr_set_crtc_config_cookie_t *crtc_config_p;
-	xcb_randr_set_crtc_config_cookie_reply_t **crtc_config_reply_pp;
-
-	mon_group = config_setting_lookup(profile_group,"Monitors");
-	// printf("Checking group %d\n",mon_group);
-	num_out_pp = config_setting_length(mon_group);
-	mySett.edid_val = (const char **) malloc(num_out_pp * sizeof(const char *));
-	mySett.res_x = (int *) malloc(num_out_pp * sizeof(int);
-	mySett.res_y = (int *) malloc(num_out_pp * sizeof(int);
-	mySett.pos_x = (int *) malloc(num_out_pp * sizeof(int));
-	mySett.pos_y = (int *) malloc(num_out_pp * sizeof(int));
-	mySett.width = (int *) malloc(num_out_pp * sizeof(int));
-	mySett.height = (int *) malloc(num_out_pp * sizeof(int));
-	mySett.widthMM = (int *) malloc(num_out_pp * sizeof(int));
-	mySett.heightMM = (int *) malloc(num_out_pp * sizeof(int));
-
-	for(i=0;i<num_out_pp;++i) {
-		group = config_setting_get_elem(mon_group,i);
-		// printf("Checking group %d\n",group);
-		res_group = config_setting_lookup(group,"resolution")
-		pos_group = config_setting_lookup(group,"pos");
-		config_setting_lookup_string(group,"EDID",mySett.edid_val+i);
-		config_setting_lookup_int(res_group,"x",mySett.res_x+i);
-		config_setting_lookup_int(res_group,"y",mySett.res_y+i);
-		config_setting_lookup_int(pos_group,"x",mySett.pos_x+i);
-		config_setting_lookup_int(pos_group,"y",mySett.pos_y+i);
-		// printf("Loaded values: \n");
-		// printf("EDID: %s\n",*(mySett->edid_val+i));
-		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
-		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
-	}
-
-	group = config_setting_lookup(profile_group,"Screen");
-	config_setting_lookup_int(group,"width",mySett.width);
-	config_setting_lookup_int(group,"height",mySett.height);
-	config_setting_lookup_int(group,"widthMM",mySett.widthMM);
-	config_setting_lookup_int(group,"heightMM",mySett.heightMM);
-
-	if (VERBOSE) printf("Done loading values from configuration file\n");
-
-
-	 * Plan of attack
-	 * 1. Disable all crtcs
-	 * 2. Resize the screen
-	 * 3. Enabled desired crtcs
-
-
-  screen_resources_cookie = xcb_randr_get_screen_resources(c,screen->root);
-
- 	screen_resources_reply =
- 		xcb_randr_get_screen_resources_reply(c,screen_resources_cookie,e);
-
-	crtcs_p = xcb_randr_get_screen_resources_crtcs(screen_resources_reply);
-	crtc_config_p = (xcb_randr_set_crtc_config_cookie_t *) malloc(num_crtcs*sizeof(xcb_randr_set_crtc_config_cookie_t));
-
-	for(i=0;i<screen_resources_reply->num_crtcs;++i){
-		crtc_config_p[i] = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
-	}
-
-	for(i=0;i<screen_resources_reply->num_crtcs;++i){
-		crtc_config_reply_pp[i] = xcb_randr_set_crtc_config_reply(c,crtc_config_p[i],e);
-	}
-
-	xcb_randr_set_screen_size(c,screen->root,mySett.width,mySett.height, mySett.widthMM,mySett.heightMM);
-
-
-
-	output_with_conf_match = 0;
-	for_each_output(&match_with_config,&match_with_config,&do_nothing);
-}
-
-void match_with_config(xcb_randr_output_t *output_p){
-
-	int i;
-
-	xcb_randr_get_output_info_cookie_t output_info_cookie;
-	xcb_randr_get_output_info_reply_t *output_info_reply;
-
-	char *edid_string;
-	uint8_t *output_property_data;
-	int output_property_length;
-	uint8_t delete = 0;
-	uint8_t pending = 0;
-
-	output_info_cookie =
-	xcb_randr_get_output_info(c, output_p, XCB_CURRENT_TIME);
-
-	output_property_cookie = xcb_randr_get_output_property(c,
-		*output_p, atom_reply->atom, AnyPropertyType, 0, 100, delete,
-		pending);
-	output_info_reply =
-		xcb_randr_get_output_info_reply (c, output_info_cookie, e);
-	output_property_reply = xcb_randr_get_output_property_reply(
-		c,output_property_cookie,e);
-	output_property_data = xcb_randr_get_output_property_data(
-		output_property_reply);
-	output_property_length = xcb_randr_get_output_property_data_length(
-		output_property_reply);
-
-	edid_to_string(output_property_data,output_property_length,
-		&edid_string);
-
-	for(i=0;i<num_out_pp;++i){
-		if (!strcmp(mySett.edid_val[i],edid_string)){
-			// Found a match between the configuration file edid and currently connected edid. Now have to load correct settings.
-			// Need to find the proper crtc to assign the output
-			// Which crtc has the same resolution?
-			for_each_output_mode(&find_res_match,output_info_reply,crtc_info_reply);
-			find_crtc_by_res(mySett.res_x,mySett.res_y);
-			// Connect correct crtc to correct output
-
-			crtc_config_p = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
-
-
-
-			crtc_config_reply_pp[i] = xcb_randr_set_crtc_config_reply(c,crtc_config_p[i],e);
-
-
-		}
-
-	}
-
-
-
-}
-
-void find_crtc_by_res(int res_x, int res_y){
-
-
-	xcb_randr_crtc_t *crtc_p;
-	int num_crtcs;
-
-
-
-	num_crtcs = xcb_randr_get_output_info_crtcs_length(output_info_reply)
-	crtc_p = xcb_randr_get_output_info_crtcs(output_info_reply);
-
-	for(i=0;i<num_crtcs,++i){
-		for_each_output_mode()
-
-		++crtc_p;
-	}
-
-}
-*/

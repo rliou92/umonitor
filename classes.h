@@ -52,3 +52,20 @@ typedef struct _save_profile_class{
   // Methods
   void (*save_profile)(struct _save_profile_class *,config_setting_t *);
 }save_profile_class;
+
+typedef struct _load_class{
+  // Inheriting classes
+  screen_class *screen_t_p;
+
+  // Variables
+  xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+  umon_setting_val_t umon_setting_val;
+  xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
+  xcb_randr_output_t *cur_output;
+  config_t *config;
+  int conf_output_idx,num_out_pp;
+  xcb_randr_get_output_info_reply_t *output_info_reply;
+
+  // Methods
+  void (*load_profile)(struct _load_class *,config_setting_t *);
+}load_class;

@@ -59,7 +59,7 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
   for_each_output((void *) self,self->screen_resources_reply,
     check_output_status);
 
-  if (VERBOSE) printf("Made it here \n");
+  //if (VERBOSE) printf("Made it here \n");
 	if (VERBOSE) printf("About to write to config file %s\n",CONFIG_FILE);
 	config_write_file(self->config,CONFIG_FILE);
 
