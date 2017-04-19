@@ -18,8 +18,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	xcb_randr_crtc_t *crtcs_p;
 	//xcb_randr_set_crtc_config_cookie_t *crtc_config_p;
 	//xcb_randr_set_crtc_config_reply_t **crtc_config_reply_pp;
-  xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
-  xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+
   set_crtc_param *cur_crtc_param;
 
 	mon_group = config_setting_lookup(profile_group,"Monitors");
@@ -67,26 +66,23 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	 * 3. Enabled desired crtcs
 */
 
-  screen_resources_cookie = xcb_randr_get_screen_resources(self->screen_t_p->c,
-    self->screen_t_p->screen->root);
 
- 	screen_resources_reply =
- 		xcb_randr_get_screen_resources_reply(self->screen_t_p->c,
-      screen_resources_cookie,self->screen_t_p->e);
 
-	crtcs_p = xcb_randr_get_screen_resources_crtcs(screen_resources_reply);
+
+
+	crtcs_p = xcb_randr_get_screen_resources_crtcs(self->screen_t_p->screen_resources_reply);
 	//crtc_config_p = (xcb_randr_set_crtc_config_cookie_t *)
     //malloc(
-      //screen_resources_reply->num_crtcs*sizeof(
+      //self->screen_t_p->screen_resources_reply->num_crtcs*sizeof(
       //xcb_randr_set_crtc_config_cookie_t));
 
-	for_each_output((void *) self,screen_resources_reply,match_with_config);
+	for_each_output((void *) self,self->screen_t_p->screen_resources_reply,match_with_config);
 
-	for(i=0;i<screen_resources_reply->num_crtcs;++i){
+	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
     if (!VERBOSE) {
 		//crtc_config_p[i] =
     xcb_randr_set_crtc_config_unchecked(self->screen_t_p->c,crtcs_p[i],
-      XCB_CURRENT_TIME, screen_resources_reply->config_timestamp,0,0,XCB_NONE,
+      XCB_CURRENT_TIME, self->screen_t_p->screen_resources_reply->config_timestamp,0,0,XCB_NONE,
       XCB_RANDR_ROTATION_ROTATE_0,0,0);
     }
     else{
@@ -94,7 +90,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     }
 	}
 
-// 	for(i=0;i<screen_resources_reply->num_crtcs;++i){
+// 	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
 // 		if (!VERBOSE) {
 //       crtc_config_reply_pp[i] =
 //     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p[i],
@@ -179,7 +175,7 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 			//find_crtc_by_res(mySett.res_x,mySett.res_y);
 			// Connect correct crtc to correct output
 
-			//crtc_config_p = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
+			//crtc_config_p = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, self->screen_t_p->screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
       //if (VERBOSE) printf("I would disable crtcs here\n");
 
 

@@ -12,11 +12,15 @@
 #include <stdarg.h>
 
 
-typedef struct {
+typedef struct _screen_class{
   xcb_connection_t *c;
   xcb_generic_error_t **e;
   xcb_screen_t *screen;
   xcb_intern_atom_reply_t *edid_atom;
+  xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+
+  void (*update_screen)(struct _screen_class*);
+
 
 }screen_class;
 
@@ -52,7 +56,6 @@ typedef struct _save_profile_class{
   screen_class *screen_t_p;
 
   // Variables
-  xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
   umon_setting_t umon_setting;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
   xcb_randr_output_t *cur_output;
@@ -67,7 +70,7 @@ typedef struct _load_class{
   screen_class *screen_t_p;
 
   // Variables
-  xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
+  // TODO some might be unused
   umon_setting_val_t umon_setting_val;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
   xcb_randr_output_t *cur_output;

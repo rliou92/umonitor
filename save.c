@@ -18,7 +18,7 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 	// xcb_randr_screen_size_iterator_t screen_size_iterator;
 	// xcb_randr_screen_size_t screen_size;
 
-	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
+
 
 
 	self->umon_setting.disp_group =
@@ -46,17 +46,10 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
     config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
 // Need to iterate over the outputs now
 
-	screen_resources_cookie =
-    xcb_randr_get_screen_resources(self->screen_t_p->c,
-      self->screen_t_p->screen->root);
 
-	self->screen_resources_reply =
-		xcb_randr_get_screen_resources_reply(self->screen_t_p->c,
-      screen_resources_cookie,self->screen_t_p->e);
-
-	// for_each_output(self->screen_resources_reply,
+	// for_each_output(self->screen_t_p->screen_resources_reply,
     //&output_info_to_config,&disabled_to_config,&do_nothing);
-  for_each_output((void *) self,self->screen_resources_reply,
+  for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
     check_output_status);
 
   //if (VERBOSE) printf("Made it here \n");
@@ -151,7 +144,7 @@ static void output_info_to_config(save_profile_class *self){
 
 	crtc_info_cookie =
   xcb_randr_get_crtc_info(self->screen_t_p->c,output_info_reply->crtc,
-			self->screen_resources_reply->config_timestamp);
+			self->screen_t_p->screen_resources_reply->config_timestamp);
 
 	if (VERBOSE) printf("cookies done\n");
 	self->crtc_info_reply =
@@ -194,9 +187,10 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 		if (VERBOSE) printf("Found current mode id\n");
 		// Get output info iterator
 		 mode_info_iterator =
-	xcb_randr_get_screen_resources_modes_iterator(self->screen_resources_reply);
+	xcb_randr_get_screen_resources_modes_iterator(
+    self->screen_t_p->screen_resources_reply);
 		num_screen_modes = xcb_randr_get_screen_resources_modes_length(
-			self->screen_resources_reply);
+			self->screen_t_p->screen_resources_reply);
 		 for (k=0;k<num_screen_modes;++k){
 			 if (mode_info_iterator.data->id == *mode_id_p){
 				 if (VERBOSE) printf("Found current mode info\n");
@@ -241,7 +235,7 @@ static void disabled_to_config(save_profile_class *self){
 
 /*void for_each_output(
 	void *self,
-	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
+	xcb_randr_get_screen_t_p->screen_resources_reply_t *screen_t_p->screen_resources_reply,
   void (*con_enabled)(void *,xcb_randr_output_t *),
   void (*con_disabled)(void *,xcb_randr_output_t *),
   void (*discon)(void *)){
@@ -254,9 +248,9 @@ static void disabled_to_config(save_profile_class *self){
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 
-	output_p = xcb_randr_get_screen_resources_outputs(screen_resources_reply);
+	output_p = xcb_randr_get_screen_resources_outputs(screen_t_p->screen_resources_reply);
 	outputs_length =
-		xcb_randr_get_screen_resources_outputs_length(screen_resources_reply);
+		xcb_randr_get_screen_resources_outputs_length(screen_t_p->screen_resources_reply);
 
 	for (i=0; i<outputs_length; ++i){
 		output_info_cookie =

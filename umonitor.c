@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
 	if (test_event){
 		if (config_read_file(&config, CONFIG_FILE)) {
-			//listen_for_event(); // Will not use new configuration file if it is changed
+			//listen_for_event(&screen_o,&config); // Will not use new configuration file if it is changed
 		}
 		else {
 			printf("No file to load when event is triggered\n");
@@ -153,9 +153,7 @@ void for_each_output(
 	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
 	void (*callback)(void *,xcb_randr_output_t *)){
 
-		int i;
-
-		int outputs_length;
+		int i,outputs_length;
 
 		xcb_randr_output_t *output_p;
 
@@ -164,8 +162,7 @@ void for_each_output(
 			xcb_randr_get_screen_resources_outputs_length(screen_resources_reply);
 
 		for (i=0; i<outputs_length; ++i){
-			callback(self,output_p);
-			++output_p;
+			callback(self,output_p++);
 		}
 }
 
@@ -184,8 +181,7 @@ void for_each_output_mode(
 	mode_id_p = xcb_randr_get_output_info_modes(output_info_reply);
 
 	for (j=0;j<num_output_modes;++j){
-		callback(self,mode_id_p);
-		++mode_id_p;
+		callback(self,mode_id_p++);
 	}
 
 }
@@ -217,39 +213,30 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 	if (VERBOSE) printf("Finished edid_to_string\n");
 }
 
-/*
-	xcb_randr_select_input(c, screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
-  xcb_flush(c);
-
-  while ((evt = xcb_wait_for_event(conn)) != NULL) {
-    if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
-      randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
-      if (last_time != randr_evt->timestamp) {
-        last_time = randr_evt->timestamp;
-        monitor_connected = !monitor_connected;
-        if (monitor_connected) {
-          printf("Monitor connected\n");
-        } else {
-          printf("Monitor disconnected\n");
-        }
-      }
-    }
-    free(evt);
-  }
-  xcb_disconnect(conn);
-}
-*/
-	//xcb_randr_get_screen_info_cookie_t get_screen_info_cookie = xcb_randr_get_screen_info (c, screen->root);
-
-
-	/* report */
-
-	/*printf ("\n");
-	printf ("Informations of screen %"PRIu32":\n", screen->root);
-	printf ("  width.........: %"PRIu16"\n", screen->width_in_pixels);
-	printf ("  height........: %"PRIu16"\n", screen->height_in_pixels);
-	printf ("  white pixel...: %"PRIu32"\n", screen->white_pixel);
-	printf ("  black pixel...: %"PRIu32"\n", screen->black_pixel);
-	printf ("\n");
-
-	return 0;*/
+// void listen_for_event(screen_class *screen_o,config_t *config){
+//
+//
+// 	xcb_generic_event_t *evt;
+// 	xcb_randr_screen_change_notify_event_t* randr_evt;
+// 	xcb_timestamp_t last_time;
+//
+// 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
+// 		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+//   xcb_flush(screen_o->c);
+//
+//   while ((evt = xcb_wait_for_event(screen_o->c)) != NULL) {
+//     if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
+//       randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+//       if (last_time != randr_evt->timestamp) {
+//         last_time = randr_evt->timestamp;
+//         // Find matching profile
+//
+//
+//       }
+//     }
+//     free(evt);
+//   }
+//   //xcb_disconnect(conn);
+// }
+//
+// }

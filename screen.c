@@ -3,6 +3,7 @@
 
 
 void screen_class_constructor(screen_class *);
+static void update_screen(screen_class *);
 extern int VERBOSE;
 
 void screen_class_constructor(screen_class *self){
@@ -12,6 +13,7 @@ void screen_class_constructor(screen_class *self){
 	static xcb_screen_iterator_t iter;
 
 	xcb_intern_atom_cookie_t atom_cookie;
+
 
 
 	uint8_t only_if_exists = 1;
@@ -39,6 +41,21 @@ void screen_class_constructor(screen_class *self){
 
 	self->edid_atom = xcb_intern_atom_reply(self->c,atom_cookie,self->e);
 
-	//screen_resources_reply =
-		//xcb_randr_get_screen_resources_reply(c,screen_resources_cookie,e);
+
+	self->update_screen = update_screen;
+	self->update_screen(self);
+
+	// Want outputs linked list
+
+
+}
+
+static void update_screen(screen_class *self){
+	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
+	screen_resources_cookie = xcb_randr_get_screen_resources(self->c,
+		self->screen->root);
+	self->screen_resources_reply =
+		xcb_randr_get_screen_resources_reply(self->c,screen_resources_cookie,
+			self->e);
+
 }
