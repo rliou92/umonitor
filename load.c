@@ -21,43 +21,10 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
   set_crtc_param *cur_crtc_param;
 
-	mon_group = config_setting_lookup(profile_group,"Monitors");
-	// printf("Checking group %d\n",mon_group);
-	self->num_out_pp = config_setting_length(mon_group);
-	self->umon_setting_val.edid_val = (const char **) malloc(self->num_out_pp * sizeof(const char *));
-	self->umon_setting_val.res_x = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.res_y = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.pos_x = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.pos_y = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.width = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.height = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.widthMM = (int *) malloc(self->num_out_pp * sizeof(int));
-	self->umon_setting_val.heightMM = (int *) malloc(self->num_out_pp * sizeof(int));
+  load_config_val(&(self->umon_setting_val),&(self->num_out_pp));
 
-	for(i=0;i<self->num_out_pp;++i) {
-		group = config_setting_get_elem(mon_group,i);
-		// printf("Checking group %d\n",group);
-		res_group = config_setting_lookup(group,"resolution");
-		pos_group = config_setting_lookup(group,"pos");
-		config_setting_lookup_string(group,"EDID",
-      self->umon_setting_val.edid_val+i);
-		config_setting_lookup_int(res_group,"x",self->umon_setting_val.res_x+i);
-		config_setting_lookup_int(res_group,"y",self->umon_setting_val.res_y+i);
-		config_setting_lookup_int(pos_group,"x",self->umon_setting_val.pos_x+i);
-		config_setting_lookup_int(pos_group,"y",self->umon_setting_val.pos_y+i);
-		// printf("Loaded values: \n");
-		// printf("EDID: %s\n",*(mySett->edid_val+i));
-		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
-		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
-	}
 
-	group = config_setting_lookup(profile_group,"Screen");
-	config_setting_lookup_int(group,"width",self->umon_setting_val.width);
-	config_setting_lookup_int(group,"height",self->umon_setting_val.height);
-	config_setting_lookup_int(group,"widthMM",self->umon_setting_val.widthMM);
-	config_setting_lookup_int(group,"heightMM",self->umon_setting_val.heightMM);
 
-	if (VERBOSE) printf("Done loading values from configuration file\n");
 
 /*
 	 * Plan of attack

@@ -18,4 +18,5 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p);
 static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p);
 
 extern void edid_to_string(uint8_t *edid, int length, char **edid_string);
+extern void load_config_val(umon_setting_val_t *,int *);
 extern int VERBOSE;

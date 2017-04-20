@@ -21,7 +21,7 @@
 
 
 
-// int num_out_pp;
+// int *num_out_pp;
 
 
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
 	if (test_event){
 		if (config_read_file(&config, CONFIG_FILE)) {
-			//listen_for_event(&screen_o,&config); // Will not use new configuration file if it is changed
+			listen_for_event(&screen_o,&config); // Will not use new configuration file if it is changed
 		}
 		else {
 			printf("No file to load when event is triggered\n");
@@ -213,30 +213,48 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 	if (VERBOSE) printf("Finished edid_to_string\n");
 }
 
-// void listen_for_event(screen_class *screen_o,config_t *config){
-//
-//
-// 	xcb_generic_event_t *evt;
-// 	xcb_randr_screen_change_notify_event_t* randr_evt;
-// 	xcb_timestamp_t last_time;
-//
-// 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
-// 		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
-//   xcb_flush(screen_o->c);
-//
-//   while ((evt = xcb_wait_for_event(screen_o->c)) != NULL) {
-//     if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
-//       randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
-//       if (last_time != randr_evt->timestamp) {
-//         last_time = randr_evt->timestamp;
-//         // Find matching profile
-//
-//
-//       }
-//     }
-//     free(evt);
-//   }
-//   //xcb_disconnect(conn);
-// }
-//
-// }
+
+
+void load_config_val(umon_setting_val_t *umon_setting_val,int *num_out_pp){
+
+	// TODO should use an array of structures
+	mon_group = config_setting_lookup(profile_group,"Monitors");
+	// printf("Checking group %d\n",mon_group);
+	*num_out_pp = config_setting_length(mon_group);
+	umon_setting_val->edid_val = (const char **) malloc(*num_out_pp * sizeof(const char *));
+	umon_setting_val->res_x = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->res_y = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->pos_x = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->pos_y = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->width = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->height = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->widthMM = (int *) malloc(*num_out_pp * sizeof(int));
+	umon_setting_val->heightMM = (int *) malloc(*num_out_pp * sizeof(int));
+
+	for(i=0;i<*num_out_pp;++i) {
+		group = config_setting_get_elem(mon_group,i);
+		// printf("Checking group %d\n",group);
+		res_group = config_setting_lookup(group,"resolution");
+		pos_group = config_setting_lookup(group,"pos");
+		config_setting_lookup_string(group,"EDID",
+			umon_setting_val->edid_val+i);
+		config_setting_lookup_int(res_group,"x",umon_setting_val->res_x+i);
+		config_setting_lookup_int(res_group,"y",umon_setting_val->res_y+i);
+		config_setting_lookup_int(pos_group,"x",umon_setting_val->pos_x+i);
+		config_setting_lookup_int(pos_group,"y",umon_setting_val->pos_y+i);
+		// printf("Loaded values: \n");
+		// printf("EDID: %s\n",*(mySett->edid_val+i));
+		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
+		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
+	}
+
+	group = config_setting_lookup(profile_group,"Screen");
+	config_setting_lookup_int(group,"width",umon_setting_val->width);
+	config_setting_lookup_int(group,"height",umon_setting_val->height);
+	config_setting_lookup_int(group,"widthMM",umon_setting_val->widthMM);
+	config_setting_lookup_int(group,"heightMM",umon_setting_val->heightMM);
+
+	if (VERBOSE) printf("Done loading values from configuration file\n");
+
+
+}
