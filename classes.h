@@ -90,7 +90,9 @@ typedef struct _autoload_class{
 
   // Variables
   config_t *config;
+  config_setting_t *mon_group;
+  int output_match,num_out_pp;
 
 
 
-}
+}autoload_class;
