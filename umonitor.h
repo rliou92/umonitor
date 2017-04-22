@@ -17,7 +17,7 @@ void for_each_output_mode(
   xcb_randr_get_output_info_reply_t *output_info_reply,
 	void (*callback)(void *,xcb_randr_mode_t *)
 );
-void load_config_val(umon_setting_val_t *,int *);
+
 
 
 
@@ -28,3 +28,4 @@ extern void screen_class_constructor(screen_class *);
 extern void save_profile_class_constructor(save_profile_class *,
   screen_class *,config_t *);
 extern void load_class_constructor(load_class *,screen_class *,config_t *);
+extern void autoload_constructor(autoload_class *,screen_class *,config_t *);

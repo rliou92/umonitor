@@ -36,10 +36,19 @@ typedef struct _set_crtc_param{
 /*
  * Structures for loading and saving the configuration file
  */
+typedef struct {
+	int width,height,widthMM,heightMM;
+}umon_setting_screen_t;
+
 
 typedef struct {
-	const char **edid_val;
-	int *pos_x,*pos_y,*width,*height,*widthMM,*heightMM,*res_x,*res_y;
+	const char *edid_val;
+	int pos_x,pos_y,res_x,res_y;
+}umon_setting_output_t;
+
+typedef struct {
+	umon_setting_screen_t screen;
+  umon_setting_output_t *outputs;
 }umon_setting_val_t;
 
 
@@ -78,6 +87,7 @@ typedef struct _load_class{
   int conf_output_idx,num_out_pp;
   xcb_randr_get_output_info_reply_t *output_info_reply;
   set_crtc_param *crtc_param_head;
+  config_setting_t *profile_group;
 
   // Methods
   void (*load_profile)(struct _load_class *,config_setting_t *);
@@ -86,13 +96,16 @@ typedef struct _load_class{
 typedef struct _autoload_class{
   // Inheriting classes
   screen_class *screen_t_p;
-  load_class *load_o;
+  load_class load_o;
 
   // Variables
   config_t *config;
   config_setting_t *mon_group;
-  int output_match,num_out_pp;
+  int output_match,num_out_pp,num_conn_outputs;
 
+  // Methods
+  void (*find_profile_and_load)(struct _autoload_class *);
+  void (*wait_for_event)(struct _autoload_class *);
 
 
 }autoload_class;
