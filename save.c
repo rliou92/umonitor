@@ -141,8 +141,18 @@ static void output_info_to_config(save_profile_class *self){
    config_setting_add(self->umon_setting.pos_group,"x",CONFIG_TYPE_INT);
 	self->umon_setting.pos_y =
    config_setting_add(self->umon_setting.pos_group,"y",CONFIG_TYPE_INT);
-	if (VERBOSE) printf("Finish setting up settings\n");
 
+  self->umon_setting.crtc_id =
+    config_setting_add(self->umon_setting.output_group,"crtc_id",
+      CONFIG_TYPE_INT);
+  self->umon_setting.mode_id =
+    config_setting_add(self->umon_setting.output_group,"mode_id",
+      CONFIG_TYPE_INT);
+
+
+
+
+	if (VERBOSE) printf("Finish setting up settings\n");
 	output_property_cookie = xcb_randr_get_output_property(self->screen_t_p->c,
 		*(self->cur_output),self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
     delete,pending);
@@ -150,6 +160,8 @@ static void output_info_to_config(save_profile_class *self){
 	crtc_info_cookie =
   xcb_randr_get_crtc_info(self->screen_t_p->c,output_info_reply->crtc,
 			self->screen_t_p->screen_resources_reply->config_timestamp);
+
+
 
 	if (VERBOSE) printf("cookies done\n");
 	self->crtc_info_reply =
@@ -177,6 +189,8 @@ static void output_info_to_config(save_profile_class *self){
 
 	config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
+  config_setting_set_int(self->umon_setting.crtc_id,
+    (int) output_info_reply->crtc);
 
 
 }
@@ -204,6 +218,8 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
            mode_info_iterator.data->width);
 				 config_setting_set_int(self->umon_setting.res_y,
            mode_info_iterator.data->height);
+         config_setting_set_int(self->umon_setting.mode_id,
+           (int) *mode_id_p);
 			 }
 			xcb_randr_mode_info_next(&mode_info_iterator);
 
@@ -236,52 +252,3 @@ static void disabled_to_config(save_profile_class *self){
 
 
 }
-
-
-/*void for_each_output(
-	void *self,
-	xcb_randr_get_screen_t_p->screen_resources_reply_t *screen_t_p->screen_resources_reply,
-  void (*con_enabled)(void *,xcb_randr_output_t *),
-  void (*con_disabled)(void *,xcb_randr_output_t *),
-  void (*discon)(void *)){
-
-	int i;
-
-	int outputs_length;
-
-	xcb_randr_output_t *output_p;
-	xcb_randr_get_output_info_cookie_t output_info_cookie;
-	xcb_randr_get_output_info_reply_t *output_info_reply;
-
-	output_p = xcb_randr_get_screen_resources_outputs(screen_t_p->screen_resources_reply);
-	outputs_length =
-		xcb_randr_get_screen_resources_outputs_length(screen_t_p->screen_resources_reply);
-
-	for (i=0; i<outputs_length; ++i){
-		output_info_cookie =
-		xcb_randr_get_output_info(c, output_p, XCB_CURRENT_TIME);
-		output_info_reply =
-			xcb_randr_get_output_info_reply (c, output_info_cookie, e);
-
-		if (VERBOSE) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
-		if (!output_info_reply->connection){
-			if (VERBOSE) printf("Found output that is connected\n");
-
-			if (output_info_reply->crtc){
-				(*con_enabled)(self,output_p);
-			}
-			else {
-				(*con_disabled)(self,output_p);
-			}
-
-		}
-		else {
-			(*discon)(self);
-		}
-
-		++output_p;
-	}
-
-
-}
-*/

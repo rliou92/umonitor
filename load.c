@@ -85,15 +85,15 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     printf("enable crtcs here\n");
     for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;cur_crtc_param=cur_crtc_param->next){
 
-	printf("*(cur_crtc_param->crtc_p): %d\n",*(cur_crtc_param->crtc_p));
+	printf("*(cur_crtc_param->crtc_p): %d\n",cur_crtc_param->crtc);
 	printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
-	printf("*(cur_crtc_param->mode_id_p): %d\n",*(cur_crtc_param->mode_id_p));
+	printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
      crtc_config_p = xcb_randr_set_crtc_config(self->screen_t_p->c,
-        *(cur_crtc_param->crtc_p),
+        cur_crtc_param->crtc,
         XCB_CURRENT_TIME,XCB_CURRENT_TIME,
         cur_crtc_param->pos_x,
         cur_crtc_param->pos_y,
-        *(cur_crtc_param->mode_id_p),XCB_RANDR_ROTATION_ROTATE_0, 1, cur_crtc_param->output_p);
+        cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1, cur_crtc_param->output_p);
     //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
     crtc_config_reply_pp = xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p,&self->screen_t_p->e);
     xcb_flush(self->screen_t_p->c);
@@ -116,6 +116,7 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
   xcb_randr_get_output_property_cookie_t output_property_cookie;
   xcb_randr_get_output_property_reply_t *output_property_reply;
   load_class *self = (load_class *) self_void;
+  set_crtc_param *new_crtc_param;
 
 	char *edid_string;
 	uint8_t *output_property_data;
@@ -152,11 +153,27 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 			// Found a match between the configuration file edid and currently connected edid. Now have to load correct settings.
 			// Need to find the proper crtc to assign the output
 			// Which crtc has the same resolution?
-			for_each_output_mode((void *) self,self->output_info_reply,
-        find_crtc_match);
+			//for_each_output_mode((void *) self,self->output_info_reply,
+        //find_crtc_match);
 			//find_crtc_by_res(mySett.res_x,mySett.res_y);
 			// Connect correct crtc to correct output
+      new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
+      new_crtc_param->crtc =
+        self->umon_setting_val.outputs[self->conf_output_idx].crtc_id;
+      new_crtc_param->pos_x =
+        self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
+      new_crtc_param->pos_y =
+        self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
+      new_crtc_param->mode_id =
+        self->umon_setting_val.outputs[self->conf_output_idx].mode_id;
+      new_crtc_param->output_p = self->cur_output;
+      new_crtc_param->next = self->crtc_param_head;
+      self->crtc_param_head = new_crtc_param;
 
+	printf("*(cur_crtc_param->crtc_p): %d\n",self->umon_setting_val.outputs[self->conf_output_idx].crtc_id);
+	printf("cur_crtc_param->output_p: %d\n",self->cur_output);
+	printf("*(cur_crtc_param->mode_id_p): %d\n",
+    self->umon_setting_val.outputs[self->conf_output_idx].mode_id);
 			//crtc_config_p = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, self->screen_t_p->screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
 
 
@@ -172,7 +189,7 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
 
 
-	xcb_randr_crtc_t *crtc_p;
+	/*xcb_randr_crtc_t *crtc_p;
   //xcb_randr_mode_t *crtc_mode;
   xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
@@ -191,6 +208,8 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
 	for(i=0;i<num_crtcs;++i){
 
 		// When output is disabled the crtc_info_reply->mode is 0!!
+    // Perhaps I need another method of doing this, not storing and matching
+    // resolution (can do that only for save) but the actual mode id
     crtc_info_cookie =
      xcb_randr_get_crtc_info(self->screen_t_p->c,*crtc_p,XCB_CURRENT_TIME);
     crtc_info_reply =
@@ -235,7 +254,7 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
     }
 		++crtc_p;
 	}
-
+*/
 }
 
 static void load_config_val(load_class *self){
@@ -265,6 +284,10 @@ static void load_config_val(load_class *self){
       &(self->umon_setting_val.outputs[i].pos_x));
 		config_setting_lookup_int(pos_group,"y",
       &(self->umon_setting_val.outputs[i].pos_y));
+    config_setting_lookup_int(group,"crtc_id",
+      &(self->umon_setting_val.outputs[i].crtc_id));
+    config_setting_lookup_int(group,"crtc_id",
+      &(self->umon_setting_val.outputs[i].mode_id));
 		// printf("Loaded values: \n");
 		// printf("EDID: %s\n",*(mySett->edid_val+i));
 		// printf("Resolution: %s\n",*(mySett->resolution_str+i));

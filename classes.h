@@ -25,9 +25,9 @@ typedef struct _screen_class{
 }screen_class;
 
 typedef struct _set_crtc_param{
-  xcb_randr_crtc_t *crtc_p;
+  xcb_randr_crtc_t crtc;
   int pos_x,pos_y;
-  xcb_randr_mode_t *mode_id_p;
+  xcb_randr_mode_t mode_id;
   xcb_randr_output_t *output_p;
   struct _set_crtc_param *next;
 
@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct {
 	const char *edid_val;
-	int pos_x,pos_y,res_x,res_y;
+	int pos_x,pos_y,res_x,res_y,crtc_id,mode_id;
 }umon_setting_output_t;
 
 typedef struct {
@@ -57,7 +57,7 @@ typedef struct {
 	config_setting_t *edid,*res_group,*res_x,*res_y,*pos_x,
 		*pos_y,*disp_group,*disp_width,*disp_height,
 		*disp_widthMM,*disp_heightMM,*mon_group,*output_group,
-		*pos_group,*status,*edid_setting;
+		*pos_group,*status,*edid_setting,*crtc_id,*mode_id;
 }umon_setting_t;
 
 typedef struct _save_profile_class{
