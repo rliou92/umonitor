@@ -97,7 +97,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
     crtc_config_reply_pp = xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p,&self->screen_t_p->e);
     xcb_flush(self->screen_t_p->c);
-    printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
+    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
     printf("enable crtcs here\n");
 
     }
@@ -188,9 +188,9 @@ static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p){
 	crtc_p = xcb_randr_get_output_info_crtcs(self->output_info_reply);
 
 
-// TODO Can optimize server fetching times
 	for(i=0;i<num_crtcs;++i){
 
+		// When output is disabled the crtc_info_reply->mode is 0!!
     crtc_info_cookie =
      xcb_randr_get_crtc_info(self->screen_t_p->c,*crtc_p,XCB_CURRENT_TIME);
     crtc_info_reply =
