@@ -14,7 +14,7 @@
 
 typedef struct _screen_class{
   xcb_connection_t *c;
-  xcb_generic_error_t **e;
+  xcb_generic_error_t *e;
   xcb_screen_t *screen;
   xcb_intern_atom_reply_t *edid_atom;
   xcb_randr_get_screen_resources_reply_t *screen_resources_reply;

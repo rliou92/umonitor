@@ -78,13 +78,13 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
     *(output_p),self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
     delete,pending);
   output_property_reply = xcb_randr_get_output_property_reply(
-      self->screen_t_p->c,output_property_cookie,self->screen_t_p->e);
+      self->screen_t_p->c,output_property_cookie,&self->screen_t_p->e);
 	output_info_cookie =
 	xcb_randr_get_output_info(self->screen_t_p->c, *output_p,
 		XCB_CURRENT_TIME);
 	output_info_reply =
 		xcb_randr_get_output_info_reply (self->screen_t_p->c,
-		output_info_cookie, self->screen_t_p->e);
+		output_info_cookie, &self->screen_t_p->e);
 
 	if (!output_info_reply->connection){
 		if (VERBOSE) printf("Found output that is connected\n");

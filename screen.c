@@ -15,7 +15,6 @@ void screen_class_constructor(screen_class *self){
 	xcb_intern_atom_cookie_t atom_cookie;
 
 
-
 	uint8_t only_if_exists = 1;
 	const char *edid_name = "EDID";
 	uint16_t name_len = strlen(edid_name);
@@ -39,7 +38,7 @@ void screen_class_constructor(screen_class *self){
 	//screen_resources_cookie = xcb_randr_get_screen_resources(c,screen->root);
 	atom_cookie = xcb_intern_atom(self->c,only_if_exists,name_len,edid_name);
 
-	self->edid_atom = xcb_intern_atom_reply(self->c,atom_cookie,self->e);
+	self->edid_atom = xcb_intern_atom_reply(self->c,atom_cookie,&self->e);
 
 
 	self->update_screen = update_screen;
@@ -56,6 +55,6 @@ static void update_screen(screen_class *self){
 		self->screen->root);
 	self->screen_resources_reply =
 		xcb_randr_get_screen_resources_reply(self->c,screen_resources_cookie,
-			self->e);
+			&self->e);
 
 }

@@ -21,6 +21,7 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 
 
 
+	if (VERBOSE) printf("Before for each output\n");
 	self->umon_setting.disp_group =
    config_setting_add(profile_group,"Screen",CONFIG_TYPE_GROUP);
 	self->umon_setting.disp_width =
@@ -33,14 +34,17 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 		config_setting_add(self->umon_setting.disp_group,"heightMM",
       CONFIG_TYPE_INT);
 
+	printf("Screen width in pixels: %d\n",self->screen_t_p->screen->width_in_pixels);
 	config_setting_set_int(self->umon_setting.disp_width,
     self->screen_t_p->screen->width_in_pixels);
+	printf("Screen height in pixels: %d\n",self->screen_t_p->screen->height_in_pixels);
 	config_setting_set_int(self->umon_setting.disp_height,
     self->screen_t_p->screen->height_in_pixels);
-	config_setting_set_int(self->umon_setting.disp_widthMM,
-    self->screen_t_p->screen->width_in_millimeters);
-	config_setting_set_int(self->umon_setting.disp_heightMM,
-    self->screen_t_p->screen->height_in_millimeters);
+	//printf("Screen width in millimeters: %d\n",self->screen_t_p->screen->width_in_millimeters);
+	//config_setting_set_int(self->umon_setting.disp_widthMM,
+    //self->screen_t_p->screen->width_in_millimeters);
+	//config_setting_set_int(self->umon_setting.disp_heightMM,
+    //self->screen_t_p->screen->height_in_millimeters);
 
 	self->umon_setting.mon_group =
     config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
@@ -49,6 +53,7 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 
 	// for_each_output(self->screen_t_p->screen_resources_reply,
     //&output_info_to_config,&disabled_to_config,&do_nothing);
+	if (VERBOSE) printf("Before for each output\n");
   for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
     check_output_status);
 
@@ -74,7 +79,7 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
     XCB_CURRENT_TIME);
   output_info_reply =
     xcb_randr_get_output_info_reply (self->screen_t_p->c,
-    output_info_cookie, self->screen_t_p->e);
+    output_info_cookie, &self->screen_t_p->e);
 
   if (VERBOSE) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
   if (!output_info_reply->connection){
@@ -113,7 +118,7 @@ static void output_info_to_config(save_profile_class *self){
     XCB_CURRENT_TIME);
 	output_info_reply =
 		xcb_randr_get_output_info_reply (self->screen_t_p->c, output_info_cookie,
-    self->screen_t_p->e);
+    &self->screen_t_p->e);
 
 
 	self->umon_setting.output_group =
@@ -149,9 +154,9 @@ static void output_info_to_config(save_profile_class *self){
 	if (VERBOSE) printf("cookies done\n");
 	self->crtc_info_reply =
   xcb_randr_get_crtc_info_reply(self->screen_t_p->c,crtc_info_cookie,
-    self->screen_t_p->e);
+    &self->screen_t_p->e);
 	output_property_reply = xcb_randr_get_output_property_reply(
-		self->screen_t_p->c,output_property_cookie,self->screen_t_p->e);
+		self->screen_t_p->c,output_property_cookie,&self->screen_t_p->e);
 
 	//if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 	output_property_data = xcb_randr_get_output_property_data(
@@ -218,7 +223,7 @@ static void disabled_to_config(save_profile_class *self){
     XCB_CURRENT_TIME);
 	output_info_reply =
 		xcb_randr_get_output_info_reply (self->screen_t_p->c,
-    output_info_cookie,self->screen_t_p->e);
+    output_info_cookie,&self->screen_t_p->e);
 	self->umon_setting.output_group =
 		config_setting_add(self->umon_setting.mon_group,
 			(char *) xcb_randr_get_output_info_name(output_info_reply),
