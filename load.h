@@ -15,7 +15,7 @@ void load_class_constructor(load_class *self,
   screen_class *screen_t,config_t *config);
 static void load_profile(load_class *self,config_setting_t *profile_group);
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p);
-static void find_crtc_match(void *self_void,xcb_randr_mode_t *mode_id_p);
+static void find_mode_id(load_class *self);
 static void load_config_val(load_class *);
 
 extern void edid_to_string(uint8_t *edid, int length, char **edid_string);

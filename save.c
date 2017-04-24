@@ -228,14 +228,13 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
            mode_info_iterator.data->width);
 				 config_setting_set_int(self->umon_setting.res_y,
            mode_info_iterator.data->height);
-         config_setting_set_int(self->umon_setting.mode_id,
-           (int) *mode_id_p);
+         //config_setting_set_int(self->umon_setting.mode_id,
+           //(int) *mode_id_p);
 			 }
 			xcb_randr_mode_info_next(&mode_info_iterator);
 
 		 }
 	}
-
 
 }
 
