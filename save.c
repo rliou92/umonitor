@@ -107,7 +107,7 @@ static void output_info_to_config(save_profile_class *self){
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 
-	char *edid_string;
+	char *edid_string,*output_name;
 	uint8_t *output_property_data;
 	int output_property_length;
 	uint8_t delete = 0;
@@ -120,10 +120,17 @@ static void output_info_to_config(save_profile_class *self){
 		xcb_randr_get_output_info_reply (self->screen_t_p->c, output_info_cookie,
     &self->screen_t_p->e);
 
+	uint8_t *output_name_raw = xcb_randr_get_output_info_name(output_info_reply);
+	int output_name_length = xcb_randr_get_output_info_name_length(output_info_reply);
+	output_name = malloc(output_name_length*sizeof(char));
+
+	for(int i=0;i<output_name_length;++i){
+		output_name[i] = (char) output_name_raw[i];
+	}
 
 	self->umon_setting.output_group =
 		config_setting_add(self->umon_setting.mon_group,
-		    (char *) xcb_randr_get_output_info_name(output_info_reply),
+				output_name,
 				CONFIG_TYPE_GROUP);
 	if (VERBOSE) printf("Found output that is enabled\n");
 	self->umon_setting.edid_setting =
@@ -179,7 +186,10 @@ static void output_info_to_config(save_profile_class *self){
 	if (VERBOSE) printf("Finish fetching info from server\n");
 	edid_to_string(output_property_data,output_property_length,
 		&edid_string);
+	printf("Am I here?\n");
+	printf("edid_string: %s\n",edid_string);
 	config_setting_set_string(self->umon_setting.edid_setting,edid_string);
+	//config_setting_set_string(self->umon_setting.edid_setting,"blah");
 	// Free edid_string?
 
 	// Need to find the mode info now

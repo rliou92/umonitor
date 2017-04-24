@@ -1,7 +1,7 @@
 TARGET = umonitor
 LIBS = -lX11 -lxcb-randr -lxcb -lconfig
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -g
 
 .PHONY: default all clean
 

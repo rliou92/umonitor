@@ -68,6 +68,8 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 // 	}
 
 	if (!VERBOSE) {
+    printf("screen size width: %d\n",self->umon_setting_val.screen.width);
+    printf("screen size height: %d\n",self->umon_setting_val.screen.height);
     xcb_randr_set_screen_size(self->screen_t_p->c,
       self->screen_t_p->screen->root,self->umon_setting_val.screen.width,
       self->umon_setting_val.screen.height,
@@ -75,7 +77,6 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
       self->umon_setting_val.screen.heightMM);
       xcb_flush(self->screen_t_p->c);
     printf("change screen size here\n");
-    printf("screen size width: %d\n",self->umon_setting_val.screen.width);
 	}
   else{
     printf("Would change screen size here\n");
@@ -286,7 +287,7 @@ static void load_config_val(load_class *self){
       &(self->umon_setting_val.outputs[i].pos_y));
     config_setting_lookup_int(group,"crtc_id",
       &(self->umon_setting_val.outputs[i].crtc_id));
-    config_setting_lookup_int(group,"crtc_id",
+    config_setting_lookup_int(group,"mode_id",
       &(self->umon_setting_val.outputs[i].mode_id));
 		// printf("Loaded values: \n");
 		// printf("EDID: %s\n",*(mySett->edid_val+i));
