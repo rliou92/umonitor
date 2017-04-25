@@ -69,14 +69,19 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 // 	}
 
 	if (!VERBOSE) {
+		//Ignore saved widthMM and heightMM
+		int widthMM = 25.4*self->umon_setting_val.screen.width/96;
+		int heightMM = 25.4*self->umon_setting_val.screen.height/96;
     printf("screen size width: %d\n",self->umon_setting_val.screen.width);
     printf("screen size height: %d\n",self->umon_setting_val.screen.height);
+    printf("screen size widthmm: %d\n",widthMM);
+    printf("screen size heightmm: %d\n",heightMM);
     // TODO don't believe this is working
-    xcb_randr_set_screen_size(self->screen_t_p->c,
-      self->screen_t_p->screen->root,self->umon_setting_val.screen.width,
-      self->umon_setting_val.screen.height,
-      self->umon_setting_val.screen.widthMM,
-      self->umon_setting_val.screen.heightMM);
+    xcb_void_cookie_t void_cookie = xcb_randr_set_screen_size(self->screen_t_p->c,
+      self->screen_t_p->screen->root,(uint16_t)self->umon_setting_val.screen.width,
+      (uint16_t)self->umon_setting_val.screen.height,
+      (uint32_t)self->umon_setting_val.screen.widthMM,
+      (uint32_t)self->umon_setting_val.screen.heightMM);
       xcb_flush(self->screen_t_p->c);
     printf("change screen size here\n");
 	}
@@ -86,7 +91,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
   if (!VERBOSE) {
     printf("enable crtcs here\n");
-    // TODO make sure there are enough crtcs
+    // TODO check if the crtc can actually be connected to the output
     i = 0;
     for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;cur_crtc_param=cur_crtc_param->next){
 
@@ -111,6 +116,23 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     printf("Would enable crtcs here\n");
   }
 
+//	if (!VERBOSE) {
+//    printf("screen size width: %d\n",self->umon_setting_val.screen.width);
+//    printf("screen size height: %d\n",self->umon_setting_val.screen.height);
+//    printf("screen size widthmm: %d\n",self->umon_setting_val.screen.widthMM);
+//    printf("screen size heightmm: %d\n",self->umon_setting_val.screen.heightMM);
+//    // TODO don't believe this is working
+//    xcb_void_cookie_t void_cookie = xcb_randr_set_screen_size_checked(self->screen_t_p->c,
+//      self->screen_t_p->screen->root,(uint16_t)self->umon_setting_val.screen.width,
+//      (uint16_t)self->umon_setting_val.screen.height,
+//      (uint32_t)self->umon_setting_val.screen.widthMM,
+//      (uint32_t)self->umon_setting_val.screen.heightMM);
+//      xcb_flush(self->screen_t_p->c);
+//    printf("change screen size here\n");
+//	}
+//  else{
+//    printf("Would change screen size here\n");
+//  }
 
 }
 

@@ -41,10 +41,10 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 	config_setting_set_int(self->umon_setting.disp_height,
     self->screen_t_p->screen->height_in_pixels);
 	//printf("Screen width in millimeters: %d\n",self->screen_t_p->screen->width_in_millimeters);
-	//config_setting_set_int(self->umon_setting.disp_widthMM,
-    //self->screen_t_p->screen->width_in_millimeters);
-	//config_setting_set_int(self->umon_setting.disp_heightMM,
-    //self->screen_t_p->screen->height_in_millimeters);
+	config_setting_set_int(self->umon_setting.disp_widthMM,
+    self->screen_t_p->screen->width_in_millimeters);
+	config_setting_set_int(self->umon_setting.disp_heightMM,
+    self->screen_t_p->screen->height_in_millimeters);
 
 	self->umon_setting.mon_group =
     config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
@@ -149,12 +149,12 @@ static void output_info_to_config(save_profile_class *self){
 	self->umon_setting.pos_y =
    config_setting_add(self->umon_setting.pos_group,"y",CONFIG_TYPE_INT);
 
-  self->umon_setting.crtc_id =
-    config_setting_add(self->umon_setting.output_group,"crtc_id",
-      CONFIG_TYPE_INT);
-  self->umon_setting.mode_id =
-    config_setting_add(self->umon_setting.output_group,"mode_id",
-      CONFIG_TYPE_INT);
+  //self->umon_setting.crtc_id =
+//     config_setting_add(self->umon_setting.output_group,"crtc_id",
+//       CONFIG_TYPE_INT);
+//   self->umon_setting.mode_id =
+//     config_setting_add(self->umon_setting.output_group,"mode_id",
+//       CONFIG_TYPE_INT);
 
 
 
@@ -199,8 +199,8 @@ static void output_info_to_config(save_profile_class *self){
 
 	config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
-  config_setting_set_int(self->umon_setting.crtc_id,
-    (int) output_info_reply->crtc);
+  // config_setting_set_int(self->umon_setting.crtc_id,
+    //(int) output_info_reply->crtc);
 
 
 }
