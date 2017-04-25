@@ -222,6 +222,7 @@ static void find_mode_id(load_class *self){
         self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
 			 if (VERBOSE) printf("Found current mode info\n");
 			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
+           new_crtc_param->crtc = find_available_crtc(self);
            new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
            new_crtc_param->pos_x =
              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
@@ -239,6 +240,30 @@ static void find_mode_id(load_class *self){
 
 		 }
      		//if (VERBOSE) printf("Found current mode id\n");
+}
+
+static xcb_randr_crtc_t find_available_crtc(load_class *self){
+
+  xcb_randr_crtc_t *output_crtcs =
+    xcb_randr_get_output_info_crtcs(self->output_info_reply);
+  int num_output_crtcs =
+   xcb_randr_get_output_info_crtcs_length(self->output_info_reply);
+
+  xcb_randr_crtc_t *available_crtcs = xcb_randr_get_screen_resources_crtcs(
+    self->screen_t_p->screen_resources_reply);
+  int num_available_crtcs = self->screen_t_p->screen_resources_reply->num_crtcs;
+
+  for (int i=0;i<num_available_crtcs;++i){
+    for (int j=0;j<num_output_crtcs;++j){
+        if (available_crtcs[i] == output_crtcs[j]){
+          return available_crtcs[i];
+        }
+      }
+  }
+
+  printf("failed to find a matching crtc\n");
+  exit(10);
+
 }
 
 static void load_config_val(load_class *self){

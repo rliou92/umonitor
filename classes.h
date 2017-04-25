@@ -25,7 +25,7 @@ typedef struct _screen_class{
 }screen_class;
 
 typedef struct _set_crtc_param{
-  //xcb_randr_crtc_t crtc;
+  xcb_randr_crtc_t crtc;
   int pos_x,pos_y;
   xcb_randr_mode_t mode_id;
   xcb_randr_output_t *output_p;
