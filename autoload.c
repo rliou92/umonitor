@@ -33,19 +33,19 @@ static void wait_for_event(autoload_class *self){
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 	xcb_timestamp_t last_time;
 
-	while ((evt = xcb_wait_for_event(self->screen_t_p->c)) != NULL) {
-		if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
-			randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
-			if (last_time != randr_evt->timestamp) {
-				last_time = randr_evt->timestamp;
-				// Find matching profile
-				// Get total connected outputs
-				find_profile_and_load(self);
+	while(1){
+	evt = xcb_wait_for_event(self->screen_t_p->c);
+	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
+		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+			// Find matching profile
+			// Get total connected outputs
+		printf("event received\n");
+			find_profile_and_load(self);
+			//Self triggering right now
 
-			}
-		}
-		free(evt);
 	}
+	}
+	free(evt);
 
 //xcb_disconnect(conn);
 }
@@ -87,10 +87,9 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 		output_info_cookie, &self->screen_t_p->e);
 
 	if (!output_info_reply->connection){
-		if (VERBOSE) printf("Found output that is connected\n");
-
-		if (output_info_reply->crtc){
+		if (VERBOSE) printf("Found output that is connected \n");
 			self->num_conn_outputs++;
+
 			output_property_data = xcb_randr_get_output_property_data(
 		    output_property_reply);
 		  output_property_length = xcb_randr_get_output_property_data_length(
@@ -100,25 +99,31 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 		  edid_to_string(output_property_data,output_property_length,
 		    &edid_string);
 
+		  output_match_unique = 0;
 		  for(j=0;j<self->num_out_pp;j++){
+			    printf("output match, %d\n",self->output_match);
 
-		    output_match_unique = 0;
+			    printf("output_match_unique, %d\n",output_match_unique);
 		    group = config_setting_get_elem(self->mon_group,j);
 		    config_setting_lookup_string(group,"EDID",&conf_edid);
+		    printf("conf_edid: %s\n",conf_edid);
+		    printf("edid_string: %s\n",edid_string);
 		    if (!strcmp(conf_edid,edid_string)){
 		      output_match_unique++;
+			    printf("match, %d\n",output_match_unique);
 		    }
 		  }
 
 		  if (output_match_unique == 1){
+			    printf("output match, %d\n",self->output_match);
 		    self->output_match++;
+			    printf("output match, %d\n",self->output_match);
 		  }
 		}
 		else {
 			// TODO just disable
 		}
 
-	}
   //if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 
 }
@@ -133,6 +138,7 @@ static void find_profile_and_load(autoload_class *self){
   int num_profiles = config_setting_length(root);
 	if (VERBOSE) printf("Number of profiles:%d\n",num_profiles);
   for (int i=0;i<num_profiles;i++){
+	  printf("NEW PROFILE\n");
     self->output_match = 0;
     cur_profile = config_setting_get_elem(root,i);
     self->mon_group = config_setting_lookup(cur_profile,"Monitors");
@@ -143,11 +149,15 @@ static void find_profile_and_load(autoload_class *self){
 			 self->num_conn_outputs = 0;
       for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
         match_with_profile);
+      printf("self->output_match: %d\n",self->output_match);
+      printf("self->num_out_pp: %d\n",self->num_out_pp);
+      printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
       if ((self->output_match == self->num_out_pp) && (self->num_out_pp == self->num_conn_outputs)){
 
+	      //Only loads first matching profile
 				if (VERBOSE) printf("Found matching profile\n");
         self->load_o.load_profile(&(self->load_o),cur_profile);
-        //TODO handle case with matching more than one
+	break;
       }
     //}
   }

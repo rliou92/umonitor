@@ -37,6 +37,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
       //self->screen_t_p->screen_resources_reply->num_crtcs*sizeof(
       //xcb_randr_set_crtc_config_cookie_t));
 
+	self->crtc_offset = 0;
 	for_each_output(
     (void *) self,self->screen_t_p->screen_resources_reply,match_with_config);
 
@@ -98,8 +99,9 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	// printf("*(cur_crtc_param->crtc_p): %d\n",cur_crtc);
 	// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
 	// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
+    printf("Enabling crtc %d\n",cur_crtc_param->crtc);
      crtc_config_p = xcb_randr_set_crtc_config(self->screen_t_p->c,
-        crtcs_p[i++],
+        cur_crtc_param->crtc,
         XCB_CURRENT_TIME,XCB_CURRENT_TIME,
         cur_crtc_param->pos_x,
         cur_crtc_param->pos_y,
@@ -108,7 +110,6 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     crtc_config_reply_pp = xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p,&self->screen_t_p->e);
     xcb_flush(self->screen_t_p->c);
     //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
-    printf("enable crtcs here\n");
 
     }
   }
@@ -222,8 +223,8 @@ static void find_mode_id(load_class *self){
         self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
 			 if (VERBOSE) printf("Found current mode info\n");
 			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
-           new_crtc_param->crtc = find_available_crtc(self);
            new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
+           new_crtc_param->crtc = find_available_crtc(self,self->crtc_offset++);
            new_crtc_param->pos_x =
              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
            new_crtc_param->pos_y =
@@ -242,7 +243,8 @@ static void find_mode_id(load_class *self){
      		//if (VERBOSE) printf("Found current mode id\n");
 }
 
-static xcb_randr_crtc_t find_available_crtc(load_class *self){
+static xcb_randr_crtc_t find_available_crtc(load_class *self,int offset){
+
 
   xcb_randr_crtc_t *output_crtcs =
     xcb_randr_get_output_info_crtcs(self->output_info_reply);
@@ -256,7 +258,9 @@ static xcb_randr_crtc_t find_available_crtc(load_class *self){
   for (int i=0;i<num_available_crtcs;++i){
     for (int j=0;j<num_output_crtcs;++j){
         if (available_crtcs[i] == output_crtcs[j]){
-          return available_crtcs[i];
+  printf("offset crtc: %d\n",offset);
+  		if(!(offset--)) return available_crtcs[i];
+          // This is returning the same crtc unfortunately
         }
       }
   }

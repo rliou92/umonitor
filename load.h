@@ -17,7 +17,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group);
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p);
 static void find_mode_id(load_class *self);
 static void load_config_val(load_class *);
-static xcb_randr_crtc_t find_available_crtc(load_class *);
+static xcb_randr_crtc_t find_available_crtc(load_class *,int);
 
 extern void edid_to_string(uint8_t *edid, int length, char **edid_string);
 extern int VERBOSE;

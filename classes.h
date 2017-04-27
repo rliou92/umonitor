@@ -84,7 +84,7 @@ typedef struct _load_class{
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
   xcb_randr_output_t *cur_output;
   config_t *config;
-  int conf_output_idx,num_out_pp;
+  int conf_output_idx,num_out_pp,crtc_offset;
   xcb_randr_get_output_info_reply_t *output_info_reply;
   set_crtc_param *crtc_param_head;
   config_setting_t *profile_group;

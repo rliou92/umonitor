@@ -142,7 +142,8 @@ int main(int argc, char **argv) {
 		if (config_read_file(&config, CONFIG_FILE)) {
 			autoload_o = (autoload_class *) malloc(sizeof(autoload_class));
 			autoload_constructor(autoload_o,&screen_o,&config); // Will not use new configuration file if it is changed
-			autoload_o->find_profile_and_load(autoload_o);
+			//autoload_o->find_profile_and_load(autoload_o);
+			autoload_o->wait_for_event(autoload_o);
 			if (VERBOSE) printf("Autoloading\n");
 		}
 		else {
