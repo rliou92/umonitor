@@ -41,6 +41,13 @@ static void wait_for_event(autoload_class *self){
 			// Get total connected outputs
 		printf("event received\n");
 			find_profile_and_load(self);
+			sleep(1);
+	xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
+		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+//	evt = xcb_wait_for_event(self->screen_t_p->c);
+//		printf("event received\n");
+//	evt = xcb_wait_for_event(self->screen_t_p->c);
+//		printf("event received\n");
 			//Self triggering right now
 
 	}
