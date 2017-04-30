@@ -1,31 +1,5 @@
 #include "umonitor.h"
 
-/*
- * Prototypes
- */
-//void connect_to_server(void);
-//void load_val_from_config(void);
-//void free_val_from_config(void);
-//void load_profile(void);
-//void fetch_display_status(void);
-//void free_display_status(void);
-//void construct_output_list(void;
-//void free_output_list(void);
-
-//void listen_for_event(void);
-
-
-//static xcb_timestamp_t timestamp;
-
-
-
-
-
-// int *num_out_pp;
-
-
-
-
 int main(int argc, char **argv) {
 	int save = 0;
 	int load = 0;
@@ -93,9 +67,6 @@ int main(int argc, char **argv) {
 			profile_group = config_lookup(&config,profile_name);
 
 			if (profile_group != NULL) {
-				// load_val_from_config();
-				//load_profile(profile_group);
-				// free_val_from_config();
 				load_o = (load_class *) malloc(sizeof(load_class));
 				load_class_constructor(load_o,&screen_o,&config);
 				load_o->load_profile(load_o,profile_group);
@@ -191,7 +162,8 @@ void for_each_output_mode(
 
 }
 
-void edid_to_string(uint8_t *edid, int length, char **edid_string){
+void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
+	 char **edid_string){
 
 	/*
 	 * Converts the edid that is returned from the X11 server into a string
@@ -199,7 +171,24 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 	 * Outputs: 	edid_string	 edid in string form
 	 */
 
-	int z;
+	int z,length;
+	uint8_t delete = 0;
+	uint8_t pending = 0;
+	xcb_randr_get_output_property_cookie_t output_property_cookie;
+	xcb_randr_get_output_property_reply_t *output_property_reply;
+	uint8_t *edid;
+
+	output_property_cookie = xcb_randr_get_output_property(screen_t_p->c,
+		*output_p,screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
+    delete,pending);
+
+	output_property_reply = xcb_randr_get_output_property_reply(
+		screen_t_p->c,output_property_cookie,&screen_t_p->e);
+
+	edid = xcb_randr_get_output_property_data(
+		output_property_reply);
+	length = xcb_randr_get_output_property_data_length(
+		output_property_reply);
 
 	if (VERBOSE) printf("Starting edid_to_string\n");
 	*edid_string = (char *) malloc((length+1)*sizeof(char));
@@ -210,8 +199,7 @@ void edid_to_string(uint8_t *edid, int length, char **edid_string){
 		else {
 			*(*edid_string+z) = (char) edid[z];
 		}
-		//printf("\n");
-		//printf("%c",*((*edid_string)+z));
+
 	}
 	*(*edid_string+z) = '\0';
 

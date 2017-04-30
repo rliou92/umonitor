@@ -19,5 +19,5 @@ static void find_mode_id(load_class *self);
 static void load_config_val(load_class *);
 static xcb_randr_crtc_t find_available_crtc(load_class *,int);
 
-extern void edid_to_string(uint8_t *edid, int length, char **edid_string);
+extern void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
 extern int VERBOSE;

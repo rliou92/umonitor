@@ -34,10 +34,10 @@ static void save_profile(save_profile_class *self,config_setting_t *profile_grou
 		config_setting_add(self->umon_setting.disp_group,"heightMM",
       CONFIG_TYPE_INT);
 
-	printf("Screen width in pixels: %d\n",self->screen_t_p->screen->width_in_pixels);
+	//if (VERBOSE) printf("Screen width in pixels: %d\n",self->screen_t_p->screen->width_in_pixels);
 	config_setting_set_int(self->umon_setting.disp_width,
     self->screen_t_p->screen->width_in_pixels);
-	printf("Screen height in pixels: %d\n",self->screen_t_p->screen->height_in_pixels);
+	//if (VERBOSE) printf("Screen height in pixels: %d\n",self->screen_t_p->screen->height_in_pixels);
 	config_setting_set_int(self->umon_setting.disp_height,
     self->screen_t_p->screen->height_in_pixels);
 	//printf("Screen width in millimeters: %d\n",self->screen_t_p->screen->width_in_millimeters);
@@ -101,17 +101,11 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
 static void output_info_to_config(save_profile_class *self){
 
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
-	xcb_randr_get_output_property_cookie_t output_property_cookie;
-	xcb_randr_get_output_property_reply_t *output_property_reply;
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 
 	char *edid_string,*output_name;
-	uint8_t *output_property_data;
-	int output_property_length;
-	uint8_t delete = 0;
-	uint8_t pending = 0;
 
 	output_info_cookie =
 	xcb_randr_get_output_info(self->screen_t_p->c, *(self->cur_output),
@@ -149,47 +143,20 @@ static void output_info_to_config(save_profile_class *self){
 	self->umon_setting.pos_y =
    config_setting_add(self->umon_setting.pos_group,"y",CONFIG_TYPE_INT);
 
-  //self->umon_setting.crtc_id =
-//     config_setting_add(self->umon_setting.output_group,"crtc_id",
-//       CONFIG_TYPE_INT);
-//   self->umon_setting.mode_id =
-//     config_setting_add(self->umon_setting.output_group,"mode_id",
-//       CONFIG_TYPE_INT);
-
-
-
-
 	if (VERBOSE) printf("Finish setting up settings\n");
-	output_property_cookie = xcb_randr_get_output_property(self->screen_t_p->c,
-		*(self->cur_output),self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
-    delete,pending);
 
 	crtc_info_cookie =
   xcb_randr_get_crtc_info(self->screen_t_p->c,output_info_reply->crtc,
 			self->screen_t_p->screen_resources_reply->config_timestamp);
 
-
-
 	if (VERBOSE) printf("cookies done\n");
 	self->crtc_info_reply =
   xcb_randr_get_crtc_info_reply(self->screen_t_p->c,crtc_info_cookie,
     &self->screen_t_p->e);
-	output_property_reply = xcb_randr_get_output_property_reply(
-		self->screen_t_p->c,output_property_cookie,&self->screen_t_p->e);
-
-	//if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
-	output_property_data = xcb_randr_get_output_property_data(
-		output_property_reply);
-	output_property_length = xcb_randr_get_output_property_data_length(
-		output_property_reply);
 
 	if (VERBOSE) printf("Finish fetching info from server\n");
-	edid_to_string(output_property_data,output_property_length,
-		&edid_string);
-	printf("Am I here?\n");
-	printf("edid_string: %s\n",edid_string);
+	fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
 	config_setting_set_string(self->umon_setting.edid_setting,edid_string);
-	//config_setting_set_string(self->umon_setting.edid_setting,"blah");
 	// Free edid_string?
 
 	// Need to find the mode info now
@@ -199,16 +166,13 @@ static void output_info_to_config(save_profile_class *self){
 
 	config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
-  // config_setting_set_int(self->umon_setting.crtc_id,
-    //(int) output_info_reply->crtc);
-
 
 }
 
 static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 
 	int num_screen_modes,k;
-	//char res_string[10];
+
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
   save_profile_class *self = (save_profile_class *) self_void;
 	if (VERBOSE) printf("current mode id %d\n",*mode_id_p);

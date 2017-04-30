@@ -1,6 +1,6 @@
 #include "classes.h"
 
-extern void edid_to_string(uint8_t *edid, int length, char **edid_string);
+extern void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
 extern void for_each_output(
 	void *self,
 	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,

@@ -25,7 +25,7 @@ extern void for_each_output_mode(
   xcb_randr_get_output_info_reply_t *output_info_reply,
 	void (*callback)(void *,xcb_randr_mode_t *)
 );
-extern void edid_to_string(uint8_t *edid, int length, char **edid_string);
+extern void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
 
 extern const char *const CONFIG_FILE;
 extern int VERBOSE;

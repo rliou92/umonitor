@@ -6,7 +6,7 @@ const char *const CONFIG_FILE = "umon2.conf";
 int VERBOSE = 0;
 
 // Some helper functions
-void edid_to_string(uint8_t *edid, int length, char **edid_string);
+void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
 void for_each_output(
 	void *self,
 	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,

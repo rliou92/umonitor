@@ -65,8 +65,6 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
   const char *conf_edid;
 	char *edid_string;
 
-  xcb_randr_get_output_property_cookie_t output_property_cookie;
-  xcb_randr_get_output_property_reply_t *output_property_reply;
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 
@@ -75,17 +73,9 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
   // xcb_randr_get_output_info_reply_t *output_info_reply;
 
   int j,output_match_unique;
-	uint8_t *output_property_data;
-	int output_property_length;
-	uint8_t delete = 0;
-	uint8_t pending = 0;
+
 	config_setting_t *group;
 
-  output_property_cookie = xcb_randr_get_output_property(self->screen_t_p->c,
-    *(output_p),self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
-    delete,pending);
-  output_property_reply = xcb_randr_get_output_property_reply(
-      self->screen_t_p->c,output_property_cookie,&self->screen_t_p->e);
 	output_info_cookie =
 	xcb_randr_get_output_info(self->screen_t_p->c, *output_p,
 		XCB_CURRENT_TIME);
@@ -97,14 +87,8 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 		if (VERBOSE) printf("Found output that is connected \n");
 			self->num_conn_outputs++;
 
-			output_property_data = xcb_randr_get_output_property_data(
-		    output_property_reply);
-		  output_property_length = xcb_randr_get_output_property_data_length(
-		    output_property_reply);
-
 		  if (VERBOSE) printf("Finish fetching info from server\n");
-		  edid_to_string(output_property_data,output_property_length,
-		    &edid_string);
+		  fetch_edid(output_p,self->screen_t_p,&edid_string);
 
 		  output_match_unique = 0;
 		  for(j=0;j<self->num_out_pp;j++){

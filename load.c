@@ -73,10 +73,10 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 		//Ignore saved widthMM and heightMM
 		int widthMM = 25.4*self->umon_setting_val.screen.width/96;
 		int heightMM = 25.4*self->umon_setting_val.screen.height/96;
-    printf("screen size width: %d\n",self->umon_setting_val.screen.width);
-    printf("screen size height: %d\n",self->umon_setting_val.screen.height);
-    printf("screen size widthmm: %d\n",widthMM);
-    printf("screen size heightmm: %d\n",heightMM);
+    // printf("screen size width: %d\n",self->umon_setting_val.screen.width);
+    // printf("screen size height: %d\n",self->umon_setting_val.screen.height);
+    // printf("screen size widthmm: %d\n",widthMM);
+    // printf("screen size heightmm: %d\n",heightMM);
     // TODO don't believe this is working
     xcb_void_cookie_t void_cookie = xcb_randr_set_screen_size(self->screen_t_p->c,
       self->screen_t_p->screen->root,(uint16_t)self->umon_setting_val.screen.width,
@@ -91,7 +91,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   }
 
   if (!VERBOSE) {
-    printf("enable crtcs here\n");
+    //printf("enable crtcs here\n");
     // TODO check if the crtc can actually be connected to the output
     i = 0;
     for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;cur_crtc_param=cur_crtc_param->next){
@@ -99,7 +99,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	// printf("*(cur_crtc_param->crtc_p): %d\n",cur_crtc);
 	// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
 	// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
-    printf("Enabling crtc %d\n",cur_crtc_param->crtc);
+    //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
      crtc_config_p = xcb_randr_set_crtc_config(self->screen_t_p->c,
         cur_crtc_param->crtc,
         XCB_CURRENT_TIME,XCB_CURRENT_TIME,
@@ -117,60 +117,28 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     printf("Would enable crtcs here\n");
   }
 
-//	if (!VERBOSE) {
-//    printf("screen size width: %d\n",self->umon_setting_val.screen.width);
-//    printf("screen size height: %d\n",self->umon_setting_val.screen.height);
-//    printf("screen size widthmm: %d\n",self->umon_setting_val.screen.widthMM);
-//    printf("screen size heightmm: %d\n",self->umon_setting_val.screen.heightMM);
-//    // TODO don't believe this is working
-//    xcb_void_cookie_t void_cookie = xcb_randr_set_screen_size_checked(self->screen_t_p->c,
-//      self->screen_t_p->screen->root,(uint16_t)self->umon_setting_val.screen.width,
-//      (uint16_t)self->umon_setting_val.screen.height,
-//      (uint32_t)self->umon_setting_val.screen.widthMM,
-//      (uint32_t)self->umon_setting_val.screen.heightMM);
-//      xcb_flush(self->screen_t_p->c);
-//    printf("change screen size here\n");
-//	}
-//  else{
-//    printf("Would change screen size here\n");
-//  }
-
 }
 
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
-  xcb_randr_get_output_property_cookie_t output_property_cookie;
-  xcb_randr_get_output_property_reply_t *output_property_reply;
   load_class *self = (load_class *) self_void;
 
 	char *edid_string;
-	uint8_t *output_property_data;
-	int output_property_length;
-	uint8_t delete = 0;
-	uint8_t pending = 0;
 
   self->cur_output = output_p;
 	output_info_cookie =
 	xcb_randr_get_output_info(self->screen_t_p->c,*output_p,XCB_CURRENT_TIME);
 
   // TODO Duplicate code, fetching edid info
-	output_property_cookie = xcb_randr_get_output_property(self->screen_t_p->c,
-    *output_p,self->screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
-    delete,pending);
+
 	self->output_info_reply =
 		xcb_randr_get_output_info_reply (self->screen_t_p->c,output_info_cookie,
       &self->screen_t_p->e);
-	output_property_reply = xcb_randr_get_output_property_reply(
-		self->screen_t_p->c,output_property_cookie,&self->screen_t_p->e);
-	output_property_data = xcb_randr_get_output_property_data(
-		output_property_reply);
-	output_property_length = xcb_randr_get_output_property_data_length(
-		output_property_reply);
 
-	edid_to_string(output_property_data,output_property_length,
-		&edid_string);
+
+	fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
 
 	if (VERBOSE) printf("Num out pp: %d\n",self->num_out_pp);
 
@@ -181,33 +149,19 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 			// Found a match between the configuration file edid and currently connected edid. Now have to load correct settings.
 			// Need to find the proper crtc to assign the output
 			// Which crtc has the same resolution?
-			// for_each_output_mode((void *) self,self->output_info_reply,
-      //   find_mode_id);
+
       find_mode_id(self);
-			//find_crtc_by_res(mySett.res_x,mySett.res_y);
-			// Connect correct crtc to correct output
-
-  //
-	// printf("*(cur_crtc_param->crtc_p): %d\n",self->umon_setting_val.outputs[self->conf_output_idx].crtc_id);
-	// printf("cur_crtc_param->output_p: %d\n",self->cur_output);
-	// printf("*(cur_crtc_param->mode_id_p): %d\n",
-  //   self->umon_setting_val.outputs[self->conf_output_idx].mode_id);
-			//crtc_config_p = xcb_randr_set_crtc_config(c,crtcs_p[i],XCB_CURRENT_TIME, self->screen_t_p->screen_resources_reply->config_timestamp,0,0,XCB_NONE,  XCB_RANDR_ROTATION_ROTATE_0,NULL,0);
-
-
 
 		}
 
 	}
-
-
 
 }
 
 static void find_mode_id(load_class *self){
 
   int num_screen_modes,k;
-	//char res_string[10];
+
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
   set_crtc_param *new_crtc_param;
 
@@ -234,8 +188,7 @@ static void find_mode_id(load_class *self){
            new_crtc_param->output_p = self->cur_output;
            new_crtc_param->next = self->crtc_param_head;
            self->crtc_param_head = new_crtc_param;
-       //config_setting_set_int(self->umon_setting.mode_id,
-           //(int) *mode_id_p);
+
 			 }
 			xcb_randr_mode_info_next(&mode_info_iterator);
 
@@ -255,12 +208,14 @@ static xcb_randr_crtc_t find_available_crtc(load_class *self,int offset){
     self->screen_t_p->screen_resources_reply);
   int num_available_crtcs = self->screen_t_p->screen_resources_reply->num_crtcs;
 
+  if (VERBOSE) printf("num_available_crtcs: %d\n",num_available_crtcs);
+  if (VERBOSE) printf("num_output_crtcs: %d\n",num_output_crtcs);
+
   for (int i=0;i<num_available_crtcs;++i){
     for (int j=0;j<num_output_crtcs;++j){
         if (available_crtcs[i] == output_crtcs[j]){
-  printf("offset crtc: %d\n",offset);
-  		if(!(offset--)) return available_crtcs[i];
-          // This is returning the same crtc unfortunately
+          //if (VERBOSE) printf("offset crtc: %d\n",offset);
+          if(!(offset--)) return available_crtcs[i];
         }
       }
   }
