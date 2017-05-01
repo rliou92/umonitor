@@ -88,6 +88,7 @@ typedef struct _load_class{
   xcb_randr_get_output_info_reply_t *output_info_reply;
   set_crtc_param *crtc_param_head;
   config_setting_t *profile_group;
+  xcb_timestamp_t last_time;
 
   // Methods
   void (*load_profile)(struct _load_class *,config_setting_t *);

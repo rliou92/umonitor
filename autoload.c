@@ -16,6 +16,7 @@ void autoload_constructor(autoload_class *self,screen_class *screen_o,config_t *
 
 	self->find_profile_and_load = find_profile_and_load;
   load_class_constructor(&(self->load_o),screen_o,config);
+  self->load_o.last_time = 0;
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
@@ -31,19 +32,35 @@ static void wait_for_event(autoload_class *self){
 
 	xcb_generic_event_t *evt;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
-	xcb_timestamp_t last_time;
+
 
 	while(1){
+
+  printf("Waiting for event\n");
 	evt = xcb_wait_for_event(self->screen_t_p->c);
 	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
 		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+    printf("event received, should I load?\n");
+    printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
+    //printf("Last time of configuration: %d\n",self->load_o.last_time);
+    printf("Time of event: %" PRIu32 "\n",randr_evt->config_timestamp);
+    //printf("Time of event: %d\n",randr_evt->config_timestamp);
+
+    // This comparison is not working
+    if (randr_evt->timestamp > self->load_o.last_time){
+      printf("Now I should load\n");
+      self->screen_t_p->update_screen(self->screen_t_p);
+      find_profile_and_load(self);
+    }
 			// Find matching profile
 			// Get total connected outputs
-		printf("event received\n");
-			find_profile_and_load(self);
+
 			sleep(1);
-	xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
-		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+          self->screen_t_p->update_screen(self->screen_t_p);
+          xcb_flush(self->screen_t_p->c);
+
+	//xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
+		//XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
 //	evt = xcb_wait_for_event(self->screen_t_p->c);
 //		printf("event received\n");
 //	evt = xcb_wait_for_event(self->screen_t_p->c);
@@ -123,7 +140,6 @@ static void find_profile_and_load(autoload_class *self){
 
   config_setting_t *root,*cur_profile;
 
-  self->screen_t_p->update_screen(self->screen_t_p);
 
   root = config_root_setting(self->config);
   int num_profiles = config_setting_length(root);

@@ -56,6 +56,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     else{
       printf("Would disable crtcs here\n");
     }
+
 	}
 
 // 	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
@@ -96,7 +97,6 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     i = 0;
     for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;cur_crtc_param=cur_crtc_param->next){
 
-	// printf("*(cur_crtc_param->crtc_p): %d\n",cur_crtc);
 	// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
 	// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
     //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
@@ -105,9 +105,13 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
         XCB_CURRENT_TIME,XCB_CURRENT_TIME,
         cur_crtc_param->pos_x,
         cur_crtc_param->pos_y,
-        cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1, cur_crtc_param->output_p);
+        cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
+        cur_crtc_param->output_p);
     //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
-    crtc_config_reply_pp = xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p,&self->screen_t_p->e);
+    crtc_config_reply_pp =
+     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_p,
+       &self->screen_t_p->e);
+         //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
     xcb_flush(self->screen_t_p->c);
     //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
 
@@ -116,6 +120,9 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   else{
     printf("Would enable crtcs here\n");
   }
+
+  self->last_time = crtc_config_reply_pp->timestamp;
+
 
 }
 
@@ -179,6 +186,7 @@ static void find_mode_id(load_class *self){
 			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
            new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
            new_crtc_param->crtc = find_available_crtc(self,self->crtc_offset++);
+           printf("Queing up crtc to load: %d\n",new_crtc_param->crtc);
            new_crtc_param->pos_x =
              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
            new_crtc_param->pos_y =
