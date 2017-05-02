@@ -16,7 +16,7 @@ void autoload_constructor(autoload_class *self,screen_class *screen_o,config_t *
 
 	self->find_profile_and_load = find_profile_and_load;
   load_class_constructor(&(self->load_o),screen_o,config);
-  self->load_o.last_time = 0;
+  self->load_o.last_time = (xcb_timestamp_t) 0;
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
@@ -43,11 +43,18 @@ static void wait_for_event(autoload_class *self){
     printf("event received, should I load?\n");
     printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
     //printf("Last time of configuration: %d\n",self->load_o.last_time);
-    printf("Time of event: %" PRIu32 "\n",randr_evt->config_timestamp);
+    printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
     //printf("Time of event: %d\n",randr_evt->config_timestamp);
+    xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
+    printf("Time difference: %" PRIu32 "\n",time_difference);
+
+    time_t raw_time = (time_t) randr_evt->timestamp;
+    struct tm *timeinfo = localtime (&raw_time);
+    printf ("Time and date: %s", asctime(timeinfo));
+     //timedifference
 
     // This comparison is not working
-    if (randr_evt->timestamp > self->load_o.last_time){
+    if (randr_evt->timestamp >= self->load_o.last_time){
       printf("Now I should load\n");
       self->screen_t_p->update_screen(self->screen_t_p);
       find_profile_and_load(self);
@@ -56,7 +63,7 @@ static void wait_for_event(autoload_class *self){
 			// Get total connected outputs
 
 			sleep(1);
-          self->screen_t_p->update_screen(self->screen_t_p);
+          //self->screen_t_p->update_screen(self->screen_t_p);
           xcb_flush(self->screen_t_p->c);
 
 	//xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
@@ -68,8 +75,9 @@ static void wait_for_event(autoload_class *self){
 			//Self triggering right now
 
 	}
+  free(evt);
 	}
-	free(evt);
+
 
 //xcb_disconnect(conn);
 }
