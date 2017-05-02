@@ -10,7 +10,6 @@
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <stdarg.h>
-#include <time.h>
 
 
 typedef struct _screen_class{
@@ -21,7 +20,6 @@ typedef struct _screen_class{
   xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
 
   void (*update_screen)(struct _screen_class*);
-
 
 }screen_class;
 

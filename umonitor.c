@@ -124,6 +124,10 @@ int main(int argc, char **argv) {
 	}
 
 	// Free things
+	// Screen destructor
+	screen_class_destructor(&screen_o);
+
+	config_destroy(&config);
 
 }
 
@@ -143,6 +147,7 @@ void for_each_output(
 		for (i=0; i<outputs_length; ++i){
 			callback(self,output_p++);
 		}
+
 }
 
 void for_each_output_mode(
@@ -206,5 +211,6 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	}
 	*(*edid_string+z) = '\0';
 
+	free(output_property_reply);
 	if (VERBOSE) printf("Finished edid_to_string\n");
 }

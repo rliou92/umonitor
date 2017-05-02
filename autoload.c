@@ -78,7 +78,7 @@ static void wait_for_event(autoload_class *self){
 	}
 
 
-//xcb_disconnect(conn);
+
 }
 
 
