@@ -61,19 +61,20 @@ typedef struct {
 		*pos_group,*status,*edid_setting,*crtc_id,*mode_id;
 }umon_setting_t;
 
-typedef struct _save_profile_class{
+typedef struct _save_class{
   // Inheriting classes
   screen_class *screen_t_p;
 
   // Variables
   umon_setting_t umon_setting;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
+  xcb_randr_get_output_info_reply_t *output_info_reply;
   xcb_randr_output_t *cur_output;
   config_t *config;
 
   // Methods
-  void (*save_profile)(struct _save_profile_class *,config_setting_t *);
-}save_profile_class;
+  void (*save_profile)(struct _save_class *,config_setting_t *);
+}save_class;
 
 typedef struct _load_class{
   // Inheriting classes

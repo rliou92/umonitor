@@ -5,17 +5,16 @@ int main(int argc, char **argv) {
 	int load = 0;
 	int delete = 0;
 	int test_event = 0;
-	save_profile_class *save_profile_o;
+	save_class *save_o;
 	load_class *load_o;
 	autoload_class *autoload_o;
+	screen_class screen_o;
 
 	config_t config;
 	config_setting_t *root, *profile_group;
 	char* profile_name;
 
 	int i, cfg_idx;
-
-	screen_class screen_o;
 
 	config_init(&config);
 
@@ -56,7 +55,6 @@ int main(int argc, char **argv) {
 	}
 
 	screen_class_constructor(&screen_o);
-
 
 	if (config_read_file(&config, CONFIG_FILE)) {
 		if (VERBOSE) printf("Detected existing configuration file\n");
@@ -104,9 +102,11 @@ int main(int argc, char **argv) {
 		*/
 		root = config_root_setting(&config);
 		profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
-		save_profile_o = (save_profile_class *) malloc(sizeof(save_profile_class));
-		save_profile_class_constructor(save_profile_o,&screen_o,&config);
-		save_profile_o->save_profile(save_profile_o,profile_group);
+
+		save_class_constructor(&save_o,&screen_o,&config);
+		save_o->save_profile(save_o,profile_group);
+		save_class_destructor(save_o);
+		//free save_o
 	}
 
 	if (test_event){
@@ -122,6 +122,9 @@ int main(int argc, char **argv) {
 			exit(3);
 		}
 	}
+
+	// Free things
+
 }
 
 void for_each_output(

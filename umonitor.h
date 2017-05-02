@@ -25,7 +25,9 @@ void for_each_output_mode(
 
 // extern
 extern void screen_class_constructor(screen_class *);
-extern void save_profile_class_constructor(save_profile_class *,
-  screen_class *,config_t *);
+extern void save_class_constructor(save_class **,screen_class *,
+	config_t *);
+extern void save_class_destructor(save_class *);
+
 extern void load_class_constructor(load_class *,screen_class *,config_t *);
 extern void autoload_constructor(autoload_class *,screen_class *,config_t *);

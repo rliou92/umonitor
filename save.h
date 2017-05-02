@@ -2,16 +2,17 @@
 
 
 
-void save_profile_class_constructor(save_profile_class *,screen_class *,
+void save_profile_class_constructor(save_class **,screen_class *,
   config_t *);
+void save_class_destructor(save_class *);
 
 // Public methods
-static void save_profile(save_profile_class *,config_setting_t *);
+static void save_profile(save_class *,config_setting_t *);
 
 // Private methods
-static void output_info_to_config(save_profile_class *);
+static void output_info_to_config(save_class *);
 static void find_res_to_config(void *,xcb_randr_mode_t *);
-static void disabled_to_config(save_profile_class *);
+static void disabled_to_config(save_class *);
 static void check_output_status(void *,xcb_randr_output_t *);
 
 // Extern functions
