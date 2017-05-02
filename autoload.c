@@ -40,20 +40,19 @@ static void wait_for_event(autoload_class *self){
 	evt = xcb_wait_for_event(self->screen_t_p->c);
 	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
 		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
-    printf("event received, should I load?\n");
-    printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
+    //printf("event received, should I load?\n");
+    //printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
     //printf("Last time of configuration: %d\n",self->load_o.last_time);
-    printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
+    //printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
     //printf("Time of event: %d\n",randr_evt->config_timestamp);
-    xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
-    printf("Time difference: %" PRIu32 "\n",time_difference);
+    //xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
+    //printf("Time difference: %" PRIu32 "\n",time_difference);
 
-    time_t raw_time = (time_t) randr_evt->timestamp;
-    struct tm *timeinfo = localtime (&raw_time);
-    printf ("Time and date: %s", asctime(timeinfo));
+    //time_t raw_time = (time_t) randr_evt->timestamp;
+    //struct tm *timeinfo = localtime (&raw_time);
+    //printf ("Time and date: %s", asctime(timeinfo));
      //timedifference
 
-    // This comparison is not working
     if (randr_evt->timestamp >= self->load_o.last_time){
       printf("Now I should load\n");
       self->screen_t_p->update_screen(self->screen_t_p);

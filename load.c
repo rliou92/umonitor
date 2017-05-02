@@ -100,6 +100,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
 	// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
     //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
+    printf("About to load this pos_x: %d\n",cur_crtc_param->pos_x);
      crtc_config_p = xcb_randr_set_crtc_config(self->screen_t_p->c,
         cur_crtc_param->crtc,
         XCB_CURRENT_TIME,XCB_CURRENT_TIME,
@@ -122,7 +123,8 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   }
 
   self->last_time = crtc_config_reply_pp->timestamp;
-
+  // Need to worry about freeing
+  self->crtc_param_head = NULL;
 
 }
 
@@ -189,6 +191,7 @@ static void find_mode_id(load_class *self){
            printf("Queing up crtc to load: %d\n",new_crtc_param->crtc);
            new_crtc_param->pos_x =
              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
+           printf("pos_x: %d\n",new_crtc_param->pos_x);
            new_crtc_param->pos_y =
              self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
            new_crtc_param->mode_id =
@@ -235,7 +238,6 @@ static xcb_randr_crtc_t find_available_crtc(load_class *self,int offset){
 
 static void load_config_val(load_class *self){
 
-	// TODO should use an array of structures
 	config_setting_t *mon_group,*group,*res_group,*pos_group;
 	int i;
 	mon_group = config_setting_lookup(self->profile_group,"Monitors");
