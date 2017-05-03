@@ -1,32 +1,33 @@
 #include "autoload.h"
 
+void autoload_constructor(autoload_class **self,screen_class *screen_o,
+  config_t *config){
 
+	*self = (autoload_class *) malloc(sizeof(autoload_class));
 
+  (*self)->screen_t_p = screen_o;
+  (*self)->config = config;
+	(*self)->wait_for_event = wait_for_event;
 
-void autoload_constructor(autoload_class *self,screen_class *screen_o,config_t *config){
-
-
-  //int i,j,output_match_unique=0,num_profiles;
-
-
-
-  self->screen_t_p = screen_o;
-  self->config = config;
-	self->wait_for_event = wait_for_event;
-
-	self->find_profile_and_load = find_profile_and_load;
-  load_class_constructor(&(self->load_o),screen_o,config);
-  self->load_o.last_time = (xcb_timestamp_t) 0;
+	(*self)->find_profile_and_load = find_profile_and_load;
+  load_class_constructor(&((*self)->load_o),screen_o,config);
+  (*self)->load_o->last_time = (xcb_timestamp_t) 0;
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
 		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
   xcb_flush(screen_o->c);
 
+}
 
+void autoload_destructor(autoload_class *self){
+
+  load_class_destructor(self->load_o);
+  free(self);
 
 
 }
+
 
 static void wait_for_event(autoload_class *self){
 
@@ -36,45 +37,45 @@ static void wait_for_event(autoload_class *self){
 
 	while(1){
 
-  printf("Waiting for event\n");
-	evt = xcb_wait_for_event(self->screen_t_p->c);
-	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
-		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
-    //printf("event received, should I load?\n");
-    //printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
-    //printf("Last time of configuration: %d\n",self->load_o.last_time);
-    //printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
-    //printf("Time of event: %d\n",randr_evt->config_timestamp);
-    //xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
-    //printf("Time difference: %" PRIu32 "\n",time_difference);
+    printf("Waiting for event\n");
+  	evt = xcb_wait_for_event(self->screen_t_p->c);
+  	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
+  		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+      //printf("event received, should I load?\n");
+      //printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
+      //printf("Last time of configuration: %d\n",self->load_o.last_time);
+      //printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
+      //printf("Time of event: %d\n",randr_evt->config_timestamp);
+      //xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
+      //printf("Time difference: %" PRIu32 "\n",time_difference);
 
-    //time_t raw_time = (time_t) randr_evt->timestamp;
-    //struct tm *timeinfo = localtime (&raw_time);
-    //printf ("Time and date: %s", asctime(timeinfo));
-     //timedifference
+      //time_t raw_time = (time_t) randr_evt->timestamp;
+      //struct tm *timeinfo = localtime (&raw_time);
+      //printf ("Time and date: %s", asctime(timeinfo));
+       //timedifference
 
-    if (randr_evt->timestamp >= self->load_o.last_time){
-      printf("Now I should load\n");
-      self->screen_t_p->update_screen(self->screen_t_p);
-      find_profile_and_load(self);
-    }
-			// Find matching profile
-			// Get total connected outputs
+      if (randr_evt->timestamp >= self->load_o->last_time){
+        printf("Now I should load\n");
+        self->screen_t_p->update_screen(self->screen_t_p);
+        find_profile_and_load(self);
+      }
+  			// Find matching profile
+  			// Get total connected outputs
 
-			sleep(1);
-          //self->screen_t_p->update_screen(self->screen_t_p);
-          xcb_flush(self->screen_t_p->c);
+  		sleep(1);
+            //self->screen_t_p->update_screen(self->screen_t_p);
+      xcb_flush(self->screen_t_p->c);
 
-	//xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
-		//XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
-//	evt = xcb_wait_for_event(self->screen_t_p->c);
-//		printf("event received\n");
-//	evt = xcb_wait_for_event(self->screen_t_p->c);
-//		printf("event received\n");
-			//Self triggering right now
+  	//xcb_randr_select_input(self->screen_t_p->c,self->screen_t_p->screen->root,
+  		//XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+  //	evt = xcb_wait_for_event(self->screen_t_p->c);
+  //		printf("event received\n");
+  //	evt = xcb_wait_for_event(self->screen_t_p->c);
+  //		printf("event received\n");
+  			//Self triggering right now
 
-	}
-  free(evt);
+  	}
+    free(evt);
 	}
 
 
@@ -91,10 +92,6 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
-
-
-  // xcb_randr_get_output_info_cookie_t output_info_cookie;
-  // xcb_randr_get_output_info_reply_t *output_info_reply;
 
   int j,output_match_unique;
 
@@ -119,26 +116,28 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 			    printf("output match, %d\n",self->output_match);
 
 			    printf("output_match_unique, %d\n",output_match_unique);
-		    group = config_setting_get_elem(self->mon_group,j);
-		    config_setting_lookup_string(group,"EDID",&conf_edid);
-		    printf("conf_edid: %s\n",conf_edid);
-		    printf("edid_string: %s\n",edid_string);
-		    if (!strcmp(conf_edid,edid_string)){
-		      output_match_unique++;
-			    printf("match, %d\n",output_match_unique);
-		    }
+  		    group = config_setting_get_elem(self->mon_group,j);
+  		    config_setting_lookup_string(group,"EDID",&conf_edid);
+  		    printf("conf_edid: %s\n",conf_edid);
+  		    printf("edid_string: %s\n",edid_string);
+  		    if (!strcmp(conf_edid,edid_string)){
+  		      output_match_unique++;
+  			    printf("match, %d\n",output_match_unique);
+  		    }
 		  }
 
 		  if (output_match_unique == 1){
-			    printf("output match, %d\n",self->output_match);
+			  printf("output match, %d\n",self->output_match);
 		    self->output_match++;
-			    printf("output match, %d\n",self->output_match);
+        printf("output match, %d\n",self->output_match);
 		  }
 		}
 		else {
 			// TODO just disable
 		}
 
+    free(edid_string);
+    free(output_info_reply);
   //if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 
 }
@@ -167,11 +166,10 @@ static void find_profile_and_load(autoload_class *self){
       printf("self->num_out_pp: %d\n",self->num_out_pp);
       printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
       if ((self->output_match == self->num_out_pp) && (self->num_out_pp == self->num_conn_outputs)){
-
 	      //Only loads first matching profile
 				if (VERBOSE) printf("Found matching profile\n");
-        self->load_o.load_profile(&(self->load_o),cur_profile);
-	break;
+        self->load_o->load_profile(self->load_o,cur_profile);
+      	break;
       }
     //}
   }

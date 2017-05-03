@@ -85,7 +85,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     // printf("screen size widthmm: %d\n",widthMM);
     // printf("screen size heightmm: %d\n",heightMM);
     // TODO believe this is working
-    xcb_void_cookie_t void_cookie =
+    //xcb_void_cookie_t void_cookie =
       xcb_randr_set_screen_size(self->screen_t_p->c,
         self->screen_t_p->screen->root,
         (uint16_t)self->umon_setting_val.screen.width,

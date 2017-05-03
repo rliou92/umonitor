@@ -94,7 +94,7 @@ typedef struct _load_class{
 typedef struct _autoload_class{
   // Inheriting classes
   screen_class *screen_t_p;
-  load_class load_o;
+  load_class *load_o;
 
   // Variables
   config_t *config;
