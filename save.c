@@ -134,6 +134,7 @@ static void output_info_to_config(save_class *self){
 
   fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
 	config_setting_set_string(self->umon_setting.edid_setting,edid_string);
+  free(edid_string);
 
 	crtc_info_cookie =
   xcb_randr_get_crtc_info(self->screen_t_p->c,self->output_info_reply->crtc,
@@ -148,8 +149,6 @@ static void output_info_to_config(save_class *self){
 
 
 	//if (VERBOSE) printf("Finish fetching info from server\n");
-
-	// Free edid_string?
 
 	// Need to find the mode info now
 	// Look at output crtc

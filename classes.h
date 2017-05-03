@@ -79,16 +79,13 @@ typedef struct _load_class{
   screen_class *screen_t_p;
 
   // Variables
-  // TODO some might be unused
   umon_setting_val_t umon_setting_val;
-  xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
-  xcb_randr_output_t *cur_output;
-  config_t *config;
-  int conf_output_idx,num_out_pp,crtc_offset;
   xcb_randr_get_output_info_reply_t *output_info_reply;
+  xcb_randr_output_t *cur_output;
+  int conf_output_idx,num_out_pp,crtc_offset;
   set_crtc_param *crtc_param_head;
   config_setting_t *profile_group;
-  volatile xcb_timestamp_t last_time;
+  xcb_timestamp_t last_time;
 
   // Methods
   void (*load_profile)(struct _load_class *,config_setting_t *);

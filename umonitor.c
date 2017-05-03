@@ -65,9 +65,9 @@ int main(int argc, char **argv) {
 			profile_group = config_lookup(&config,profile_name);
 
 			if (profile_group != NULL) {
-				load_o = (load_class *) malloc(sizeof(load_class));
-				load_class_constructor(load_o,&screen_o,&config);
+				load_class_constructor(&load_o,&screen_o);
 				load_o->load_profile(load_o,profile_group);
+				load_class_destructor(load_o);
 			}
 			else {
 				printf("No profile found\n");
