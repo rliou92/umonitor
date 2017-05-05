@@ -52,21 +52,20 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
 	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
     if (!VERBOSE) {
-		//crtc_config_p[i] =
-	printf("Disabling this crtc: %d\n",crtcs_p[i]);
-    crtc_config_cookie =
-     xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
-      XCB_CURRENT_TIME,
-      XCB_CURRENT_TIME,0,0,XCB_NONE,
-      XCB_RANDR_ROTATION_ROTATE_0,0,NULL);
-    // TODO Do I need to fetch the reply for the code to work?
-    crtc_config_reply =
-     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-       &self->screen_t_p->e);
-    free(crtc_config_reply);
+		  //crtc_config_p[i] =
+      printf("Disabling this crtc: %d\n",crtcs_p[i]);
+      crtc_config_cookie =
+      xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
+        XCB_CURRENT_TIME,
+        XCB_CURRENT_TIME,0,0,XCB_NONE,
+        XCB_RANDR_ROTATION_ROTATE_0,0,NULL);
+      // TODO Do I need to fetch the reply for the code to work?
+      crtc_config_reply =
+        xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+          &self->screen_t_p->e);
+      free(crtc_config_reply);
 
-
-    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->status);
+      //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->status);
       //printf("disable crtcs here\n");
     }
     else{

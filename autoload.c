@@ -37,17 +37,16 @@ static void wait_for_event(autoload_class *self){
 
 	while(1){
 
-    printf("Waiting for event\n");
+    if (VERBOSE) printf("Waiting for event\n");
   	evt = xcb_wait_for_event(self->screen_t_p->c);
   	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
   		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
       //printf("event received, should I load?\n");
       //printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
-      //printf("Last time of configuration: %d\n",self->load_o.last_time);
-      //printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
-      //printf("Time of event: %d\n",randr_evt->config_timestamp);
-      //xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o.last_time;
-      //printf("Time difference: %" PRIu32 "\n",time_difference);
+      if (VERBOSE) printf("Last time of configuration: %d\n",self->load_o->last_time);
+      if (VERBOSE) printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
+      xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o->last_time;
+      if (VERBOSE) printf("Time difference: %" PRIu32 "\n",time_difference);
 
       //time_t raw_time = (time_t) randr_evt->timestamp;
       //struct tm *timeinfo = localtime (&raw_time);
@@ -55,7 +54,7 @@ static void wait_for_event(autoload_class *self){
        //timedifference
 
       if (randr_evt->timestamp >= self->load_o->last_time){
-        printf("Now I should load\n");
+        if (VERBOSE) printf("Now I should load\n");
         self->screen_t_p->update_screen(self->screen_t_p);
         find_profile_and_load(self);
       }
@@ -124,7 +123,9 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
   		      output_match_unique++;
   			    printf("match, %d\n",output_match_unique);
   		    }
+
 		  }
+      free(edid_string);
 
 		  if (output_match_unique == 1){
 			  printf("output match, %d\n",self->output_match);
@@ -136,7 +137,7 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 			// TODO just disable
 		}
 
-    free(edid_string);
+
     free(output_info_reply);
   //if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 
@@ -145,13 +146,13 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 static void find_profile_and_load(autoload_class *self){
 
   config_setting_t *root,*cur_profile;
-
+  int profile_found = 0;
 
   root = config_root_setting(self->config);
   int num_profiles = config_setting_length(root);
 	if (VERBOSE) printf("Number of profiles:%d\n",num_profiles);
   for (int i=0;i<num_profiles;i++){
-	  printf("NEW PROFILE\n");
+	  if (VERBOSE) printf("NEW PROFILE\n");
     self->output_match = 0;
     cur_profile = config_setting_get_elem(root,i);
     self->mon_group = config_setting_lookup(cur_profile,"Monitors");
@@ -159,19 +160,22 @@ static void find_profile_and_load(autoload_class *self){
 
     //if (self->num_out_pp ==
        //self->screen_t_p->screen_resources_reply->num_outputs){
-			 self->num_conn_outputs = 0;
-      for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
-        match_with_profile);
-      printf("self->output_match: %d\n",self->output_match);
-      printf("self->num_out_pp: %d\n",self->num_out_pp);
-      printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
-      if ((self->output_match == self->num_out_pp) && (self->num_out_pp == self->num_conn_outputs)){
-	      //Only loads first matching profile
-				if (VERBOSE) printf("Found matching profile\n");
-        self->load_o->load_profile(self->load_o,cur_profile);
-      	break;
-      }
+		self->num_conn_outputs = 0;
+    for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
+      match_with_profile);
+    printf("self->output_match: %d\n",self->output_match);
+    printf("self->num_out_pp: %d\n",self->num_out_pp);
+    printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
+    if ((self->output_match == self->num_out_pp) &&
+        (self->num_out_pp == self->num_conn_outputs)){
+      //Only loads first matching profile
+			if (VERBOSE) printf("Found matching profile\n");
+      profile_found = 1;
+      self->load_o->load_profile(self->load_o,cur_profile);
+    	break;
+    }
     //}
   }
+  if (!profile_found) printf("No profile found!\n");
 
 }
