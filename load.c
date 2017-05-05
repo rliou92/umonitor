@@ -53,7 +53,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
     if (!VERBOSE) {
 		  //crtc_config_p[i] =
-      printf("Disabling this crtc: %d\n",crtcs_p[i]);
+      //printf("Disabling this crtc: %d\n",crtcs_p[i]);
       crtc_config_cookie =
       xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
         XCB_CURRENT_TIME,
@@ -92,7 +92,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
         (uint32_t)self->umon_setting_val.screen.widthMM,
         (uint32_t)self->umon_setting_val.screen.heightMM);
     xcb_flush(self->screen_t_p->c);
-    printf("change screen size here\n");
+    //printf("change screen size here\n");
 	}
   else{
     printf("Would change screen size here\n");

@@ -1,5 +1,25 @@
 #include "umonitor.h"
 
+/*! \mainpage Main Page
+ *
+ * \section intro_sec Introduction
+ *
+ * Welcome
+ *
+ * \section install_sec Installation
+ *
+ * \subsection step1 Step 1: Opening the box
+ *
+ * etc...
+ */
+
+/*! \file
+		\brief Main file
+
+		Contains the main function plus some helper functions that are shared by the classes
+*/
+
+
 int main(int argc, char **argv) {
 	int save = 0;
 	int load = 0;
@@ -134,6 +154,10 @@ int main(int argc, char **argv) {
 
 }
 
+/*! \brief Loop over each output
+
+	Calls the callback function for each output
+ */
 void for_each_output(
 	void *self,
 	xcb_randr_get_screen_resources_reply_t *screen_resources_reply,
@@ -153,6 +177,11 @@ void for_each_output(
 
 }
 
+/*! \brief Loop over each output mode
+
+Calls the callback function for each output mode
+
+ */
 void for_each_output_mode(
   void *self,
   xcb_randr_get_output_info_reply_t *output_info_reply,
@@ -173,14 +202,16 @@ void for_each_output_mode(
 
 }
 
+/*! \brief Converts the edid that is returned from the X11 server into a string
+ *
+ * @param[in]		output_p		the output whose edid is desired
+ * @param[out]	edid_string	the edid in string form
+ */
+
 void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	 char **edid_string){
 
-	/*
-	 * Converts the edid that is returned from the X11 server into a string
-	 * Inputs: 	edid	 	the bits return from X11 server
-	 * Outputs: 	edid_string	 edid in string form
-	 */
+
 
 	int z,length;
 	uint8_t delete = 0;

@@ -1,3 +1,5 @@
 *.o
 umonitor
 *.swp
+html/
+latex/
