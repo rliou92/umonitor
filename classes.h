@@ -56,7 +56,7 @@ typedef struct {
 	config_setting_t *edid,*res_group,*res_x,*res_y,*pos_x,
 		*pos_y,*disp_group,*disp_width,*disp_height,
 		*disp_widthMM,*disp_heightMM,*mon_group,*output_group,
-		*pos_group,*status,*edid_setting,*crtc_id,*mode_id;
+		*pos_group,*edid_setting;
 }umon_setting_t;
 
 typedef struct _save_class{

@@ -57,8 +57,11 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
       crtc_config_cookie =
       xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
         XCB_CURRENT_TIME,
-        XCB_CURRENT_TIME,0,0,XCB_NONE,
-        XCB_RANDR_ROTATION_ROTATE_0,0,NULL);
+        XCB_CURRENT_TIME,
+        0,
+        0,
+        XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
+        NULL);
       // TODO Do I need to fetch the reply for the code to work?
       crtc_config_reply =
         xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
@@ -189,34 +192,36 @@ static void find_mode_id(load_class *self){
      self->screen_t_p->screen_resources_reply);
 	num_screen_modes = xcb_randr_get_screen_resources_modes_length(
 		self->screen_t_p->screen_resources_reply);
-	 for (k=0;k<num_screen_modes;++k){
-		 if ((mode_info_iterator.data->width ==
-        self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
-        (mode_info_iterator.data->height ==
-        self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
-			 if (VERBOSE) printf("Found current mode info\n");
-			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
-           new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
-           find_available_crtc(self,self->crtc_offset++,
-             &(new_crtc_param->crtc));
-           if (VERBOSE) {
-             printf("Queing up crtc to load: %d\n",new_crtc_param->crtc);
-           }
-           new_crtc_param->pos_x =
-             self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
-           //printf("pos_x: %d\n",new_crtc_param->pos_x);
-           new_crtc_param->pos_y =
-             self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
-           new_crtc_param->mode_id =
-             mode_info_iterator.data->id;
-           new_crtc_param->output_p = self->cur_output;
-           new_crtc_param->next = self->crtc_param_head;
-           self->crtc_param_head = new_crtc_param;
+  if ((self->umon_setting_val.outputs[self->conf_output_idx].res_x != 0) &&
+      (self->umon_setting_val.outputs[self->conf_output_idx].res_y != 0)){
 
-			 }
-			xcb_randr_mode_info_next(&mode_info_iterator);
-
-		 }
+    for (k=0;k<num_screen_modes;++k){
+  		 if ((mode_info_iterator.data->width ==
+         self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
+         (mode_info_iterator.data->height ==
+         self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
+  			 if (VERBOSE) printf("Found current mode info\n");
+  			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
+            new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
+            find_available_crtc(self,self->crtc_offset++,
+              &(new_crtc_param->crtc));
+            if (VERBOSE) {
+              printf("Queing up crtc to load: %d\n",new_crtc_param->crtc);
+            }
+            new_crtc_param->pos_x =
+              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
+            //printf("pos_x: %d\n",new_crtc_param->pos_x);
+            new_crtc_param->pos_y =
+              self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
+            new_crtc_param->mode_id =
+              mode_info_iterator.data->id;
+            new_crtc_param->output_p = self->cur_output;
+            new_crtc_param->next = self->crtc_param_head;
+            self->crtc_param_head = new_crtc_param;
+  			 }
+  			xcb_randr_mode_info_next(&mode_info_iterator);
+  		 }
+  }
      		//if (VERBOSE) printf("Found current mode id\n");
 }
 
@@ -268,7 +273,9 @@ static void load_config_val(load_class *self){
 	for(i=0;i<self->num_out_pp;++i) {
 		group = config_setting_get_elem(mon_group,i);
 		// printf("Checking group %d\n",group);
-		res_group = config_setting_lookup(group,"resolution");
+    // Check if output is disabled
+
+    res_group = config_setting_lookup(group,"resolution");
 		pos_group = config_setting_lookup(group,"pos");
 		config_setting_lookup_string(group,"EDID",
 			&(self->umon_setting_val.outputs[i].edid_val));
@@ -280,14 +287,7 @@ static void load_config_val(load_class *self){
       &(self->umon_setting_val.outputs[i].pos_x));
 		config_setting_lookup_int(pos_group,"y",
       &(self->umon_setting_val.outputs[i].pos_y));
-    // config_setting_lookup_int(group,"crtc_id",
-    //   &(self->umon_setting_val.outputs[i].crtc_id));
-    // config_setting_lookup_int(group,"mode_id",
-    //   &(self->umon_setting_val.outputs[i].mode_id));
-		// printf("Loaded values: \n");
-		// printf("EDID: %s\n",*(mySett->edid_val+i));
-		// printf("Resolution: %s\n",*(mySett->resolution_str+i));
-		// printf("Pos: x=%d y=%d\n",*(mySett->pos_val+2*i),*(mySett->pos_val+2*i+1));
+
 	}
 
 	group = config_setting_lookup(self->profile_group,"Screen");

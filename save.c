@@ -62,6 +62,7 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
 static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
 
   xcb_randr_get_output_info_cookie_t output_info_cookie;
+  char *edid_string,*output_name;
 
   save_class *self = (save_class *) self_void;
   self->cur_output = output_p;
@@ -72,9 +73,37 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
     xcb_randr_get_output_info_reply(self->screen_t_p->c,
     output_info_cookie, &self->screen_t_p->e);
 
-  //if (VERBOSE) printf("Looping over output %s\n",xcb_randr_get_output_info_name(output_info_reply));
   if (!self->output_info_reply->connection){
     if (VERBOSE) printf("Found output that is connected\n");
+
+    get_output_name(self,&output_name);
+    self->umon_setting.output_group =
+     config_setting_add(self->umon_setting.mon_group,
+   				              output_name,
+   				              CONFIG_TYPE_GROUP);
+    free(output_name);
+
+    self->umon_setting.edid_setting =
+  	config_setting_add(self->umon_setting.output_group,"EDID",
+      CONFIG_TYPE_STRING);
+    self->umon_setting.res_group =
+  	 config_setting_add(self->umon_setting.output_group,
+      "resolution",CONFIG_TYPE_GROUP);
+  	self->umon_setting.res_x =
+    	config_setting_add(self->umon_setting.res_group,"x",CONFIG_TYPE_INT);
+  	self->umon_setting.res_y =
+    	config_setting_add(self->umon_setting.res_group,"y",CONFIG_TYPE_INT);
+  	self->umon_setting.pos_group =
+     config_setting_add(self->umon_setting.output_group,"pos",
+      CONFIG_TYPE_GROUP);
+  	self->umon_setting.pos_x =
+     config_setting_add(self->umon_setting.pos_group,"x",CONFIG_TYPE_INT);
+  	self->umon_setting.pos_y =
+     config_setting_add(self->umon_setting.pos_group,"y",CONFIG_TYPE_INT);
+
+    fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
+    config_setting_set_string(self->umon_setting.edid_setting,edid_string);
+    free(edid_string);
 
     if (self->output_info_reply->crtc){
     	if (VERBOSE) printf("Found output that is enabled\n");
@@ -88,53 +117,25 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
   free(self->output_info_reply);
 }
 
+static void get_output_name(save_class *self,char **output_name){
+  int i;
+  uint8_t *output_name_raw = xcb_randr_get_output_info_name(
+    self->output_info_reply);
+	int output_name_length =
+    xcb_randr_get_output_info_name_length(self->output_info_reply);
+	*output_name = (char *) malloc((output_name_length+1)*sizeof(char));
 
+	for(i=0;i<output_name_length;++i){
+		(*output_name)[i] = (char) output_name_raw[i];
+	}
+  (*output_name)[i] = '\0';
+
+}
 
 
 static void output_info_to_config(save_class *self){
 
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
-  int i;
-	char *edid_string,*output_name;
-
-	uint8_t *output_name_raw = xcb_randr_get_output_info_name(
-    self->output_info_reply);
-	int output_name_length =
-    xcb_randr_get_output_info_name_length(self->output_info_reply);
-	output_name = malloc((output_name_length+1)*sizeof(char));
-
-	for(i=0;i<output_name_length;++i){
-		output_name[i] = (char) output_name_raw[i];
-	}
-  output_name[i] = '\0';
-
-	self->umon_setting.output_group =
-		config_setting_add(self->umon_setting.mon_group,
-				output_name,
-				CONFIG_TYPE_GROUP);
-  free(output_name);
-
-	self->umon_setting.edid_setting =
-	config_setting_add(self->umon_setting.output_group,"EDID",CONFIG_TYPE_STRING);
-	self->umon_setting.res_group =
-	 config_setting_add(self->umon_setting.output_group,
-    "resolution",CONFIG_TYPE_GROUP);
-	self->umon_setting.res_x =
-  	config_setting_add(self->umon_setting.res_group,"x",CONFIG_TYPE_INT);
-	self->umon_setting.res_y =
-  	config_setting_add(self->umon_setting.res_group,"y",CONFIG_TYPE_INT);
-	self->umon_setting.pos_group =
-   config_setting_add(self->umon_setting.output_group,"pos",CONFIG_TYPE_GROUP);
-	self->umon_setting.pos_x =
-   config_setting_add(self->umon_setting.pos_group,"x",CONFIG_TYPE_INT);
-	self->umon_setting.pos_y =
-   config_setting_add(self->umon_setting.pos_group,"y",CONFIG_TYPE_INT);
-
-	//if (VERBOSE) printf("Finish setting up settings\n");
-
-  fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
-	config_setting_set_string(self->umon_setting.edid_setting,edid_string);
-  free(edid_string);
 
 	crtc_info_cookie =
   xcb_randr_get_crtc_info(self->screen_t_p->c,self->output_info_reply->crtc,
@@ -147,12 +148,6 @@ static void output_info_to_config(save_class *self){
   config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
 
-
-	//if (VERBOSE) printf("Finish fetching info from server\n");
-
-	// Need to find the mode info now
-	// Look at output crtc
-	//if (VERBOSE) printf("finished edid_setting config\n");
 	for_each_output_mode((void *) self,self->output_info_reply,
     find_res_to_config);
 
@@ -191,28 +186,11 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 
 static void disabled_to_config(save_class *self){
 
-  // TODO Implement
+  if (VERBOSE) printf("Found output that is disabled\n");
 
-	// xcb_randr_get_output_info_cookie_t output_info_cookie;
-	// xcb_randr_get_output_info_reply_t *output_info_reply;
-  //
-	// output_info_cookie =
-	// xcb_randr_get_output_info(self->screen_t_p->c,*(self->cur_output),
-  //   XCB_CURRENT_TIME);
-	// output_info_reply =
-	// 	xcb_randr_get_output_info_reply (self->screen_t_p->c,
-  //   output_info_cookie,&self->screen_t_p->e);
-	// self->umon_setting.output_group =
-	// 	config_setting_add(self->umon_setting.mon_group,
-	// 		(char *) xcb_randr_get_output_info_name(output_info_reply),
-  //     CONFIG_TYPE_GROUP);
-	// if (VERBOSE) printf("Found output that is disabled\n");
-	// self->umon_setting.status =
-	// config_setting_add(self->umon_setting.output_group,"Status",
-  //   CONFIG_TYPE_STRING);
-	// config_setting_set_string(self->umon_setting.status,"Disabled");
-  //
-  // free(output_info_reply);
-
+  config_setting_set_int(self->umon_setting.pos_x,0);
+	config_setting_set_int(self->umon_setting.pos_y,0);
+  config_setting_set_int(self->umon_setting.res_x,0);
+  config_setting_set_int(self->umon_setting.res_y,0);
 
 }

@@ -14,6 +14,7 @@ static void output_info_to_config(save_class *);
 static void find_res_to_config(void *,xcb_randr_mode_t *);
 static void disabled_to_config(save_class *);
 static void check_output_status(void *,xcb_randr_output_t *);
+static void get_output_name(save_class *,char **);
 
 // Extern functions
 extern void for_each_output(

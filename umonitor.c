@@ -4,13 +4,8 @@
  *
  * \section intro_sec Introduction
  *
- * Welcome
+ * This program is intended to manage monitor hotplugging.
  *
- * \section install_sec Installation
- *
- * \subsection step1 Step 1: Opening the box
- *
- * etc...
  */
 
 /*! \file
@@ -74,6 +69,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (save + load + test_event >= 2) exit(10);
 	screen_class_constructor(&screen_o);
 
 	if (config_read_file(&config, CONFIG_FILE)) {
