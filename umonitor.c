@@ -5,6 +5,12 @@
  * \section intro_sec Introduction
  *
  * This program is intended to manage monitor hotplugging.
+
+ 	 \section readme README
+	 Usage:
+	 				1. Setup your configuration using xrandr or related tools
+	 				2. Run \code umonitor --save <profile_name> \endcode
+					3. Run \code umonitor --listen \endcode to begin automatically detecting and changing monitor configuration
  *
  */
 
@@ -19,7 +25,7 @@ int main(int argc, char **argv) {
 	int save = 0;
 	int load = 0;
 	int delete = 0;
-	int test_event = 0;
+	int listen = 0;
 	save_class *save_o;
 	load_class *load_o;
 	autoload_class *autoload_o;
@@ -61,15 +67,15 @@ int main(int argc, char **argv) {
 		else if (!strcmp("--verbose", argv[i])){
 			VERBOSE = 1;
 		}
-		else if (!strcmp("--test-event", argv[i])){
-			test_event = 1;
+		else if (!strcmp("--listen", argv[i])){
+			listen = 1;
 		}
 		else {
 			printf("Unrecognized argument: %s\n",argv[i]);
 		}
 	}
 
-	if (save + load + test_event >= 2) exit(10);
+	if (save + load + listen >= 2) exit(10);
 	screen_class_constructor(&screen_o);
 
 	if (config_read_file(&config, CONFIG_FILE)) {
@@ -125,7 +131,7 @@ int main(int argc, char **argv) {
 		//free save_o
 	}
 
-	if (test_event){
+	if (listen){
 		if (config_read_file(&config, CONFIG_FILE)) {
 
 			// TODO Will not use new configuration file if it is changed

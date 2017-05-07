@@ -22,12 +22,14 @@ void load_class_destructor(load_class *self){
 
 static void load_profile(load_class *self,config_setting_t *profile_group){
 
-	xcb_randr_crtc_t *crtcs_p;
-	xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
-	xcb_randr_set_crtc_config_reply_t *crtc_config_reply;
-  int i;
+  set_crtc_param *cur_crtc_param;
 
-  set_crtc_param *cur_crtc_param,*old_crtc_param;
+  xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
+  xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
+  xcb_randr_output_t *conn_output;
+  int i,crtc_match;
+
+
 
   self->profile_group = profile_group;
   load_config_val(self);
@@ -39,106 +41,144 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	 * 3. Enabled desired crtcs
 */
 
-	crtcs_p = xcb_randr_get_screen_resources_crtcs(
+	self->crtcs_p = xcb_randr_get_screen_resources_crtcs(
     self->screen_t_p->screen_resources_reply);
-	//crtc_config_p = (xcb_randr_set_crtc_config_cookie_t *)
-    //malloc(
-      //self->screen_t_p->screen_resources_reply->num_crtcs*sizeof(
-      //xcb_randr_set_crtc_config_cookie_t));
 
 	self->crtc_offset = 0;
+  self->crtc_ll_length = 0;
 	for_each_output(
     (void *) self,self->screen_t_p->screen_resources_reply,match_with_config);
 
-	for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
-    if (!VERBOSE) {
-		  //crtc_config_p[i] =
-      //printf("Disabling this crtc: %d\n",crtcs_p[i]);
-      crtc_config_cookie =
-      xcb_randr_set_crtc_config(self->screen_t_p->c,crtcs_p[i],
-        XCB_CURRENT_TIME,
-        XCB_CURRENT_TIME,
-        0,
-        0,
-        XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
-        NULL);
-      // TODO Do I need to fetch the reply for the code to work?
-      crtc_config_reply =
-        xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-          &self->screen_t_p->e);
-      free(crtc_config_reply);
+  // Check against redaundant loading
+  //TODO Only assuming 1 output connected to crtc
+  crtc_match = 0;
+  for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
+    crtc_info_cookie =
+      xcb_randr_get_crtc_info(self->screen_t_p->c,self->crtcs_p[i],
+        XCB_CURRENT_TIME);
+    crtc_info_reply = xcb_randr_get_crtc_info_reply(self->screen_t_p->c,
+          crtc_info_cookie,&self->screen_t_p->e);
+    conn_output = xcb_randr_get_crtc_info_outputs(crtc_info_reply);
+    for(cur_crtc_param=self->crtc_param_head;cur_crtc_param;
+        cur_crtc_param=cur_crtc_param->next){
 
-      //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->status);
-      //printf("disable crtcs here\n");
+          // printf("current crtc params: %d,%d,%d,%d\n",cur_crtc_param->pos_x,
+          // cur_crtc_param->pos_y,cur_crtc_param->mode_id,
+          // cur_crtc_param->output_p[0]);
+          // printf("comparing to crtc: %d,%d,%d,%d\n",crtc_info_reply->x,
+          // crtc_info_reply->y,crtc_info_reply->mode,conn_output[0]);
+      if(cur_crtc_param->pos_x == crtc_info_reply->x &&
+         cur_crtc_param->pos_y == crtc_info_reply->y &&
+         cur_crtc_param->mode_id == crtc_info_reply->mode &&
+         cur_crtc_param->output_p[0] == conn_output[0]){
+           crtc_match++;
+         }
+
     }
-    else{
-      printf("Would disable crtcs here\n");
-    }
+    free(crtc_info_reply);
+  }
+  if (crtc_match != self->crtc_ll_length){
+    apply_settings(self);
+    self->cur_loaded = 0;
+  }
+  else{
+    self->cur_loaded = 1;
+  }
+  // printf("crtc matches: %d\n",crtc_match);
+  // printf("crtc linked list length: %d\n",self->crtc_ll_length);
+  // printf("is currently loaded? %d\n",self->cur_loaded);
+
+
+
+}
+
+static void apply_settings(load_class *self){
+  xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
+	xcb_randr_set_crtc_config_reply_t *crtc_config_reply;
+  int i;
+  set_crtc_param *cur_crtc_param,*old_crtc_param;
+
+  for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
+
+    //printf("Disabling this crtc: %d\n",crtcs_p[i]);
+    crtc_config_cookie =
+    xcb_randr_set_crtc_config(self->screen_t_p->c,self->crtcs_p[i],
+      XCB_CURRENT_TIME,
+      XCB_CURRENT_TIME,
+      0,
+      0,
+      XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
+      NULL);
+    // TODO Do I need to fetch the reply for the code to work?
+    // crtc_config_reply =
+    //   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+    //     &self->screen_t_p->e);
+    // free(crtc_config_reply);
+
+    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->status);
+    //printf("disable crtcs here\n");
+
+    if (VERBOSE) printf("Would disable crtcs here\n");
 
 	}
   xcb_flush(self->screen_t_p->c);
 
-	if (!VERBOSE) {
-		//Ignore saved widthMM and heightMM
-		// int widthMM = 25.4*self->umon_setting_val.screen.width/96;
-		// int heightMM = 25.4*self->umon_setting_val.screen.height/96;
-    // printf("screen size width: %d\n",self->umon_setting_val.screen.width);
-    // printf("screen size height: %d\n",self->umon_setting_val.screen.height);
-    // printf("screen size widthmm: %d\n",widthMM);
-    // printf("screen size heightmm: %d\n",heightMM);
-    // TODO believe this is working
-    //xcb_void_cookie_t void_cookie =
-      xcb_randr_set_screen_size(self->screen_t_p->c,
-        self->screen_t_p->screen->root,
-        (uint16_t)self->umon_setting_val.screen.width,
-        (uint16_t)self->umon_setting_val.screen.height,
-        (uint32_t)self->umon_setting_val.screen.widthMM,
-        (uint32_t)self->umon_setting_val.screen.heightMM);
+
+  xcb_randr_set_screen_size(self->screen_t_p->c,
+    self->screen_t_p->screen->root,
+    (uint16_t)self->umon_setting_val.screen.width,
+    (uint16_t)self->umon_setting_val.screen.height,
+    (uint32_t)self->umon_setting_val.screen.widthMM,
+    (uint32_t)self->umon_setting_val.screen.heightMM);
+  xcb_flush(self->screen_t_p->c);
+  //printf("change screen size here\n");
+
+  if (VERBOSE) printf("Would change screen size here\n");
+
+
+  //TODO implement
+  //find_duplicate_crtc(self);
+
+
+  //printf("enable crtcs here\n");
+  // TODO check if the crtc can actually be connected to the output
+  i = 0;
+  cur_crtc_param=self->crtc_param_head;
+  while(cur_crtc_param){
+
+// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
+// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
+  //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
+    //printf("About to load this pos_x: %d\n",cur_crtc_param->pos_x);
+     crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
+        cur_crtc_param->crtc,
+        XCB_CURRENT_TIME,XCB_CURRENT_TIME,
+        cur_crtc_param->pos_x,
+        cur_crtc_param->pos_y,
+        cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
+        cur_crtc_param->output_p);
+  //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
+
+         //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
     xcb_flush(self->screen_t_p->c);
-    //printf("change screen size here\n");
-	}
-  else{
-    printf("Would change screen size here\n");
+    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
+    old_crtc_param = cur_crtc_param;
+    cur_crtc_param = cur_crtc_param->next;
+    free(old_crtc_param);
   }
+  if (VERBOSE) printf("Would enable crtcs here\n");
 
-  if (!VERBOSE) {
-    //printf("enable crtcs here\n");
-    // TODO check if the crtc can actually be connected to the output
-    i = 0;
-    cur_crtc_param=self->crtc_param_head;
-    while(cur_crtc_param){
-
-	// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
-	// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
-    //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
-      //printf("About to load this pos_x: %d\n",cur_crtc_param->pos_x);
-       crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
-          cur_crtc_param->crtc,
-          XCB_CURRENT_TIME,XCB_CURRENT_TIME,
-          cur_crtc_param->pos_x,
-          cur_crtc_param->pos_y,
-          cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
-          cur_crtc_param->output_p);
-    //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
-      crtc_config_reply =
-       xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-         &self->screen_t_p->e);
-           //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
-      xcb_flush(self->screen_t_p->c);
-      //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
-      old_crtc_param = cur_crtc_param;
-      cur_crtc_param = cur_crtc_param->next;
-      free(old_crtc_param);
-    }
-  }
-  else{
-    printf("Would enable crtcs here\n");
-  }
-
+  crtc_config_reply =
+   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+     &self->screen_t_p->e);
   self->last_time = crtc_config_reply->timestamp;
   self->crtc_param_head = NULL;
 
+  free(crtc_config_reply);
+
+
 }
+
 
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 
@@ -195,6 +235,7 @@ static void find_mode_id(load_class *self){
   if ((self->umon_setting_val.outputs[self->conf_output_idx].res_x != 0) &&
       (self->umon_setting_val.outputs[self->conf_output_idx].res_y != 0)){
 
+
     for (k=0;k<num_screen_modes;++k){
   		 if ((mode_info_iterator.data->width ==
          self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
@@ -213,11 +254,11 @@ static void find_mode_id(load_class *self){
             //printf("pos_x: %d\n",new_crtc_param->pos_x);
             new_crtc_param->pos_y =
               self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
-            new_crtc_param->mode_id =
-              mode_info_iterator.data->id;
+            new_crtc_param->mode_id = mode_info_iterator.data->id;
             new_crtc_param->output_p = self->cur_output;
             new_crtc_param->next = self->crtc_param_head;
             self->crtc_param_head = new_crtc_param;
+            self->crtc_ll_length++;
   			 }
   			xcb_randr_mode_info_next(&mode_info_iterator);
   		 }

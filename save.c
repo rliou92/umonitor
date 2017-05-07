@@ -138,13 +138,12 @@ static void output_info_to_config(save_class *self){
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
 
 	crtc_info_cookie =
-  xcb_randr_get_crtc_info(self->screen_t_p->c,self->output_info_reply->crtc,
+    xcb_randr_get_crtc_info(self->screen_t_p->c,self->output_info_reply->crtc,
 			self->screen_t_p->screen_resources_reply->config_timestamp);
 
 	//if (VERBOSE) printf("cookies done\n");
-	self->crtc_info_reply =
-  xcb_randr_get_crtc_info_reply(self->screen_t_p->c,crtc_info_cookie,
-    &self->screen_t_p->e);
+	self->crtc_info_reply = xcb_randr_get_crtc_info_reply(self->screen_t_p->c,
+    crtc_info_cookie,&self->screen_t_p->e);
   config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
 

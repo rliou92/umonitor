@@ -82,10 +82,11 @@ typedef struct _load_class{
   umon_setting_val_t umon_setting_val;
   xcb_randr_get_output_info_reply_t *output_info_reply;
   xcb_randr_output_t *cur_output;
-  int conf_output_idx,num_out_pp,crtc_offset;
+  int conf_output_idx,num_out_pp,crtc_offset,crtc_ll_length,cur_loaded;
   set_crtc_param *crtc_param_head;
   config_setting_t *profile_group;
   xcb_timestamp_t last_time;
+  xcb_randr_crtc_t *crtcs_p;
 
   // Methods
   void (*load_profile)(struct _load_class *,config_setting_t *);

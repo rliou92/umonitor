@@ -34,7 +34,7 @@ static void wait_for_event(autoload_class *self){
 	xcb_generic_event_t *evt;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 
-
+  find_profile_and_load(self); //In order to get an output the first time
 	while(1){
 
     if (VERBOSE) printf("Waiting for event\n");
@@ -130,7 +130,6 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 		  if (output_match_unique == 1){
 			  if (VERBOSE) printf("output match, %d\n",self->output_match);
 		    self->output_match++;
-        if (VERBOSE) printf("output match, %d\n",self->output_match);
 		  }
 		}
 		else {
@@ -152,30 +151,34 @@ static void find_profile_and_load(autoload_class *self){
   int num_profiles = config_setting_length(root);
 	if (VERBOSE) printf("Number of profiles:%d\n",num_profiles);
   for (int i=0;i<num_profiles;i++){
-	  if (VERBOSE) printf("NEW PROFILE\n");
-    self->output_match = 0;
     cur_profile = config_setting_get_elem(root,i);
-    self->mon_group = config_setting_lookup(cur_profile,"Monitors");
-    self->num_out_pp = config_setting_length(self->mon_group);
+    printf("%s",config_setting_name(cur_profile));
+    if(!profile_found){
+      self->output_match = 0;
+      self->mon_group = config_setting_lookup(cur_profile,"Monitors");
+      self->num_out_pp = config_setting_length(self->mon_group);
 
-    //if (self->num_out_pp ==
-       //self->screen_t_p->screen_resources_reply->num_outputs){
-		self->num_conn_outputs = 0;
-    for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
-      match_with_profile);
-    if (VERBOSE) printf("self->output_match: %d\n",self->output_match);
-    if (VERBOSE) printf("self->num_out_pp: %d\n",self->num_out_pp);
-    if (VERBOSE) printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
-    if ((self->output_match == self->num_out_pp) &&
-        (self->num_out_pp == self->num_conn_outputs)){
-      //Only loads first matching profile
-			if (VERBOSE) printf("Found matching profile\n");
-      profile_found = 1;
-      self->load_o->load_profile(self->load_o,cur_profile);
-    	break;
+      //if (self->num_out_pp ==
+         //self->screen_t_p->screen_resources_reply->num_outputs){
+  		self->num_conn_outputs = 0;
+      for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
+        match_with_profile);
+      if (VERBOSE) printf("self->output_match: %d\n",self->output_match);
+      if (VERBOSE) printf("self->num_out_pp: %d\n",self->num_out_pp);
+      if (VERBOSE) printf("self->num_conn_outputs: %d\n",self->num_conn_outputs);
+      if ((self->output_match == self->num_out_pp) &&
+          (self->num_out_pp == self->num_conn_outputs)){
+        //Only loads first matching profile
+  			if (VERBOSE) printf("Found matching profile\n");
+        profile_found = 1;
+        self->load_o->load_profile(self->load_o,cur_profile);
+        printf("*");
+      }
     }
-    //}
+
+    printf("\n");
   }
-  if (!profile_found) printf("No profile found!\n");
+  if (!profile_found) printf("Unknown profile*\n");
+  printf("---------------------------------\n");
 
 }
