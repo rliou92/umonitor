@@ -88,7 +88,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   // printf("crtc linked list length: %d\n",self->crtc_ll_length);
   // printf("is currently loaded? %d\n",self->cur_loaded);
 
-
+  self->crtc_param_head = NULL;
 
 }
 
@@ -101,7 +101,6 @@ static void apply_settings(load_class *self){
   for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
 
     //printf("Disabling this crtc: %d\n",crtcs_p[i]);
-    crtc_config_cookie =
     xcb_randr_set_crtc_config(self->screen_t_p->c,self->crtcs_p[i],
       XCB_CURRENT_TIME,
       XCB_CURRENT_TIME,
@@ -109,20 +108,10 @@ static void apply_settings(load_class *self){
       0,
       XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
       NULL);
-    // TODO Do I need to fetch the reply for the code to work?
-    // crtc_config_reply =
-    //   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-    //     &self->screen_t_p->e);
-    // free(crtc_config_reply);
-
-    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->status);
-    //printf("disable crtcs here\n");
 
     if (VERBOSE) printf("Would disable crtcs here\n");
-
 	}
   xcb_flush(self->screen_t_p->c);
-
 
   xcb_randr_set_screen_size(self->screen_t_p->c,
     self->screen_t_p->screen->root,
@@ -131,17 +120,12 @@ static void apply_settings(load_class *self){
     (uint32_t)self->umon_setting_val.screen.widthMM,
     (uint32_t)self->umon_setting_val.screen.heightMM);
   xcb_flush(self->screen_t_p->c);
-  //printf("change screen size here\n");
 
   if (VERBOSE) printf("Would change screen size here\n");
-
 
   //TODO implement
   //find_duplicate_crtc(self);
 
-
-  //printf("enable crtcs here\n");
-  // TODO check if the crtc can actually be connected to the output
   i = 0;
   cur_crtc_param=self->crtc_param_head;
   while(cur_crtc_param){
@@ -160,7 +144,7 @@ static void apply_settings(load_class *self){
   //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
 
          //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
-    xcb_flush(self->screen_t_p->c);
+    // xcb_flush(self->screen_t_p->c);
     //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
     old_crtc_param = cur_crtc_param;
     cur_crtc_param = cur_crtc_param->next;
@@ -168,11 +152,12 @@ static void apply_settings(load_class *self){
   }
   if (VERBOSE) printf("Would enable crtcs here\n");
 
+  // xcb_flush(self->screen_t_p->c);
   crtc_config_reply =
    xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
      &self->screen_t_p->e);
   self->last_time = crtc_config_reply->timestamp;
-  self->crtc_param_head = NULL;
+
 
   free(crtc_config_reply);
 
