@@ -8,7 +8,7 @@ Related projects:
       <li> https://github.com/jceb/srandrd / https://github.com/jceb/screenconfig
       </ol>
 
-If you still are interested, you should be able to build the program by running <code> make </code>.
+If you still are interested, you should be able to build the program by running <code> make </code>. Seems like the indentation is really messed up. I blame Atom text editor. It appears fine on my screen.
 
 Usage:
        <ol>
