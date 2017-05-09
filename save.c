@@ -46,6 +46,17 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
 	self->umon_setting.mon_group =
     config_setting_add(profile_group,"Monitors",CONFIG_TYPE_GROUP);
 
+  // Get primary output
+  xcb_randr_get_output_primary_cookie_t output_primary_cookie =
+   xcb_randr_get_output_primary(self->screen_t_p->c,
+                                self->screen_t_p->screen->root);
+  xcb_randr_get_output_primary_reply_t *output_primary_reply =
+   	xcb_randr_get_output_primary_reply(self->screen_t_p->c,
+       output_primary_cookie, &self->screen_t_p->e);
+  self->primary_output = output_primary_reply->output;
+  printf("Primary output %d\n",self->primary_output);
+  free(output_primary_reply);
+
 	if (VERBOSE) printf("Before for each output\n");
   for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
     check_output_status);
@@ -73,10 +84,12 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
     xcb_randr_get_output_info_reply(self->screen_t_p->c,
     output_info_cookie, &self->screen_t_p->e);
 
+
+
   if (!self->output_info_reply->connection){
     if (VERBOSE) printf("Found output that is connected\n");
 
-    get_output_name(self,&output_name);
+    get_output_name(self->output_info_reply,&output_name);
     self->umon_setting.output_group =
      config_setting_add(self->umon_setting.mon_group,
    				              output_name,
@@ -106,7 +119,13 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
     free(edid_string);
 
     if (self->output_info_reply->crtc){
-    	if (VERBOSE) printf("Found output that is enabled\n");
+    	if (VERBOSE) printf("Found output that is enabled :%d\n",*output_p);
+      if (*output_p == self->primary_output){
+        if (VERBOSE) printf("Found primary output\n");
+        config_setting_t *primary_output_setting = config_setting_add(self->umon_setting.output_group,"primary",CONFIG_TYPE_INT);
+        config_setting_set_int(primary_output_setting,1);
+
+      }
       output_info_to_config(self);
     }
     else {
@@ -117,18 +136,18 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
   free(self->output_info_reply);
 }
 
-static void get_output_name(save_class *self,char **output_name){
+static void get_output_name(xcb_randr_get_output_info_reply_t *output_info_reply,char **output_name){
   int i;
   uint8_t *output_name_raw = xcb_randr_get_output_info_name(
-    self->output_info_reply);
+    output_info_reply);
 	int output_name_length =
-    xcb_randr_get_output_info_name_length(self->output_info_reply);
+    xcb_randr_get_output_info_name_length(output_info_reply);
 	*output_name = (char *) malloc((output_name_length+1)*sizeof(char));
 
 	for(i=0;i<output_name_length;++i){
 		(*output_name)[i] = (char) output_name_raw[i];
 	}
-  (*output_name)[i] = '\0';
+    (*output_name)[i] = '\0';
 
 }
 

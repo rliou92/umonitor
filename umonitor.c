@@ -76,7 +76,10 @@ int main(int argc, char **argv) {
 	}
 
 	if (save + load + listen >= 2) exit(10);
+	// if (save+load+listen == 0) sleep(5);
 	screen_class_constructor(&screen_o);
+	// printf("Connected to screen\n");
+	// printf("Proof screen connection: %d\n",screen_o.c);
 
 	if (config_read_file(&config, CONFIG_FILE)) {
 		if (VERBOSE) printf("Detected existing configuration file\n");

@@ -112,16 +112,16 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 
 		  output_match_unique = 0;
 		  for(j=0;j<self->num_out_pp;j++){
-			    if (VERBOSE) printf("output match, %d\n",self->output_match);
+			    //if (VERBOSE) printf("output match, %d\n",self->output_match);
 
-			    if (VERBOSE) printf("output_match_unique, %d\n",output_match_unique);
+			    //if (VERBOSE) printf("output_match_unique, %d\n",output_match_unique);
   		    group = config_setting_get_elem(self->mon_group,j);
   		    config_setting_lookup_string(group,"EDID",&conf_edid);
   		    if (VERBOSE) printf("conf_edid: %s\n",conf_edid);
   		    if (VERBOSE) printf("edid_string: %s\n",edid_string);
   		    if (!strcmp(conf_edid,edid_string)){
   		      output_match_unique++;
-  			    if (VERBOSE) printf("match, %d\n",output_match_unique);
+  			    //if (VERBOSE) printf("match, %d\n",output_match_unique);
   		    }
 
 		  }

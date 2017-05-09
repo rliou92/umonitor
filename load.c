@@ -141,6 +141,11 @@ static void apply_settings(load_class *self){
         cur_crtc_param->pos_y,
         cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
         cur_crtc_param->output_p);
+
+     if(cur_crtc_param->is_primary){
+        xcb_randr_set_output_primary(self->screen_t_p->c,
+          self->screen_t_p->screen->root, *(cur_crtc_param->output_p));
+     }
   //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
 
          //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
@@ -187,22 +192,16 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 
 	if (VERBOSE) printf("Num out pp: %d\n",self->num_out_pp);
 
-	for(self->conf_output_idx=0;self->conf_output_idx<self->num_out_pp;++self->conf_output_idx){
+	for(self->conf_output_idx=0;self->conf_output_idx<self->num_out_pp;
+    ++self->conf_output_idx){
 		if (!strcmp(self->umon_setting_val.outputs[self->conf_output_idx].edid_val,
                 edid_string)){
 			if (VERBOSE) printf("Before for each output mode\n");
-			// Found a match between the configuration file edid and currently connected edid. Now have to load correct settings.
-			// Need to find the proper crtc to assign the output
 			// Which crtc has the same resolution?
-
       find_mode_id(self);
-
 		}
-
 	}
-
   free(edid_string);
-
 }
 
 static void find_mode_id(load_class *self){
@@ -236,9 +235,10 @@ static void find_mode_id(load_class *self){
             }
             new_crtc_param->pos_x =
               self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
-            //printf("pos_x: %d\n",new_crtc_param->pos_x);
             new_crtc_param->pos_y =
               self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
+            new_crtc_param->is_primary =
+              self->umon_setting_val.outputs[self->conf_output_idx].is_primary;
             new_crtc_param->mode_id = mode_info_iterator.data->id;
             new_crtc_param->output_p = self->cur_output;
             new_crtc_param->next = self->crtc_param_head;
@@ -305,6 +305,10 @@ static void load_config_val(load_class *self){
 		pos_group = config_setting_lookup(group,"pos");
 		config_setting_lookup_string(group,"EDID",
 			&(self->umon_setting_val.outputs[i].edid_val));
+    if(!config_setting_lookup_int(group,"primary",
+      &(self->umon_setting_val.outputs[i].is_primary))) {
+        self->umon_setting_val.outputs[i].is_primary = 0;
+    }
 		config_setting_lookup_int(res_group,"x",
       &(self->umon_setting_val.outputs[i].res_x));
 		config_setting_lookup_int(res_group,"y",

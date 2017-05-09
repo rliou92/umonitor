@@ -25,7 +25,7 @@ typedef struct _screen_class{
 
 typedef struct _set_crtc_param{
   xcb_randr_crtc_t crtc;
-  int pos_x,pos_y;
+  int pos_x,pos_y,is_primary;
   xcb_randr_mode_t mode_id;
   xcb_randr_output_t *output_p;
   struct _set_crtc_param *next;
@@ -42,7 +42,7 @@ typedef struct {
 
 typedef struct {
 	const char *edid_val;
-	int pos_x,pos_y,res_x,res_y,crtc_id,mode_id;
+	int pos_x,pos_y,res_x,res_y,crtc_id,mode_id,is_primary;
 }umon_setting_output_t;
 
 typedef struct {
@@ -69,6 +69,7 @@ typedef struct _save_class{
   xcb_randr_get_output_info_reply_t *output_info_reply;
   xcb_randr_output_t *cur_output;
   config_t *config;
+  xcb_randr_output_t primary_output;
 
   // Methods
   void (*save_profile)(struct _save_class *,config_setting_t *);
