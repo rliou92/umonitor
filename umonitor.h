@@ -2,7 +2,7 @@
 #include "classes.h"
 
 // Global variables
-const char *const CONFIG_FILE = "umon2.conf";
+FILE *CONF_FP;
 int VERBOSE = 0;
 
 // Some helper functions

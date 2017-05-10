@@ -62,8 +62,8 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
     check_output_status);
 
   //if (VERBOSE) printf("Made it here \n");
-	if (VERBOSE) printf("About to write to config file %s\n",CONFIG_FILE);
-	config_write_file(self->config,CONFIG_FILE);
+	//if (VERBOSE) printf("About to write to config file %s\n",CONFIG_FILE);
+	config_write(self->config,CONF_FP);
 
 	if (VERBOSE) printf("Done saving settings to profile\n");
 

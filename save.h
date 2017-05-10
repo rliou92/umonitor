@@ -29,5 +29,5 @@ extern void for_each_output_mode(
 );
 extern void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
 
-extern const char *const CONFIG_FILE;
+extern FILE *CONF_FP;
 extern int VERBOSE;

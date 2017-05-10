@@ -81,7 +81,18 @@ int main(int argc, char **argv) {
 	// printf("Connected to screen\n");
 	// printf("Proof screen connection: %d\n",screen_o.c);
 
-	if (config_read_file(&config, CONFIG_FILE)) {
+	char *home_directory = getenv("HOME");
+	printf("Home directory: %s\n",home_directory);
+	const char *conf_file = "/.config/umon2.conf";
+	char *path = malloc((strlen(home_directory)+strlen(conf_file)));
+	strcpy(path,home_directory);
+	strcat(path,conf_file);
+	printf("Path: %s\n",path);
+	CONF_FP = fopen(path,"rw");
+	if (!CONF_FP) error("Cannot find configuration file");
+	printf("File pointer: %d\n",CONF_FP);
+
+	if (config_read(&config, CONF_FP)) {
 		if (VERBOSE) printf("Detected existing configuration file\n");
 		// Existing config file to load setting values
 		if (load) {
@@ -110,12 +121,26 @@ int main(int argc, char **argv) {
 				if (VERBOSE) printf("Deleted profile %s\n", profile_name);
 			}
 		}
+
+		if (listen) {
+			// TODO Will not use new configuration file if it is changed
+			autoload_constructor(&autoload_o,&screen_o,&config);
+			//autoload_o->find_profile_and_load(autoload_o);
+			autoload_o->wait_for_event(autoload_o);
+			if (VERBOSE) printf("Autoloading\n");
+			autoload_destructor(autoload_o);
+
+		}
 	}
 
 	else {
 		if (load || delete) {
 			printf("No file to load or delete\n");
 			exit(1);
+		}
+		if (listen){
+			printf("No file to load when event is triggered\n");
+			exit(3);
 		}
 	}
 
@@ -134,28 +159,13 @@ int main(int argc, char **argv) {
 		//free save_o
 	}
 
-	if (listen){
-		if (config_read_file(&config, CONFIG_FILE)) {
-
-			// TODO Will not use new configuration file if it is changed
-			autoload_constructor(&autoload_o,&screen_o,&config);
-			//autoload_o->find_profile_and_load(autoload_o);
-			autoload_o->wait_for_event(autoload_o);
-			if (VERBOSE) printf("Autoloading\n");
-			autoload_destructor(autoload_o);
-
-		}
-		else {
-			printf("No file to load when event is triggered\n");
-			exit(3);
-		}
-	}
-
 	// Free things
 	// Screen destructor
 	screen_class_destructor(&screen_o);
 
 	config_destroy(&config);
+	fclose(CONF_FP);
+	free(path);
 
 }
 
