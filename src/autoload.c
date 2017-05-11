@@ -1,5 +1,10 @@
 #include "autoload.h"
 
+/*! \file
+		\brief Detect which profile to load
+
+*/
+
 void autoload_constructor(autoload_class **self,screen_class *screen_o,
   config_t *config){
 
@@ -28,6 +33,8 @@ void autoload_destructor(autoload_class *self){
 
 }
 
+/*! \brief Use xcb_wait_for_event to detect screen changes
+ */
 
 static void wait_for_event(autoload_class *self){
 
@@ -81,10 +88,10 @@ static void wait_for_event(autoload_class *self){
 
 }
 
-
+/*! \brief For each connected output find which profile contains that output
+ */
 static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
-	// For each profile
-	// umon_setting_val_t umon_setting_val;
+
   autoload_class *self = (autoload_class *) self_void;
   const char *conf_edid;
 	char *edid_string;
@@ -141,6 +148,9 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
   //if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 
 }
+
+/*! \brief Find which profile matches the current setup and load it
+ */
 
 static void find_profile_and_load(autoload_class *self){
 
