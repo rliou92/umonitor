@@ -1,5 +1,11 @@
 #include "load.h"
 
+/*! \file
+    \brief Load a profile and apply the changes to the current
+configuration (if needed)
+
+*/
+
 void load_class_constructor(load_class **self,screen_class *screen_t){
 
   *self = (load_class *) malloc(sizeof(load_class));
@@ -19,6 +25,9 @@ void load_class_destructor(load_class *self){
   free(self);
 
 }
+
+/*! \brief Load the specified profile
+ */
 
 static void load_profile(load_class *self,config_setting_t *profile_group){
 
@@ -91,6 +100,9 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   self->crtc_param_head = NULL;
 
 }
+
+/*! \brief Set the crtcs to the queued up configuration stored in the
+linked list crtc_param_head */
 
 static void apply_settings(load_class *self){
   xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
@@ -169,6 +181,8 @@ static void apply_settings(load_class *self){
 
 }
 
+/*! \brief For each connected output, find the configuration monitor edid that
+matches connected monitor edid */
 
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 
@@ -203,6 +217,12 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 	}
   free(edid_string);
 }
+
+/*! \brief After matching edid has been found, find the matching mode id from
+the configuration's resolution x and y values
+
+  Queues up the crtc to be loaded in apply_settings
+ */
 
 static void find_mode_id(load_class *self){
 
@@ -251,6 +271,8 @@ static void find_mode_id(load_class *self){
      		//if (VERBOSE) printf("Found current mode id\n");
 }
 
+/*! \brief Find an available crtc for the current output with a specified offset
+ */
 static void find_available_crtc(load_class *self,int offset,
   xcb_randr_crtc_t *crtc_p){
 
@@ -284,6 +306,8 @@ static void find_available_crtc(load_class *self,int offset,
 
 }
 
+/*! \brief Load the values stored in the configuration file into this program
+ */
 static void load_config_val(load_class *self){
 
 	config_setting_t *mon_group,*group,*res_group,*pos_group;

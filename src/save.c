@@ -1,5 +1,12 @@
 #include "save.h"
 
+/*! \file
+		\brief Save current settings into the configuration file
+
+*/
+
+
+
 void save_class_constructor(save_class **self,screen_class *screen_t,
   config_t *config){
 
@@ -15,6 +22,8 @@ void save_class_destructor(save_class *self){
   free(self);
 }
 
+/*! \brief Save function main
+ */
 
 static void save_profile(save_class *self,config_setting_t *profile_group){
 
@@ -69,6 +78,8 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
 
 }
 
+/*! \brief For each output determine whether output is connected or enabled
+ */
 
 static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
 
@@ -136,6 +147,8 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
   free(self->output_info_reply);
 }
 
+/*! \brief Convert the raw output name obtained from server into char
+ */
 static void get_output_name(xcb_randr_get_output_info_reply_t *output_info_reply,char **output_name){
   int i;
   uint8_t *output_name_raw = xcb_randr_get_output_info_name(
@@ -151,7 +164,8 @@ static void get_output_name(xcb_randr_get_output_info_reply_t *output_info_reply
 
 }
 
-
+/*! \brief Save the crtc x,y and res x,y into config
+ */
 static void output_info_to_config(save_class *self){
 
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
@@ -172,6 +186,8 @@ static void output_info_to_config(save_class *self){
   free(self->crtc_info_reply);
 }
 
+/*! \brief Translate the mode id into resolution x,y
+ */
 static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 
 	int num_screen_modes,k;
@@ -202,6 +218,8 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 
 }
 
+/*! \brief Just save 0 for all settings if output is connected but disabled
+ */
 static void disabled_to_config(save_class *self){
 
   if (VERBOSE) printf("Found output that is disabled\n");

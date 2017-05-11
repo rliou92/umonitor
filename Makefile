@@ -5,7 +5,7 @@ CFLAGS = -Wall -g
 
 .PHONY: default all clean
 
-default: $(TARGET)
+default: $(TARGET) directories
 all: default
 
 OBJDIR = obj
@@ -14,6 +14,10 @@ TARGETDIR = bin
 
 OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.c))
 HEADERS = $(wildcard $(SRCDIR)/*.h)
+
+directories:
+	@mkdir -p $(TARGETDIR)
+	@mkdir -p $(OBJDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
