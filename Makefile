@@ -8,17 +8,21 @@ CFLAGS = -Wall -g
 default: $(TARGET)
 all: default
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS = $(wildcard *.h)
+OBJDIR = obj
+SRCDIR = src
+TARGETDIR = bin
 
-%.o: %.c $(HEADERS)
+OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.c))
+HEADERS = $(wildcard $(SRCDIR)/*.h)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PRECIOUS: $(TARGET) $(OBJECTS)
+.PRECIOUS: $(TARGETDIR)/$(TARGET) $(OBJDIR)/$(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall $(LIBS) -o $(TARGETDIR)/$@
 
 clean:
-	-rm -f *.o
-	-rm -f $(TARGET)
+	-rm -f $(OBJDIR)/*.o
+	-rm -f $(TARGETDIR)/$(TARGET)
