@@ -2,8 +2,8 @@
 #include "classes.h"
 
 // Global variables
-FILE *CONF_FP;
-int VERBOSE = 0;
+FILE *CONF_FP; /*!< file pointer to configuration file*/
+int VERBOSE = 0; /*!< verbose output*/
 
 // Some helper functions
 void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);

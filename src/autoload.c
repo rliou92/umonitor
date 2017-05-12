@@ -5,6 +5,7 @@
 
 */
 
+/*! Autload constructor*/
 void autoload_constructor(autoload_class **self,screen_class *screen_o,
   config_t *config){
 
@@ -25,6 +26,7 @@ void autoload_constructor(autoload_class **self,screen_class *screen_o,
 
 }
 
+/*! Autload destructor*/
 void autoload_destructor(autoload_class *self){
 
   load_class_destructor(self->load_o);

@@ -1,5 +1,3 @@
-// TODO some of these includes are not needed
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,100 +9,163 @@
 #include <xcb/randr.h>
 #include <stdarg.h>
 
-
+/*! Contains the connection and screen information
+*/
 typedef struct _screen_class{
+  /*! connection to server*/
   xcb_connection_t *c;
+  /*! xcb generic error structure*/
   xcb_generic_error_t *e;
+  /*! default screen number of the connection*/
   xcb_screen_t *screen;
+  /*! edid atom fetched from the server*/
   xcb_intern_atom_reply_t *edid_atom;
+  /*! screen resources information*/
   xcb_randr_get_screen_resources_reply_t *screen_resources_reply;
 
+  /*! Update screen resources after the screen configuration has changed*/
   void (*update_screen)(struct _screen_class*);
 
 }screen_class;
 
+/*! Queue of crtcs to be loaded*/
 typedef struct _set_crtc_param{
-  xcb_randr_crtc_t crtc;
-  int pos_x,pos_y,is_primary;
-  xcb_randr_mode_t mode_id;
-  xcb_randr_output_t *output_p;
-  struct _set_crtc_param *next;
+  xcb_randr_crtc_t crtc;  /*!< crtc to be loaded*/
+  int pos_x; /*!< x position of crtc*/
+  int pos_y; /*!< y position of crtc*/
+  int is_primary; /*!< Whether or not the output associated with this
+   crtc is the primary output*/
+  xcb_randr_mode_t mode_id; /*!< mode id of crtc*/
+  xcb_randr_output_t *output_p; /*!< to which output the crtc should be
+   connected*/
+  struct _set_crtc_param *next; /*!< next crtc param*/
 
 }set_crtc_param;
 
-/*
- * Structures for loading and saving the configuration file
- */
+/*! Screen information that is saved into configuration file
+*/
 typedef struct {
-	int width,height,widthMM,heightMM;
+	int width; /*!< the width of the screen in pixels*/
+  int height; /*!< the height of the screen in pixels*/
+  int widthMM; /*!< the width of the screen in mm*/
+  int heightMM; /*!< the height of the screen in mm*/
 }umon_setting_screen_t;
 
-
+/*! Output information that is saved into configuration file
+*/
 typedef struct {
-	const char *edid_val;
-	int pos_x,pos_y,res_x,res_y,crtc_id,mode_id,is_primary;
+	const char *edid_val; /*!< the edid value as a string*/
+	int pos_x; /*!< the output x coordinate*/
+  int pos_y; /*!< the output y coordinate*/
+  int res_x; /*!< the output x resolution*/
+  int res_y; /*!< the output y resolution*/
+  int crtc_id; /*!< the output's crtc id*/
+  int mode_id; /*!< the output's mode id*/
+  int is_primary; /*!< whether or not the output is the primary output*/
 }umon_setting_output_t;
 
+/*! Settings that are stored for one profile*/
 typedef struct {
-	umon_setting_screen_t screen;
-  umon_setting_output_t *outputs;
+	umon_setting_screen_t screen; /*!< the screen settings*/
+  umon_setting_output_t *outputs; /*!< the output settings*/
 }umon_setting_val_t;
 
-
-
+/*! libconfig settings that are used to save into the configuration
+ file*/
 typedef struct {
-	config_setting_t *edid,*res_group,*res_x,*res_y,*pos_x,
-		*pos_y,*disp_group,*disp_width,*disp_height,
-		*disp_widthMM,*disp_heightMM,*mon_group,*output_group,
-		*pos_group,*edid_setting;
+  config_setting_t *res_group; /*!< resolution group setting*/
+  config_setting_t *res_x; /*!< crtc resolution x dimension*/
+  config_setting_t *res_y; /*!< crtc resolution y dimension*/
+  config_setting_t *pos_x; /*!< crtc position x coordinate*/
+	config_setting_t *pos_y; /*!< crtc position y coordinate*/
+  config_setting_t *disp_group; /*!< screen group setting */
+  config_setting_t *disp_width; /*!< screen width setting */
+  config_setting_t *disp_height; /*!< screen height setting */
+	config_setting_t *disp_widthMM; /*!< screen widthmm setting */
+  config_setting_t *disp_heightMM; /*!< screen heightmm setting */
+  config_setting_t *mon_group; /*!< Monitors group setting*/
+  config_setting_t *output_group; /*!< output group setting */
+	config_setting_t *pos_group; /*!< position group setting */
+  config_setting_t *edid_setting; /*!< edid setting */
 }umon_setting_t;
+
+/*! Class for saving current display settings into the configuration file
+*/
 
 typedef struct _save_class{
   // Inheriting classes
-  screen_class *screen_t_p;
+  screen_class *screen_t_p; /*!< Connection information to server*/
 
   // Variables
-  umon_setting_t umon_setting;
+  umon_setting_t umon_setting; /*!< Settings container to be saved into file*/
+  /*! crtc info of current output*/
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
+  /*! output info of current output*/
   xcb_randr_get_output_info_reply_t *output_info_reply;
+  /*! current output id*/
   xcb_randr_output_t *cur_output;
+  /*! config handle*/
   config_t *config;
+  /*! which output is primary*/
   xcb_randr_output_t primary_output;
 
   // Methods
+  /*! saves the current display settings into configuration file*/
   void (*save_profile)(struct _save_class *,config_setting_t *);
 }save_class;
 
+/*! Class for loading specified profile from configuration file
+*/
+
 typedef struct _load_class{
   // Inheriting classes
-  screen_class *screen_t_p;
+  screen_class *screen_t_p; /*!< Connection information to server*/
 
   // Variables
+  /*! contains the profile information that is loaded from the conf file*/
   umon_setting_val_t umon_setting_val;
+  /*! current output info*/
   xcb_randr_get_output_info_reply_t *output_info_reply;
+  /*! current output id*/
   xcb_randr_output_t *cur_output;
-  int conf_output_idx,num_out_pp,crtc_offset,crtc_ll_length,cur_loaded;
-  set_crtc_param *crtc_param_head;
-  config_setting_t *profile_group;
-  xcb_timestamp_t last_time;
-  xcb_randr_crtc_t *crtcs_p;
+
+  int conf_output_idx;   /*!< current output index*/
+  int num_out_pp;   /*!< number of outputs per profile*/
+  int crtc_offset;   /*!< how many available crtcs to skip before returning*/
+  int crtc_ll_length;   /*!< how many crtcs are queued up to load*/
+  int cur_loaded;   /*!< whether or not current profile is loaded*/
+  set_crtc_param *crtc_param_head; /*!< head of crtc queue*/
+  config_setting_t *profile_group; /*!< which profile to be loaded*/
+  xcb_timestamp_t last_time; /*!< last time the crtc setting was changed*/
+  xcb_randr_crtc_t *crtcs_p; /*!< crtcs associated with the screen*/
 
   // Methods
+  /*! loads specified profile from configuration file*/
   void (*load_profile)(struct _load_class *,config_setting_t *);
 }load_class;
 
+/*! Class for determining which profile to load based on the current
+display settings */
+
 typedef struct _autoload_class{
   // Inheriting classes
-  screen_class *screen_t_p;
+  screen_class *screen_t_p; /*!< Connection information to server*/
+  /*! load object for loading after matching profile is found*/
   load_class *load_o;
 
   // Variables
-  config_t *config;
-  config_setting_t *mon_group;
-  int output_match,num_out_pp,num_conn_outputs;
+  config_t *config; /*!< config handle*/
+  config_setting_t *mon_group; /*!< current monitor group*/
+  /*! how many outputs in configuration file match current display settings*/
+  int output_match;
+  int num_out_pp; /*!< Number of outputs per profile*/
+  int num_conn_outputs; /*!< number of connected outputs*/
 
   // Methods
+  /*! find which profile matches current display settings and loads that
+   profile*/
   void (*find_profile_and_load)(struct _autoload_class *);
+  /*! waits for the screen change event, then calls find_profile_and_load*/
   void (*wait_for_event)(struct _autoload_class *);
 
 

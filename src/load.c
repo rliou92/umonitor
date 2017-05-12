@@ -6,6 +6,8 @@ configuration (if needed)
 
 */
 
+/*! load constructor*/
+
 void load_class_constructor(load_class **self,screen_class *screen_t){
 
   *self = (load_class *) malloc(sizeof(load_class));
@@ -16,6 +18,8 @@ void load_class_constructor(load_class **self,screen_class *screen_t){
   (*self)->output_info_reply = NULL;
 
 }
+
+/*! load deconstructor*/
 
 void load_class_destructor(load_class *self){
 

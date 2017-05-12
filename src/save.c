@@ -5,7 +5,7 @@
 
 */
 
-
+/*! save constructor*/
 
 void save_class_constructor(save_class **self,screen_class *screen_t,
   config_t *config){
@@ -17,6 +17,8 @@ void save_class_constructor(save_class **self,screen_class *screen_t,
   if (VERBOSE) printf("Done constructing save class\n");
 
 }
+
+/*! save deconstructor*/
 
 void save_class_destructor(save_class *self){
   free(self);

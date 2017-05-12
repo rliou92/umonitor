@@ -5,6 +5,14 @@ void screen_class_destructor(screen_class *);
 static void update_screen(screen_class *);
 extern int VERBOSE;
 
+
+/*! \file
+		\brief Contains the connection and screen information
+
+*/
+
+/*! screen constructor*/
+
 void screen_class_constructor(screen_class *self){
 
 	int i,screenNum;
@@ -41,6 +49,8 @@ void screen_class_constructor(screen_class *self){
 
 }
 
+/*! screen deconstructor*/
+
 void screen_class_destructor(screen_class *self){
 
 	xcb_disconnect(self->c);
@@ -49,7 +59,8 @@ void screen_class_destructor(screen_class *self){
 
 }
 
-
+/*! \brief Update screen resources after the screen configuration has changed
+ */
 
 static void update_screen(screen_class *self){
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;

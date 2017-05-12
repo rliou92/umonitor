@@ -20,6 +20,7 @@
 		Contains the main function plus some helper functions that are shared by the classes
 */
 
+/*! Logic for parsing options here*/
 
 int main(int argc, char **argv) {
 	int save = 0;
@@ -220,6 +221,7 @@ void for_each_output_mode(
 /*! \brief Converts the edid that is returned from the X11 server into a string
  *
  * @param[in]		output_p		the output whose edid is desired
+ * @param[in]		screen_t_p	the connection information
  * @param[out]	edid_string	the edid in string form
  */
 
