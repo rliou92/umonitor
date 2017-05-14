@@ -2,7 +2,7 @@
 #include "classes.h"
 
 // Global variables
-FILE *CONF_FP; /*!< file pointer to configuration file*/
+const char *CONFIG_FILE; /*!< Configuration file path name*/
 int VERBOSE = 0; /*!< verbose output*/
 
 // Some helper functions

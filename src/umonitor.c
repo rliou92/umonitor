@@ -83,69 +83,28 @@ int main(int argc, char **argv) {
 	// printf("Proof screen connection: %d\n",screen_o.c);
 
 	char *home_directory = getenv("HOME");
-	printf("Home directory: %s\n",home_directory);
-	const char *conf_file = "/.config/umon2.conf";
-	char *path = malloc((strlen(home_directory)+strlen(conf_file)));
+	//printf("Home directory: %s\n",home_directory);
+	const char *conf_location = "/.config/umon2.conf";
+	char *path = malloc((strlen(home_directory)+strlen(conf_location)));
 	strcpy(path,home_directory);
-	strcat(path,conf_file);
-	printf("Path: %s\n",path);
-	CONF_FP = fopen(path,"rw");
-	if (!CONF_FP) error("Cannot find configuration file");
-	printf("File pointer: %d\n",CONF_FP);
-
-	if (config_read(&config, CONF_FP)) {
-		if (VERBOSE) printf("Detected existing configuration file\n");
-		// Existing config file to load setting values
-		if (load) {
-			if (VERBOSE) printf("Loading profile: %s\n", profile_name);
-			// Load profile
-			profile_group = config_lookup(&config,profile_name);
-
-			if (profile_group != NULL) {
-				load_class_constructor(&load_o,&screen_o);
-				load_o->load_profile(load_o,profile_group);
-				load_class_destructor(load_o);
-			}
-			else {
-				printf("No profile found\n");
-				exit(2);
-			}
-		}
-
-		if (save || delete) {
-			profile_group = config_lookup(&config,profile_name);
-			if (profile_group != NULL) {
-				// Overwrite existing profile
-				cfg_idx = config_setting_index(profile_group);
-				root = config_root_setting(&config);
-				config_setting_remove_elem(root,cfg_idx);
-				if (VERBOSE) printf("Deleted profile %s\n", profile_name);
-			}
-		}
-
-		if (listen) {
-			// TODO Will not use new configuration file if it is changed
-			autoload_constructor(&autoload_o,&screen_o,&config);
-			//autoload_o->find_profile_and_load(autoload_o);
-			autoload_o->wait_for_event(autoload_o);
-			if (VERBOSE) printf("Autoloading\n");
-			autoload_destructor(autoload_o);
-
-		}
-	}
-
-	else {
-		if (load || delete) {
-			printf("No file to load or delete\n");
-			exit(1);
-		}
-		if (listen){
-			printf("No file to load when event is triggered\n");
-			exit(3);
-		}
-	}
+	strcat(path,conf_location);
+	//printf("Path: %s\n",path);
+	CONFIG_FILE = path;
+	//CONF_FP = fopen(path,"r");
+	//if (!CONF_FP) printf("Cannot find configuration file\n");
+	//printf("File pointer: %d\n",CONF_FP);
+	// Existing config file to load setting values
 
 	if (save) {
+		config_read_file(&config, CONFIG_FILE);
+		profile_group = config_lookup(&config,profile_name);
+		if (profile_group != NULL) {
+			// Overwrite existing profile
+			cfg_idx = config_setting_index(profile_group);
+			root = config_root_setting(&config);
+			config_setting_remove_elem(root,cfg_idx);
+			if (VERBOSE) printf("Deleted profile %s\n", profile_name);
+		}
 		if (VERBOSE) printf("Saving current settings into profile: %s\n", profile_name);
 		/*
 		 * Always create the new profile group because above code has already
@@ -157,7 +116,44 @@ int main(int argc, char **argv) {
 		save_class_constructor(&save_o,&screen_o,&config);
 		save_o->save_profile(save_o,profile_group);
 		save_class_destructor(save_o);
-		//free save_o
+	}
+
+
+	if (load) {
+		if(config_read_file(&config, CONFIG_FILE)){
+			if (VERBOSE) printf("Loading profile: %s\n", profile_name);
+			// Load profile
+			profile_group = config_lookup(&config,profile_name);
+
+			if (profile_group != NULL) {
+				load_class_constructor(&load_o,&screen_o);
+				load_o->load_profile(load_o,profile_group);
+				load_class_destructor(load_o);
+			}
+			else {
+				printf("Profile %s not found\n",profile_name);
+				exit(2);
+			}
+		}
+		else{
+			if (VERBOSE) printf("No configuration file to load\n");
+			exit(3);
+		}
+	}
+
+	if (listen) {
+	// TODO Will not use new configuration file if it is changed
+		if(config_read_file(&config, CONFIG_FILE)){
+			autoload_constructor(&autoload_o,&screen_o,&config);
+			//autoload_o->find_profile_and_load(autoload_o);
+			autoload_o->wait_for_event(autoload_o);
+			if (VERBOSE) printf("Autoloading\n");
+			autoload_destructor(autoload_o);
+		}
+		else{
+			if (VERBOSE) printf("No configuration file to load\n");
+			exit(3);
+		}
 	}
 
 	// Free things
@@ -165,7 +161,6 @@ int main(int argc, char **argv) {
 	screen_class_destructor(&screen_o);
 
 	config_destroy(&config);
-	fclose(CONF_FP);
 	free(path);
 
 }

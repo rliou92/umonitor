@@ -39,6 +39,7 @@ typedef struct _set_crtc_param{
   xcb_randr_output_t *output_p; /*!< to which output the crtc should be
    connected*/
   struct _set_crtc_param *next; /*!< next crtc param*/
+  struct _set_crtc_param *prev; /*!< previous crtc param*/
 
 }set_crtc_param;
 
@@ -114,6 +115,13 @@ typedef struct _save_class{
   void (*save_profile)(struct _save_class *,config_setting_t *);
 }save_class;
 
+
+typedef struct _disable_crtc{
+	xcb_randr_crtc_t crtc;
+	struct _disable_crtc *next;
+}disable_crtc;
+
+
 /*! Class for loading specified profile from configuration file
 */
 
@@ -138,6 +146,7 @@ typedef struct _load_class{
   config_setting_t *profile_group; /*!< which profile to be loaded*/
   xcb_timestamp_t last_time; /*!< last time the crtc setting was changed*/
   xcb_randr_crtc_t *crtcs_p; /*!< crtcs associated with the screen*/
+  disable_crtc *disable_crtc_head; /*!< disable crtcs linked list*/
 
   // Methods
   /*! loads specified profile from configuration file*/
