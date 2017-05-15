@@ -1,0 +1,19 @@
+The lrmi files were written by Josh Vanderhoof.
+
+Matthew Kern (poly-p man) <pyrophobicman@gmail.com> is the current maintainer,
+fixed some minor bugs, and rewrote a significant chunk of code for 3.0.0.
+
+John Fremlin <vii@users.sourceforge.net> wrote get-edid and the
+original parse-edid. He was the maintainer until 1.4.1.
+
+Dan Hugo <dhugo@reallycool.com> afforded immoral support, resulting in
+the 1.3 series.
+
+Martin Kavalec <xkavm04@vse.cz> enhanced parse-edid to display
+frequencies and DPMS features. He also added better monitor name
+detection and h/vsync type printing.
+
+Branden Robinson <branden@debian.org> wrote the manpage.
+
+If you want to distribute or modify read-edid, please e-mail the
+maintainer, Matthew Kern, a courtesy message.

@@ -1,0 +1,77 @@
+.TH get\-edid 1 "2013-08-29"
+.SH NAME
+get\-edid, parse\-edid \- read\-edid tools to retrieve and interpret
+monitor specifications using the VESA VBE DDC protocol
+.SH SYNOPSIS
+.B get\-edid
+[\fIOPTIONS\fR] |
+.B parse\-edid
+.br
+.B get\-edid
+[\fIOPTIONS\fR] >
+.I filename
+.br
+.B parse\-edid
+<
+.I filename
+.SH DESCRIPTION
+The
+.I read\-edid
+utility comprises two tools:
+.B get\-edid
+and
+.BR parse\-edid .
+.PP
+.B get\-edid
+uses real mode calls to perform Data Display Channel (DDC) transfers, or
+Linux i2c calls to perform Enhanced DDC transfers to retrieve information from
+monitors, including identification strings, supported sync ranges, available
+video modes, and video mode parameters. Such information can be useful for
+configuring X Window System servers in certain cases.
+.PP
+.B get\-edid
+returns the raw Extended Display Identification Data (EDID) block directly from
+the monitor, so the
+.B parse\-edid
+command is available to interpret it and generate a human-readable block of
+text information that can also be included in a X11 xorg.conf file.
+.PP
+Generally the output of
+.B get\-edid
+is piped directly to
+.BR parse\-edid .
+.PP
+New in version 3.0.0,
+.B get\-edid
+takes a few options.
+.TP
+\fB\-b \fIBUS\fR, \fB\-\-bus \fIBUS
+only scan the i2c bus \fIBUS\fR (if built with i2c support)
+.TP
+\fB\-c\fR, \fB\-\-classiconly
+only use the older VBE interface (if built with i2c and VBE support)
+.TP
+\fB\-h\fR, \fB\-\-help
+display a basic help message
+.TP
+\fB\-i\fR, \fB\-\-i2conly
+only use the newer i2c interface (if built with i2c and VBE support)
+.TP
+\fB\-m \fINUM\fR, \fB\-\-monitor \fINUM
+try to return information about monitor number \fINUM\fR (VBE only)
+.TP
+\fB\-q\fR, \fB\-\-quiet
+do not output messages over stderr
+.PP
+.B parse\-edid
+still does not take any options. \fB\-\-help\fR will show you which options
+your build of \fIread\-edid\fR supports.
+.SH AUTHOR
+.I read\-edid
+is originally the work of John Fremlin and others. Since 1.4.2, the new
+maintainer and programmer has been Matthew Kern. Nearly all of the code for
+this project, as well as this manual page, has been rewritten for 3.0.0 by
+Matthew Kern. See AUTHORS for more details.
+.SH "SEE ALSO"
+Matthew Kern's \fIread\-edid\fR website at
+<http://polypux.org/projects/read-edid>

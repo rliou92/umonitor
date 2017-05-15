@@ -223,14 +223,18 @@ void for_each_output_mode(
 void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	 char **edid_string){
 
-
-
-	int z,length;
+	int i,j;
 	uint8_t delete = 0;
 	uint8_t pending = 0;
 	xcb_randr_get_output_property_cookie_t output_property_cookie;
 	xcb_randr_get_output_property_reply_t *output_property_reply;
 	uint8_t *edid;
+	//char *edid_info;
+
+	char vendor[4];
+	// uint16_t product;
+	//uint32_t serial;
+	char modelname[13];
 
 	output_property_cookie = xcb_randr_get_output_property(screen_t_p->c,
 		*output_p,screen_t_p->edid_atom->atom,AnyPropertyType,0,100,
@@ -241,21 +245,50 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 
 	edid = xcb_randr_get_output_property_data(
 		output_property_reply);
-	length = xcb_randr_get_output_property_data_length(
-		output_property_reply);
+	//length = xcb_randr_get_output_property_data_length(
+		//output_property_reply);
 
 	if (VERBOSE) printf("Starting edid_to_string\n");
-	*edid_string = (char *) malloc((length+1)*sizeof(char));
-	for (z=0;z<length;++z) {
-		if ((char) edid[z] == '\0') {
-			*(*edid_string+z) = '0';
-		}
-		else {
-			*(*edid_string+z) = (char) edid[z];
-		}
+	// *edid_string = (char *) malloc((length+1)*sizeof(char));
+	// for (z=0;z<length;++z) {
+	// 	if ((char) edid[z] == '\0') {
+	// 		*(*edid_string+z) = '0';
+	// 	}
+	// 	else {
+	// 		*(*edid_string+z) = (char) edid[z];
+	// 	}
+	//
+	// }
+	// *(*edid_string+z) = '\0';
 
+	*edid_string = (char *) malloc(17*sizeof(char));
+	char sc = 'A'-1;
+	vendor[0] = sc + (edid[8] >> 2);
+	vendor[1] = sc + (((edid[8] & 0x03) << 3) | (edid[9] >> 5));
+	vendor[2] = sc + (edid[9] & 0x1F);
+	vendor[3] = '\0';
+
+	//product = (edid[11] << 8) | edid[10];
+	// serial = edid[15] << 24 | edid[14] << 16 | edid[13] << 8 | edid[12];
+	// edid_info = malloc(length*sizeof(char));
+	// snprintf(edid_info, length, "%04X%04X%08X", vendor, product, serial);
+
+	for (i = 0x36; i < 0x7E; i += 0x12) { //read through descriptor blocks...
+		if (edid[i] == 0x00) { //not a timing descriptor
+			if (edid[i+3] == 0xfc) { //Model Name tag
+				for (j = 0; j < 13; j++) {
+					if (edid[i+5+j] == 0x0a)
+						modelname[j] = 0x00;
+					else
+						modelname[j] = edid[i+5+j];
+				}
+			}
+		}
 	}
-	*(*edid_string+z) = '\0';
+
+	printf("vendor: %s\n",vendor);
+	printf("modelname: %s\n",modelname);
+	snprintf(*edid_string,17,"%s %s",vendor,modelname);
 
 	free(output_property_reply);
 	if (VERBOSE) printf("Finished edid_to_string\n");

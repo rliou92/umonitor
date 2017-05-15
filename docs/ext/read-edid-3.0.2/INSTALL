@@ -1,0 +1,9 @@
+read-edid is packaged using CMake. To install, simply run:
+
+cmake . 
+
+from the current directory. Use the options '-DCLASSICBUILD=OFF' or '-DI2CBUILD=OFF' to disable building of either the VBE interface or the I2C interface to get-edid, respectively. Use both to disable building get-edid entirely.
+
+After CMake has completed, use 'make' and 'make install' to build and install the package. The latter command will most likely require root access to run.
+
+A note: read-edid requires CMake 2.6 or greater, as well as the libx86 library (and related development packages on binary ditributions) if VBE usage is to be built.

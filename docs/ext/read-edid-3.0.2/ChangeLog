@@ -1,0 +1,40 @@
+2015-04-28  Matthew Kern <pyrophobicman@gmail.com>
+	* parse-edid.c:: Fix for certain "you have data blocks, but not video
+	ones..." errors.
+	* classic.c: Add language suggesting use of I2C method.
+
+2014-02-04  Matthew Kern <pyrophobicman@gmail.com>
+	* INSTALL: Rewrite for CMake instructions
+
+2011-10-10  Matthew Kern <pyrophobicman@gmail.com>
+	* get-edid.c: new modular design, added i2c support
+	* parse-edid.c: complete rewrite with e-edid support
+	* CMakeLists.txt: Move from autotools to CMake
+
+2008-09-21  Matthew Kern <pyrophobicman@gmail.com>
+	* get-edid.c: moved from lrmi to libx86 - same functions, more
+	portable.
+
+2008-08-25  Matthew Kern <pyrophobicman@gmail.com>
+	* lrmi.c: fixed for linux-2.6.26 and up.
+	* makefile.am, configure.in: Made get-edid not build on !x86.
+
+2001-06-10  John Fremlin  <vii@users.sourceforge.net>
+
+	* get-edid.c (read_edid): Fooled around with multiple block
+	handling error logic some more.
+
+2001-06-03  John Fremlin  <vii@users.sourceforge.net>
+
+	* get-edid.c (read_edid): Change action for EDIDs that keep
+	claiming more blocks to return error.
+
+2001-03-11  John Fremlin  <chief@bandits.org>
+
+	* parse-edid.c (parse_edid): Workaround lack of snprintf on djgpp
+
+2001-03-04  John Fremlin  <chief@bandits.org>
+
+	* parse-edid.c (parse_timing_description): Fix commented out hfreq
+	value - problem spotted by "GEORGE KUKA" <gmickey@worldnet.att.net>
+
