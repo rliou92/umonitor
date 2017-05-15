@@ -171,14 +171,45 @@ static void get_output_name(xcb_randr_get_output_info_reply_t *output_info_reply
 static void output_info_to_config(save_class *self){
 
 	xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
+  xcb_randr_output_t *dup_outputs;
+  int i,outputs_length;
+  char *output_name;
+  config_setting_t *dup_outputs_setting;
+  xcb_randr_get_output_info_cookie_t output_info_cookie;
+  xcb_randr_get_output_info_reply_t *output_info_reply;
 
 	crtc_info_cookie =
     xcb_randr_get_crtc_info(self->screen_t_p->c,self->output_info_reply->crtc,
 			self->screen_t_p->screen_resources_reply->config_timestamp);
-
-	//if (VERBOSE) printf("cookies done\n");
-	self->crtc_info_reply = xcb_randr_get_crtc_info_reply(self->screen_t_p->c,
+  self->crtc_info_reply = xcb_randr_get_crtc_info_reply(self->screen_t_p->c,
     crtc_info_cookie,&self->screen_t_p->e);
+
+  // Check for duplicate crtc
+  outputs_length =
+   xcb_randr_get_crtc_info_outputs_length(self->crtc_info_reply);
+  if (outputs_length > 1){
+    printf("Duplicate output!\n");
+    dup_outputs = xcb_randr_get_crtc_info_outputs(self->crtc_info_reply);
+    dup_outputs_setting =
+     config_setting_add(self->umon_setting.mon_group,"duplicates",
+      CONFIG_TYPE_LIST);
+    // Record which outputs are duplicate
+    for (i=0;i<outputs_length;++i){
+      output_info_cookie =
+      xcb_randr_get_output_info(self->screen_t_p->c,dup_outputs[i],
+        XCB_CURRENT_TIME);
+      output_info_reply =
+        xcb_randr_get_output_info_reply(self->screen_t_p->c,
+        output_info_cookie, &self->screen_t_p->e);
+
+      get_output_name(output_info_reply,&output_name);
+      config_setting_set_string_elem(dup_outputs_setting,i,output_name);
+      free(output_name);
+      free(output_info_reply);
+    }
+
+  }
+
   config_setting_set_int(self->umon_setting.pos_x,self->crtc_info_reply->x);
 	config_setting_set_int(self->umon_setting.pos_y,self->crtc_info_reply->y);
 
