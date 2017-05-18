@@ -17,7 +17,15 @@ for pmutils. Srandrd + screenconfig seems pretty promising to me, but there are
 features missing such as setting the crtc xy positions.
 
 # Installation
-Run `make`.
+Run `make`. `umonitor` binary will be created in `bin`.
+
+A systemd unit has been included for autostarting the application and can be
+enabled with `systemd --user enable umonitor`.
+
+In order to automatically apply updates after suspending, I have created a
+systemd unit called `udev_trigger` as a hack to trigger udev to send the screen
+change signal. This systemd unit should be enabled with the system systemd:
+`systemd enable --now udev_trigger`.
 
 # Usage
 * Setup your configuration using `xrandr` or related tools (`arandr` is a good one).
@@ -31,29 +39,31 @@ Run `make`.
 # Features
 This program has only been tested on my setup. I need testers and feedback!
 
-What's working:
-* Saving profile
-* Loading profile
-* Detecting which profile is currently loaded
-* Automatically loading a profile when a monitor is hotplugged
-* Setting and loading primary output
 
+What is saved and applied dynamically:
+* Monitor vendor name + model number
+* Crtc x and y position
+* Resolution
+* Primary output
+* Will not load duplicate crtcs
 
- What I am working on:
-* Parsing EDID
-* Refreshing after wakeup from suspend and hibernate (udev or X11 server bug?)
-* Doxygen documentation
+Future improvements:
+
+* Expanding Doxygen documentation
 * More commandline options
   * Alternate configuration file location
 * Clean up output
-  * Custom debug log
-* Handling the case when multiple outputs are connected to same crtc (duplicate displays) (not trivial)
-* Systemd file for autostarting (must use systemd --user for the DISPLAY and .Xauthority environment variables)
-* Do not disable crtcs when not needed
+  * Custom debug function
+* Refresh configuration file when it is changed while listening to events
+* Handling the case when multiple outputs are connected to same crtc
+* Inspect why udev is not being triggered after wakeup from suspend and
+hibernate (udev bug?)
+* I could just use `xrandr` to load the changes, might be a lot easier that way
 
 # Conclusion
 This is my personal project. From writing this program I have learned a great
-deal about how to interact with the X11 server, trying out OOP in C, and hope
-to continue learning even more in the future. I want to work on this project
-until I deem that it is "complete", fufilling its purpose of dynamic monitor
-management for those who do not use a desktop envorinment.
+deal about how to interact with the X11 server, trying out OOP in C (even when
+it is overkill), and hope to continue learning even more in the future. I want
+to work on this project until I deem that it is "complete", fufilling its
+purpose of dynamic monitor management for those who do not use a desktop
+envorinment.

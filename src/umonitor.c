@@ -20,6 +20,23 @@
 		Contains the main function plus some helper functions that are shared by the classes
 */
 
+static const char help_str[]=
+"Usage: umonitor [OPTION]\n"
+"\n"
+"Options:\n"
+"\t--save=[profile_name]\tSaves current setup into profile_name\n"
+"\t--load=[profile_name]\tLoads setup from profile name\n"
+"\t--listen\t\tListens for changes in the setup and applies the new"
+" configuration automatically\n"
+"\t--help\t\t\tDisplay this help and exit\n"
+"\t--version\t\tOutput version information and exit\n"
+;
+
+static const char version_str[]=
+"umonitor 20170517\n"
+"Written by Ricky Liou\n"
+;
+
 /*! Logic for parsing options here*/
 
 int main(int argc, char **argv) {
@@ -27,6 +44,8 @@ int main(int argc, char **argv) {
 	int load = 0;
 	int delete = 0;
 	int listen = 0;
+	int help = 0;
+	int version = 0;
 	save_class *save_o;
 	load_class *load_o;
 	autoload_class *autoload_o;
@@ -71,6 +90,12 @@ int main(int argc, char **argv) {
 		else if (!strcmp("--listen", argv[i])){
 			listen = 1;
 		}
+		else if (!strcmp("--help", argv[i])){
+			help = 1;
+		}
+		else if (!strcmp("--version", argv[i])){
+			version = 1;
+		}
 		else {
 			printf("Unrecognized argument: %s\n",argv[i]);
 		}
@@ -81,8 +106,20 @@ int main(int argc, char **argv) {
 	screen_class_constructor(&screen_o);
 	// printf("Connected to screen\n");
 	// printf("Proof screen connection: %d\n",screen_o.c);
+	if(help){
+		printf("%s",help_str);
+		return 0;
+	}
+	if(version){
+		printf("%s",version_str);
+		return 0;
+	}
 
 	char *home_directory = getenv("HOME");
+	//char *display_env = getenv("DISPLAY");
+	//char *xauthority_env = getenv("XAUTHORITY");
+	//printf("Display: %s\n",display_env);
+	//printf("XAUTHORITY: %s\n",xauthority_env);
 	//printf("Home directory: %s\n",home_directory);
 	const char *conf_location = "/.config/umon2.conf";
 	char *path = malloc((strlen(home_directory)+strlen(conf_location)));
