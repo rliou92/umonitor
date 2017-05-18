@@ -8,7 +8,7 @@ extern void for_each_output(
 );
 extern void load_class_constructor(load_class **,screen_class *,config_t *);
 extern void load_class_destructor(load_class *);
-extern int VERBOSE;
+extern void umon_print(const char*,...);
 
 void autoload_constructor(autoload_class **,screen_class *,config_t *);
 void autoload_destructor(autoload_class *);

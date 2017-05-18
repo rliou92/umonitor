@@ -14,7 +14,7 @@ void save_class_constructor(save_class **self,screen_class *screen_t,
   (*self)->save_profile = save_profile;
   (*self)->screen_t_p = screen_t;
   (*self)->config = config;
-  if (VERBOSE) printf("Done constructing save class\n");
+  umon_print("Done constructing save class\n");
 
 }
 
@@ -29,7 +29,6 @@ void save_class_destructor(save_class *self){
 
 static void save_profile(save_class *self,config_setting_t *profile_group){
 
-	if (VERBOSE) printf("Before for each output\n");
 	self->umon_setting.disp_group =
    config_setting_add(profile_group,"Screen",CONFIG_TYPE_GROUP);
 	self->umon_setting.disp_width =
@@ -65,10 +64,9 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
    	xcb_randr_get_output_primary_reply(self->screen_t_p->c,
        output_primary_cookie, &self->screen_t_p->e);
   self->primary_output = output_primary_reply->output;
-  printf("Primary output %d\n",self->primary_output);
+  umon_print("Primary output %d\n",self->primary_output);
   free(output_primary_reply);
 
-	if (VERBOSE) printf("Before for each output\n");
   for_each_output((void *) self,self->screen_t_p->screen_resources_reply,
     check_output_status);
 
@@ -76,7 +74,7 @@ static void save_profile(save_class *self,config_setting_t *profile_group){
 	//if (VERBOSE) printf("About to write to config file %s\n",CONFIG_FILE);
 	config_write_file(self->config,CONFIG_FILE);
 
-	if (VERBOSE) printf("Done saving settings to profile\n");
+	umon_print("Done saving settings to profile\n");
 
 }
 
@@ -100,7 +98,7 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
 
 
   if (!self->output_info_reply->connection){
-    if (VERBOSE) printf("Found output that is connected\n");
+    umon_print("Found output that is connected\n");
 
     get_output_name(self->output_info_reply,&output_name);
     self->umon_setting.output_group =
@@ -132,9 +130,9 @@ static void check_output_status(void *self_void,xcb_randr_output_t *output_p){
     free(edid_string);
 
     if (self->output_info_reply->crtc){
-    	if (VERBOSE) printf("Found output that is enabled :%d\n",*output_p);
+    	umon_print("Found output that is enabled :%d\n",*output_p);
       if (*output_p == self->primary_output){
-        if (VERBOSE) printf("Found primary output\n");
+        umon_print("Found primary output\n");
         config_setting_t *primary_output_setting = config_setting_add(self->umon_setting.output_group,"primary",CONFIG_TYPE_INT);
         config_setting_set_int(primary_output_setting,1);
 
@@ -188,7 +186,7 @@ static void output_info_to_config(save_class *self){
   outputs_length =
    xcb_randr_get_crtc_info_outputs_length(self->crtc_info_reply);
   if (outputs_length > 1){
-    printf("Duplicate output!\n");
+    umon_print("Duplicate output!\n");
     dup_outputs = xcb_randr_get_crtc_info_outputs(self->crtc_info_reply);
     dup_outputs_setting =
      config_setting_add(self->umon_setting.mon_group,"duplicates",
@@ -227,9 +225,9 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
 
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
   save_class *self = (save_class *) self_void;
-	if (VERBOSE) printf("current mode id %d\n",*mode_id_p);
+	//if (VERBOSE) printf("current mode id %d\n",*mode_id_p);
 	if (*mode_id_p == self->crtc_info_reply->mode){
-		if (VERBOSE) printf("Found current mode id\n");
+		//if (VERBOSE) printf("Found current mode id\n");
 		// Get output info iterator
 	  mode_info_iterator =	xcb_randr_get_screen_resources_modes_iterator(
       self->screen_t_p->screen_resources_reply);
@@ -237,7 +235,7 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
       self->screen_t_p->screen_resources_reply);
 		for (k=0;k<num_screen_modes;++k){
 		    if (mode_info_iterator.data->id == *mode_id_p){
-		        if (VERBOSE) printf("Found current mode info\n");
+		        //if (VERBOSE) printf("Found current mode info\n");
 				 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
     				 config_setting_set_int(self->umon_setting.res_x,
                mode_info_iterator.data->width);
@@ -255,7 +253,7 @@ static void find_res_to_config(void * self_void,xcb_randr_mode_t *mode_id_p){
  */
 static void disabled_to_config(save_class *self){
 
-  if (VERBOSE) printf("Found output that is disabled\n");
+  umon_print("Found output that is disabled\n");
 
   config_setting_set_int(self->umon_setting.pos_x,0);
 	config_setting_set_int(self->umon_setting.pos_y,0);

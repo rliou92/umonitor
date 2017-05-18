@@ -3,7 +3,7 @@
 void screen_class_constructor(screen_class *);
 void screen_class_destructor(screen_class *);
 static void update_screen(screen_class *);
-extern int VERBOSE;
+extern void umon_print(const char*,...);
 
 
 /*! \file
@@ -37,7 +37,7 @@ void screen_class_constructor(screen_class *self){
 	}
 
 	self->screen = iter.data;
-	if (VERBOSE) printf("Connected to server\n");
+	umon_print("Connected to server\n");
 	atom_cookie = xcb_intern_atom(self->c,only_if_exists,name_len,edid_name);
 
 	self->edid_atom = xcb_intern_atom_reply(self->c,atom_cookie,&self->e);

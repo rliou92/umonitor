@@ -36,6 +36,8 @@ change signal. This systemd unit should be enabled with the system systemd:
  The configuration file is stored in `~/.config/umon2.conf`. You can load a
  profile manually by executing `umonitor --load <profile_name>`.
 
+ Program help can also be viewed through `umonitor --help`.
+
 # Features
 This program has only been tested on my setup. I need testers and feedback!
 
@@ -60,8 +62,9 @@ Future improvements:
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
 
-# Conclusion
-This is my personal project. From writing this program I have learned a great
+# About
+This is my personal project. My motivation for writing this program comes from
+using i3 wm on my laptop. From writing this program I have learned a great
 deal about how to interact with the X11 server, trying out OOP in C (even when
 it is overkill), and hope to continue learning even more in the future. I want
 to work on this project until I deem that it is "complete", fufilling its

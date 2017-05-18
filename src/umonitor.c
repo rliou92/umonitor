@@ -25,6 +25,7 @@ static const char help_str[]=
 "\n"
 "Options:\n"
 "\t--save=[profile_name]\tSaves current setup into profile_name\n"
+"\t--delete=[profile_name]\tRemoves profile_name from configuration file\n"
 "\t--load=[profile_name]\tLoads setup from profile name\n"
 "\t--listen\t\tListens for changes in the setup and applies the new"
 " configuration automatically\n"
@@ -33,9 +34,20 @@ static const char help_str[]=
 ;
 
 static const char version_str[]=
-"umonitor 20170517\n"
+"umonitor 20170518\n"
 "Written by Ricky Liou\n"
 ;
+
+void umon_print(const char *format, ...){
+	va_list args;
+
+	if (VERBOSE){
+		va_start(args, format);
+		vprintf(format, args);
+		va_end(args);
+	}
+
+}
 
 /*! Logic for parsing options here*/
 
@@ -102,10 +114,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (save + load + listen >= 2) exit(10);
-	// if (save+load+listen == 0) sleep(5);
+
 	screen_class_constructor(&screen_o);
-	// printf("Connected to screen\n");
-	// printf("Proof screen connection: %d\n",screen_o.c);
+
 	if(help){
 		printf("%s",help_str);
 		return 0;
@@ -132,7 +143,7 @@ int main(int argc, char **argv) {
 	//printf("File pointer: %d\n",CONF_FP);
 	// Existing config file to load setting values
 
-	if (save) {
+	if (save || delete) {
 		config_read_file(&config, CONFIG_FILE);
 		profile_group = config_lookup(&config,profile_name);
 		if (profile_group != NULL) {
@@ -140,25 +151,27 @@ int main(int argc, char **argv) {
 			cfg_idx = config_setting_index(profile_group);
 			root = config_root_setting(&config);
 			config_setting_remove_elem(root,cfg_idx);
-			if (VERBOSE) printf("Deleted profile %s\n", profile_name);
+			umon_print("Deleted profile %s\n", profile_name);
 		}
-		if (VERBOSE) printf("Saving current settings into profile: %s\n", profile_name);
-		/*
-		 * Always create the new profile group because above code has already
-		 * deleted it if it existed before
-		*/
-		root = config_root_setting(&config);
-		profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
+		if (save){
+			umon_print("Saving current settings into profile: %s\n", profile_name);
+			/*
+			 * Always create the new profile group because above code has already
+			 * deleted it if it existed before
+			*/
+			root = config_root_setting(&config);
+			profile_group = config_setting_add(root,profile_name,CONFIG_TYPE_GROUP);
 
-		save_class_constructor(&save_o,&screen_o,&config);
-		save_o->save_profile(save_o,profile_group);
-		save_class_destructor(save_o);
+			save_class_constructor(&save_o,&screen_o,&config);
+			save_o->save_profile(save_o,profile_group);
+			save_class_destructor(save_o);
+		}
 	}
 
 
 	if (load) {
 		if(config_read_file(&config, CONFIG_FILE)){
-			if (VERBOSE) printf("Loading profile: %s\n", profile_name);
+			umon_print("Loading profile: %s\n", profile_name);
 			// Load profile
 			profile_group = config_lookup(&config,profile_name);
 
@@ -173,7 +186,7 @@ int main(int argc, char **argv) {
 			}
 		}
 		else{
-			if (VERBOSE) printf("No configuration file to load\n");
+			printf("No configuration file to load\n");
 			exit(3);
 		}
 	}
@@ -184,11 +197,11 @@ int main(int argc, char **argv) {
 			autoload_constructor(&autoload_o,&screen_o,&config);
 			//autoload_o->find_profile_and_load(autoload_o);
 			autoload_o->wait_for_event(autoload_o);
-			if (VERBOSE) printf("Autoloading\n");
+			umon_print("Autoloading\n");
 			autoload_destructor(autoload_o);
 		}
 		else{
-			if (VERBOSE) printf("No configuration file to load\n");
+			printf("No configuration file to load\n");
 			exit(3);
 		}
 	}
@@ -241,7 +254,7 @@ void for_each_output_mode(
 
 	num_output_modes =
 		xcb_randr_get_output_info_modes_length(output_info_reply);
-	if (VERBOSE) printf("number of modes %d\n",num_output_modes);
+	//if (VERBOSE) printf("number of modes %d\n",num_output_modes);
 	mode_id_p = xcb_randr_get_output_info_modes(output_info_reply);
 
 	for (j=0;j<num_output_modes;++j){
@@ -285,7 +298,7 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	//length = xcb_randr_get_output_property_data_length(
 		//output_property_reply);
 
-	if (VERBOSE) printf("Starting edid_to_string\n");
+	umon_print("Starting edid_to_string\n");
 	// *edid_string = (char *) malloc((length+1)*sizeof(char));
 	// for (z=0;z<length;++z) {
 	// 	if ((char) edid[z] == '\0') {
@@ -328,5 +341,5 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	snprintf(*edid_string,17,"%s %s",vendor,modelname);
 
 	free(output_property_reply);
-	if (VERBOSE) printf("Finished edid_to_string\n");
+	umon_print("Finished edid_to_string\n");
 }

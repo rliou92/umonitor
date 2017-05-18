@@ -143,6 +143,7 @@ static void apply_settings(load_class *self){
   set_crtc_param *cur_crtc_param,*old_crtc_param;
   disable_crtc *cur_disable_crtc,*old_disable_crtc;
 
+  umon_print("Disable crtcs here\n");
   cur_disable_crtc = self->disable_crtc_head;
   while(cur_disable_crtc){
 
@@ -160,7 +161,7 @@ static void apply_settings(load_class *self){
       cur_disable_crtc = cur_disable_crtc->next;
       free(old_disable_crtc);
 
-    if (VERBOSE) printf("Would disable crtcs here\n");
+
 	}
   xcb_flush(self->screen_t_p->c);
 
@@ -172,7 +173,7 @@ static void apply_settings(load_class *self){
     (uint32_t)self->umon_setting_val.screen.heightMM);
   xcb_flush(self->screen_t_p->c);
 
-  if (VERBOSE) printf("Would change screen size here\n");
+  umon_print("Change screen size here\n");
 
   //TODO implement
   //find_duplicate_crtc(self);
@@ -205,7 +206,7 @@ static void apply_settings(load_class *self){
     cur_crtc_param = cur_crtc_param->next;
     free(old_crtc_param);
   }
-  if (VERBOSE) printf("Would enable crtcs here\n");
+  umon_print("Enable crtcs here\n");
 
   // xcb_flush(self->screen_t_p->c);
   crtc_config_reply =
@@ -242,16 +243,16 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 
 	fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
 
-	if (VERBOSE) printf("Num out pp: %d\n",self->num_out_pp);
+	umon_print("Num outputs per profile: %d\n",self->num_out_pp);
 
 	for(self->conf_output_idx=0;self->conf_output_idx<self->num_out_pp;
     ++self->conf_output_idx){
 		if (!strcmp(self->umon_setting_val.outputs[self->conf_output_idx].edid_val,
                 edid_string)){
-			if (VERBOSE) printf("Before for each output mode\n");
+			//if (VERBOSE) printf("Before for each output mode\n");
 			// Which crtc has the same resolution?
       find_mode_id(self);
-      if (VERBOSE) printf("Finish find_mode_id\n");
+      //if (VERBOSE) printf("Finish find_mode_id\n");
 		}
 	}
   free(edid_string);
@@ -284,14 +285,12 @@ static void find_mode_id(load_class *self){
          self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
          (mode_info_iterator.data->height ==
          self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
-  			 if (VERBOSE) printf("Found current mode info\n");
+  			 //if (VERBOSE) printf("Found current mode info\n");
   			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
             new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
             find_available_crtc(self,self->crtc_offset++,
               &(new_crtc_param->crtc));
-            if (VERBOSE) {
-              printf("Queing up crtc to load: %d\n",new_crtc_param->crtc);
-            }
+            umon_print("Queing up crtc to load: %d\n",new_crtc_param->crtc);
             new_crtc_param->pos_x =
               self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
             new_crtc_param->pos_y =
@@ -332,8 +331,8 @@ static void find_available_crtc(load_class *self,int offset,
     self->screen_t_p->screen_resources_reply);
   int num_available_crtcs = self->screen_t_p->screen_resources_reply->num_crtcs;
 
-  if (VERBOSE) printf("num_available_crtcs: %d\n",num_available_crtcs);
-  if (VERBOSE) printf("num_output_crtcs: %d\n",num_output_crtcs);
+  // if (VERBOSE) printf("num_available_crtcs: %d\n",num_available_crtcs);
+  // if (VERBOSE) printf("num_output_crtcs: %d\n",num_output_crtcs);
 
   for (int i=0;i<num_available_crtcs;++i){
     for (int j=0;j<num_output_crtcs;++j){
@@ -400,7 +399,7 @@ static void load_config_val(load_class *self){
 	config_setting_lookup_int(group,"heightMM",
     &(self->umon_setting_val.screen.heightMM));
 
-	if (VERBOSE) printf("Done loading values from configuration file\n");
+	umon_print("Done loading values from configuration file\n");
 
 
 }

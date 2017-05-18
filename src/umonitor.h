@@ -17,6 +17,7 @@ void for_each_output_mode(
   xcb_randr_get_output_info_reply_t *output_info_reply,
 	void (*callback)(void *,xcb_randr_mode_t *)
 );
+void umon_print(const char*,...);
 
 // extern
 extern void screen_class_constructor(screen_class *);

@@ -28,6 +28,6 @@ extern void for_each_output_mode(
 	void (*callback)(void *,xcb_randr_mode_t *)
 );
 extern void fetch_edid(xcb_randr_output_t *,screen_class *,char **edid_string);
+extern void umon_print(const char*,...);
 
 extern const char *CONFIG_FILE;
-extern int VERBOSE;
