@@ -1,13 +1,17 @@
 TARGET = umonitor
 LIBS = -lX11 -lxcb-randr -lxcb -lconfig
 CC = gcc
+
+ifeq ($(DEBUG),1)
 CFLAGS = -Wall -g
+else
+CFLAGS = 
+endif
 
 .PHONY: default all clean install
 
-default: $(TARGET) directories
+default: directories $(TARGET) 
 all: default
-
 
 OBJDIR = obj
 SRCDIR = src
@@ -26,7 +30,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 .PRECIOUS: $(TARGETDIR)/$(TARGET) $(OBJDIR)/$(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $(TARGETDIR)/$@
+	$(CC) $(OBJECTS) $(CFLAGS) $(LIBS) -o $(TARGETDIR)/$@
 
 install:
 	@install -m755 $(TARGETDIR)/$(TARGET) "/usr/bin"

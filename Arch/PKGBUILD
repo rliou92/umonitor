@@ -22,7 +22,7 @@ install=${_gitname}.install
 changelog=
 source=("git://github.com/rliou92/${_gitname}.git")
 noextract=()
-md5sums=()
+md5sums=('SKIP')
 validpgpkeys=()
 
 build() {
