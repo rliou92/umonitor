@@ -1,10 +1,11 @@
 # Maintainer: Ricky Liou <rliou92@gmail.com>
-pkgname=umonitor
+pkgname=umonitor-git
+_gitname=umonitor
 pkgver=20170518
 pkgrel=1
 epoch=
 pkgdesc="Dynamic monitor configuration"
-arch=()
+arch=('i686' 'x86_64')
 url="https://github.com/rliou92/umonitor"
 license=('MIT')
 groups=()
@@ -17,31 +18,19 @@ conflicts=()
 replaces=()
 backup=()
 options=()
-install=
+install=${_gitname}.install
 changelog=
-source=("$pkgname-$pkgver.tar.gz"
-        "$pkgname-$pkgver.patch")
+source=("git://github.com/rliou92/${_gitname}.git")
 noextract=()
 md5sums=()
 validpgpkeys=()
 
-prepare() {
-	cd "$pkgname-$pkgver"
-	patch -p1 -i "$srcdir/$pkgname-$pkgver.patch"
-}
-
 build() {
-	cd "$pkgname-$pkgver"
-	./configure --prefix=/usr
+	cd $srcdir/$_gitname
 	make
 }
 
-check() {
-	cd "$pkgname-$pkgver"
-	make -k check
-}
-
 package() {
-	cd "$pkgname-$pkgver"
+	cd $srcdir/$_gitname
 	make DESTDIR="$pkgdir/" install
 }

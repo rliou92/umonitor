@@ -5,3 +5,5 @@ html/
 latex/
 *.zip
 umon2.conf
+legacy
+docs/ext

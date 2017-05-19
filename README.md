@@ -70,6 +70,9 @@ to work on this project until I deem that it is "complete", fufilling its
 purpose of dynamic monitor management for those who do not use a desktop
 envorinment.
 
+# Credits
+I borrowed the edid parsing code from [eds](https://github.com/compnerd/eds).
+
 # License
 Copyright (c) 2017 Ricky Liou
 

@@ -3,10 +3,11 @@ LIBS = -lX11 -lxcb-randr -lxcb -lconfig
 CC = gcc
 CFLAGS = -Wall -g
 
-.PHONY: default all clean
+.PHONY: default all clean install
 
 default: $(TARGET) directories
 all: default
+
 
 OBJDIR = obj
 SRCDIR = src
@@ -26,6 +27,16 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -Wall $(LIBS) -o $(TARGETDIR)/$@
+
+install:
+	@install -m755 $(TARGETDIR)/$(TARGET) "/usr/bin"
+	@install -m644 "umonitor.service" "/usr/lib/systemd/user"
+	@install -m644 "udev_trigger.service" "/usr/lib/systemd/system"
+
+uninstall:
+	@rm -f "/usr/bin/$(TARGET)"
+	@rm -f "/usr/lib/systemd/user/umonitor.service"
+	@rm -f "/usr/lib/systemd/system/udev_trigger.service"
 
 clean:
 	-rm -f $(OBJDIR)/*.o
