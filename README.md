@@ -54,8 +54,7 @@ Future improvements:
 * Expanding Doxygen documentation
 * More commandline options
   * Alternate configuration file location
-* Clean up output
-  * Custom debug function
+* Improved debugging support
 * Refresh configuration file when it is changed while listening to events
 * Handling the case when multiple outputs are connected to same crtc
 * Inspect why udev is not being triggered after wakeup from suspend and
