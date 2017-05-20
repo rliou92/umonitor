@@ -1,6 +1,10 @@
 TARGET = umonitor
 LIBS = -lX11 -lxcb-randr -lxcb -lconfig
 CC = gcc
+BIN_DIR = /usr/bin
+SYSTEMD_DIR = /usr/lib/systemd
+SYSTEMD_USER_DIR = $(SYSTEMD_DIR)/user
+SYSTEMD_SYSTEM_DIR = $(SYSTEMD_DIR)/system
 
 ifeq ($(DEBUG),1)
 CFLAGS = -Wall -g
@@ -33,15 +37,15 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) $(CFLAGS) $(LIBS) -o $(TARGETDIR)/$@
 
 install:
-	@install -m755 $(TARGETDIR)/$(TARGET) "/usr/bin"
-	@install -m644 "umonitor.service" "/usr/lib/systemd/user"
-	@install -m644 "udev_trigger.service" "/usr/lib/systemd/system"
+	install -p -m755 $(TARGETDIR)/$(TARGET) $(DESTDIR)$(BIN_DIR)
+	install -p -m644 "umonitor.service" $(DESTDIR)$(SYSTEMD_USER_DIR)
+	install -p -m644 "udev_trigger.service" $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
 
 uninstall:
-	@rm -f "/usr/bin/$(TARGET)"
-	@rm -f "/usr/lib/systemd/user/umonitor.service"
-	@rm -f "/usr/lib/systemd/system/udev_trigger.service"
+	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)
+	rm -f "$(DESTDIR)$(SYSTEMD_USER_DIR)/umonitor.service"
+	rm -f "$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/udev_trigger.service"
 
 clean:
-	-rm -f $(OBJDIR)/*.o
-	-rm -f $(TARGETDIR)/$(TARGET)
+	rm -f $(OBJDIR)/*.o
+	rm -f $(TARGETDIR)/$(TARGET)
