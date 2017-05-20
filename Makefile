@@ -37,8 +37,11 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) $(CFLAGS) $(LIBS) -o $(TARGETDIR)/$@
 
 install:
+	install -d $(DESTDIR)$(BIN_DIR)
 	install -p -m755 $(TARGETDIR)/$(TARGET) $(DESTDIR)$(BIN_DIR)
+	install -d $(DESTDIR)$(SYSTEMD_USER_DIR)
 	install -p -m644 "umonitor.service" $(DESTDIR)$(SYSTEMD_USER_DIR)
+	install -d $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
 	install -p -m644 "udev_trigger.service" $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
 
 uninstall:
