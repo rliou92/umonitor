@@ -14,4 +14,4 @@ void autoload_constructor(autoload_class **,screen_class *,config_t *);
 void autoload_destructor(autoload_class *);
 static void match_with_profile(void *,xcb_randr_output_t *);
 static void wait_for_event(autoload_class *);
-static void find_profile_and_load(autoload_class *);
+static void find_profile_and_load(autoload_class *,int);

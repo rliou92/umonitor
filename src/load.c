@@ -17,6 +17,8 @@ void load_class_constructor(load_class **self,screen_class *screen_t){
   (*self)->umon_setting_val.outputs = NULL;
   (*self)->output_info_reply = NULL;
   (*self)->disable_crtc_head = NULL;
+  (*self)->last_time = (xcb_timestamp_t) 0;
+
 
 }
 
@@ -42,7 +44,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
   xcb_randr_output_t *conn_output;
-  int i,should_disable;
+  int i,should_disable,crtc_match;
 
 
 
@@ -60,13 +62,13 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     self->screen_t_p->screen_resources_reply);
 
 	self->crtc_offset = 0;
-  self->crtc_ll_length = 0;
+  //self->crtc_ll_length = 0;
 	for_each_output(
     (void *) self,self->screen_t_p->screen_resources_reply,match_with_config);
 
   // Check against redundant loading
   //TODO Only assuming 1 output connected to crtc
-  //crtc_match = 0;
+  crtc_match = 0;
   for(i=0;i<self->screen_t_p->screen_resources_reply->num_crtcs;++i){
     should_disable = 1;
     crtc_info_cookie =
@@ -87,9 +89,9 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
          cur_crtc_param->pos_y == crtc_info_reply->y &&
          cur_crtc_param->mode_id == crtc_info_reply->mode &&
          cur_crtc_param->output_p[0] == conn_output[0]){
-           //crtc_match++;
+           crtc_match++;
            should_disable = 0;
-           // Remove current crtc_param from linked list
+           //Remove current crtc_param from linked list
            //printf("Remove current crtc_param from ll\n");
            if (cur_crtc_param->prev){
              cur_crtc_param->prev->next = cur_crtc_param->next;
@@ -114,16 +116,19 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
       new_disable_crtc->next = self->disable_crtc_head;
       self->disable_crtc_head = new_disable_crtc;
     }
-
+    umon_print("Crtc %d should be disabled? %d\n",self->crtcs_p[i],should_disable);
     free(crtc_info_reply);
   }
   //printf("self->crtc_param_head: %d\n",self->crtc_param_head);
-  if (self->crtc_param_head){
-    apply_settings(self);
-    self->cur_loaded = 0;
+  // Number of currently connected outputs
+  //printf("number of connected outputs: %d\n",self->num_conn_outputs);
+  //printf("crtc_match: %d\n",crtc_match);
+  apply_settings(self); // shouldn't change screen settings if settings are the same
+  if (self->num_out_pp == crtc_match){
+    self->cur_loaded = 1;
   }
   else{
-    self->cur_loaded = 1;
+    self->cur_loaded = 0;
   }
   // printf("crtc matches: %d\n",crtc_match);
   // printf("crtc linked list length: %d\n",self->crtc_ll_length);
@@ -147,9 +152,10 @@ static void apply_settings(load_class *self){
   cur_disable_crtc = self->disable_crtc_head;
   while(cur_disable_crtc){
 
-      //printf("Disabling this crtc: %d\n",cur_disable_crtc->crtc);
+      umon_print("Disabling this crtc: %d\n",cur_disable_crtc->crtc);
 
-      xcb_randr_set_crtc_config(self->screen_t_p->c,cur_disable_crtc->crtc,
+      crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
+        cur_disable_crtc->crtc,
         XCB_CURRENT_TIME,
         XCB_CURRENT_TIME,
         0,
@@ -162,8 +168,15 @@ static void apply_settings(load_class *self){
       free(old_disable_crtc);
 
 
+
 	}
   xcb_flush(self->screen_t_p->c);
+  crtc_config_reply =
+   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+     &self->screen_t_p->e);
+  self->last_time = crtc_config_reply->timestamp;
+  free(crtc_config_reply);
+
 
   xcb_randr_set_screen_size(self->screen_t_p->c,
     self->screen_t_p->screen->root,
@@ -179,44 +192,46 @@ static void apply_settings(load_class *self){
   //find_duplicate_crtc(self);
 
   cur_crtc_param=self->crtc_param_head;
-  while(cur_crtc_param){
+  if (cur_crtc_param){
+    while(cur_crtc_param){
 
-// printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
-// printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
-  //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
-    //printf("About to load this pos_x: %d\n",cur_crtc_param->pos_x);
-     crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
-        cur_crtc_param->crtc,
-        XCB_CURRENT_TIME,XCB_CURRENT_TIME,
-        cur_crtc_param->pos_x,
-        cur_crtc_param->pos_y,
-        cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
-        cur_crtc_param->output_p);
+  // printf("cur_crtc_param->output_p: %d\n",cur_crtc_param->output_p);
+  // printf("*(cur_crtc_param->mode_id_p): %d\n",cur_crtc_param->mode_id);
+    //printf("Enabling crtc %d\n",cur_crtc_param->crtc);
+      //printf("About to load this pos_x: %d\n",cur_crtc_param->pos_x);
+       crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
+          cur_crtc_param->crtc,
+          XCB_CURRENT_TIME,XCB_CURRENT_TIME,
+          cur_crtc_param->pos_x,
+          cur_crtc_param->pos_y,
+          cur_crtc_param->mode_id,XCB_RANDR_ROTATION_ROTATE_0, 1,
+          cur_crtc_param->output_p);
 
-     if(cur_crtc_param->is_primary){
-        xcb_randr_set_output_primary(self->screen_t_p->c,
-          self->screen_t_p->screen->root, *(cur_crtc_param->output_p));
-     }
-  //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
+       if(cur_crtc_param->is_primary){
+          xcb_randr_set_output_primary(self->screen_t_p->c,
+            self->screen_t_p->screen->root, *(cur_crtc_param->output_p));
+       }
+    //if(crtc_config_reply_pp->status==XCB_RANDR_SET_CONFIG_SUCCESS) printf("Enabling crtc should be success\n");
 
-         //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
+           //printf("Configuring time: %" PRIu32 "\n",crtc_config_reply_pp->timestamp);
+      // xcb_flush(self->screen_t_p->c);
+      //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
+      old_crtc_param = cur_crtc_param;
+      cur_crtc_param = cur_crtc_param->next;
+      free(old_crtc_param);
+    }
+    umon_print("Enable crtcs here\n");
+
     // xcb_flush(self->screen_t_p->c);
-    //printf("crtc_config_reply_pp: %d\n",crtc_config_reply_pp->response_type);
-    old_crtc_param = cur_crtc_param;
-    cur_crtc_param = cur_crtc_param->next;
-    free(old_crtc_param);
+    // Will segfault if no cur_crtc_param
+
+    crtc_config_reply =
+     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+       &self->screen_t_p->e);
+    self->last_time = crtc_config_reply->timestamp;
+
+    free(crtc_config_reply);
   }
-  umon_print("Enable crtcs here\n");
-
-  // xcb_flush(self->screen_t_p->c);
-  crtc_config_reply =
-   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-     &self->screen_t_p->e);
-  self->last_time = crtc_config_reply->timestamp;
-
-
-  free(crtc_config_reply);
-
 
 }
 
@@ -239,7 +254,6 @@ static void match_with_config(void *self_void,xcb_randr_output_t *output_p){
 	self->output_info_reply =
 		xcb_randr_get_output_info_reply (self->screen_t_p->c,output_info_cookie,
       &self->screen_t_p->e);
-
 
 	fetch_edid(self->cur_output,self->screen_t_p,&edid_string);
 
@@ -307,7 +321,7 @@ static void find_mode_id(load_class *self){
             self->crtc_param_head = new_crtc_param;
             //printf("self->crtc_param_head->next: %d\n",self->crtc_param_head->next);
             if (self->crtc_param_head->next) self->crtc_param_head->next->prev = new_crtc_param;
-            self->crtc_ll_length++;
+            //self->crtc_ll_length++;
             //printf("did I make it here\n");
   			 }
   			xcb_randr_mode_info_next(&mode_info_iterator);

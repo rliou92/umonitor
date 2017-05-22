@@ -140,7 +140,7 @@ typedef struct _load_class{
   int conf_output_idx;   /*!< current output index*/
   int num_out_pp;   /*!< number of outputs per profile*/
   int crtc_offset;   /*!< how many available crtcs to skip before returning*/
-  int crtc_ll_length;   /*!< how many crtcs are queued up to load*/
+  //int num_conn_outputs;   /*!< how many outputs are currently enabled*/
   int cur_loaded;   /*!< whether or not current profile is loaded*/
   set_crtc_param *crtc_param_head; /*!< head of crtc queue*/
   config_setting_t *profile_group; /*!< which profile to be loaded*/
@@ -173,7 +173,7 @@ typedef struct _autoload_class{
   // Methods
   /*! find which profile matches current display settings and loads that
    profile*/
-  void (*find_profile_and_load)(struct _autoload_class *);
+  void (*find_profile_and_load)(struct _autoload_class *,int);
   /*! waits for the screen change event, then calls find_profile_and_load*/
   void (*wait_for_event)(struct _autoload_class *);
 

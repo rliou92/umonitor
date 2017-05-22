@@ -17,7 +17,6 @@ void autoload_constructor(autoload_class **self,screen_class *screen_o,
 
 	(*self)->find_profile_and_load = find_profile_and_load;
   load_class_constructor(&((*self)->load_o),screen_o,config);
-  (*self)->load_o->last_time = (xcb_timestamp_t) 0;
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
@@ -43,7 +42,7 @@ static void wait_for_event(autoload_class *self){
 	xcb_generic_event_t *evt;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 
-  find_profile_and_load(self); //In order to get an output the first time
+  find_profile_and_load(self,0); //In order to get an output the first time
 	while(1){
 
     umon_print("Waiting for event\n");
@@ -51,21 +50,16 @@ static void wait_for_event(autoload_class *self){
   	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
   		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
       //printf("event received, should I load?\n");
-      //printf("Last time of configuration: %" PRIu32 "\n",self->load_o.last_time);
-      //if (VERBOSE) printf("Last time of configuration: %d\n",self->load_o->last_time);
-      //if (VERBOSE) printf("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
+      umon_print("Last time of configuration: %" PRIu32 "\n",self->load_o->last_time);
+      umon_print("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
       //xcb_timestamp_t time_difference =  randr_evt->timestamp - self->load_o->last_time;
       umon_print("Screen change event detected\n");
 
-      //time_t raw_time = (time_t) randr_evt->timestamp;
-      //struct tm *timeinfo = localtime (&raw_time);
-      //printf ("Time and date: %s", asctime(timeinfo));
-       //timedifference
 
       if (randr_evt->timestamp >= self->load_o->last_time){
         umon_print("Now I should load\n");
         self->screen_t_p->update_screen(self->screen_t_p);
-        find_profile_and_load(self);
+        find_profile_and_load(self,0);
       }
   			// Find matching profile
   			// Get total connected outputs
@@ -151,9 +145,12 @@ static void match_with_profile(void *self_void,xcb_randr_output_t *output_p){
 }
 
 /*! \brief Find which profile matches the current setup and load it
- */
 
-static void find_profile_and_load(autoload_class *self){
+Also prints out the list of configurations along with the current configuration.
+The current configuration is either the current configuration (applying no
+settings), or the newly loaded configuration. */
+
+static void find_profile_and_load(autoload_class *self, int test_cur){
 
   config_setting_t *root,*cur_profile;
   int profile_found = 0;
@@ -181,9 +178,15 @@ static void find_profile_and_load(autoload_class *self){
           (self->num_out_pp == self->num_conn_outputs)){
         //Only loads first matching profile
   			//umon_print("Found matching profile\n");
-        profile_found = 1;
         self->load_o->load_profile(self->load_o,cur_profile);
-        printf("*");
+        if (self->load_o->cur_loaded == 1 && test_cur){
+          profile_found = 1;
+          printf("*");
+        }
+        if (!test_cur){
+          profile_found = 1;
+          printf("*");
+        }
       }
     }
 

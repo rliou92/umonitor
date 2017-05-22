@@ -20,6 +20,8 @@
 		Contains the main function plus some helper functions that are shared by the classes
 */
 
+static int verbose;
+
 static const char help_str[]=
 "Usage: umonitor [OPTION]\n"
 "\n"
@@ -41,7 +43,7 @@ static const char version_str[]=
 void umon_print(const char *format, ...){
 	va_list args;
 
-	if (VERBOSE){
+	if (verbose){
 		va_start(args, format);
 		vprintf(format, args);
 		va_end(args);
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
 			delete = 1;
 		}
 		else if (!strcmp("--verbose", argv[i])){
-			VERBOSE = 1;
+			verbose = 1;
 		}
 		else if (!strcmp("--listen", argv[i])){
 			listen = 1;
@@ -113,10 +115,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (save + load + listen >= 2) exit(10);
-
-	screen_class_constructor(&screen_o);
-
 	if(help){
 		printf("%s",help_str);
 		return 0;
@@ -125,6 +123,9 @@ int main(int argc, char **argv) {
 		printf("%s",version_str);
 		return 0;
 	}
+	if (save + load + listen >= 2) exit(10);
+
+	screen_class_constructor(&screen_o);
 
 	char *home_directory = getenv("HOME");
 	//char *display_env = getenv("DISPLAY");
@@ -152,6 +153,10 @@ int main(int argc, char **argv) {
 			root = config_root_setting(&config);
 			config_setting_remove_elem(root,cfg_idx);
 			umon_print("Deleted profile %s\n", profile_name);
+			if (delete) {
+				printf("Profile %s deleted!\n",profile_name);
+				config_write_file(&config,CONFIG_FILE);
+			}
 		}
 		if (save){
 			umon_print("Saving current settings into profile: %s\n", profile_name);
@@ -165,6 +170,7 @@ int main(int argc, char **argv) {
 			save_class_constructor(&save_o,&screen_o,&config);
 			save_o->save_profile(save_o,profile_group);
 			save_class_destructor(save_o);
+		  printf("Profile %s saved!\n",profile_name);
 		}
 	}
 
@@ -203,6 +209,19 @@ int main(int argc, char **argv) {
 		else{
 			printf("No configuration file to load\n");
 			exit(3);
+		}
+	}
+	else{
+		// Print current state
+		if (config_read_file(&config, CONFIG_FILE)){
+			autoload_constructor(&autoload_o,&screen_o,&config);
+			//autoload_o->find_profile_and_load(autoload_o);
+			autoload_o->find_profile_and_load(autoload_o,1);
+			autoload_destructor(autoload_o);
+		}
+		else{
+			printf("No configuration file detected\n");
+			exit(5);
 		}
 	}
 
@@ -336,8 +355,9 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 		}
 	}
 
-	printf("vendor: %s\n",vendor);
-	printf("modelname: %s\n",modelname);
+	// printf("vendor: %s\n",vendor);
+	// printf("modelname: %s\n",modelname);
+	// 3 for vendor, 1 for space, 12 for modelname, 1 for null
 	snprintf(*edid_string,17,"%s %s",vendor,modelname);
 
 	free(output_property_reply);
