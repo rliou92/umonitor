@@ -110,7 +110,8 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
 
     }
-    if (should_disable){
+    if (should_disable && crtc_info_reply->mode){
+      //printf("crtc_info_mode: %d\n",crtc_info_reply->mode);
       new_disable_crtc = (disable_crtc *) malloc(sizeof(disable_crtc));
       new_disable_crtc->crtc = self->crtcs_p[i];
       new_disable_crtc->next = self->disable_crtc_head;
@@ -123,11 +124,12 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
   // Number of currently connected outputs
   //printf("number of connected outputs: %d\n",self->num_conn_outputs);
   //printf("crtc_match: %d\n",crtc_match);
-  apply_settings(self); // shouldn't change screen settings if settings are the same
-  if (self->num_out_pp == crtc_match){
+  if ((self->crtc_param_head == NULL) &&
+      (self->disable_crtc_head == NULL)){
     self->cur_loaded = 1;
   }
   else{
+    apply_settings(self);
     self->cur_loaded = 0;
   }
   // printf("crtc matches: %d\n",crtc_match);
@@ -150,34 +152,37 @@ static void apply_settings(load_class *self){
 
   umon_print("Disable crtcs here\n");
   cur_disable_crtc = self->disable_crtc_head;
-  while(cur_disable_crtc){
+  if (cur_disable_crtc){
+    while(cur_disable_crtc){
 
-      umon_print("Disabling this crtc: %d\n",cur_disable_crtc->crtc);
+        umon_print("Disabling this crtc: %d\n",cur_disable_crtc->crtc);
 
-      crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
-        cur_disable_crtc->crtc,
-        XCB_CURRENT_TIME,
-        XCB_CURRENT_TIME,
-        0,
-        0,
-        XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
-        NULL);
+        crtc_config_cookie = xcb_randr_set_crtc_config(self->screen_t_p->c,
+          cur_disable_crtc->crtc,
+          XCB_CURRENT_TIME,
+          XCB_CURRENT_TIME,
+          0,
+          0,
+          XCB_NONE,XCB_RANDR_ROTATION_ROTATE_0,0,
+          NULL);
 
-      old_disable_crtc = cur_disable_crtc;
-      cur_disable_crtc = cur_disable_crtc->next;
-      free(old_disable_crtc);
-
-
-
-	}
-  xcb_flush(self->screen_t_p->c);
-  crtc_config_reply =
-   xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
-     &self->screen_t_p->e);
-  self->last_time = crtc_config_reply->timestamp;
-  free(crtc_config_reply);
+        old_disable_crtc = cur_disable_crtc;
+        cur_disable_crtc = cur_disable_crtc->next;
+        free(old_disable_crtc);
 
 
+
+  	}
+    xcb_flush(self->screen_t_p->c);
+    crtc_config_reply =
+     xcb_randr_set_crtc_config_reply(self->screen_t_p->c,crtc_config_cookie,
+       &self->screen_t_p->e);
+    self->last_time = crtc_config_reply->timestamp;
+    free(crtc_config_reply);
+
+  }
+
+  umon_print("Change screen size here\n");
   xcb_randr_set_screen_size(self->screen_t_p->c,
     self->screen_t_p->screen->root,
     (uint16_t)self->umon_setting_val.screen.width,
@@ -186,7 +191,7 @@ static void apply_settings(load_class *self){
     (uint32_t)self->umon_setting_val.screen.heightMM);
   xcb_flush(self->screen_t_p->c);
 
-  umon_print("Change screen size here\n");
+
 
   //TODO implement
   //find_duplicate_crtc(self);

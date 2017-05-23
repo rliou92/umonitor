@@ -20,7 +20,7 @@ void autoload_constructor(autoload_class **self,screen_class *screen_o,
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
-		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+		XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
   xcb_flush(screen_o->c);
 
 }
@@ -47,7 +47,11 @@ static void wait_for_event(autoload_class *self){
 
     umon_print("Waiting for event\n");
   	evt = xcb_wait_for_event(self->screen_t_p->c);
-  	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
+    umon_print("Event type: %"PRIu8"\n",evt->response_type);
+    umon_print("screen change mask: %"PRIu16"\n",XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+    umon_print("output change mask: %"PRIu16"\n",XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
+
+  	if (evt->response_type) {
   		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
       //printf("event received, should I load?\n");
       umon_print("Last time of configuration: %" PRIu32 "\n",self->load_o->last_time);
@@ -177,7 +181,7 @@ static void find_profile_and_load(autoload_class *self, int test_cur){
       if ((self->output_match == self->num_out_pp) &&
           (self->num_out_pp == self->num_conn_outputs)){
         //Only loads first matching profile
-  			//umon_print("Found matching profile\n");
+  			umon_print("Found matching profile\n");
         self->load_o->load_profile(self->load_o,cur_profile);
         if (self->load_o->cur_loaded == 1 && test_cur){
           profile_found = 1;
