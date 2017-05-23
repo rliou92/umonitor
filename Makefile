@@ -5,16 +5,17 @@ BIN_DIR = /usr/bin
 SYSTEMD_DIR = /usr/lib/systemd
 SYSTEMD_USER_DIR = $(SYSTEMD_DIR)/user
 SYSTEMD_SYSTEM_DIR = $(SYSTEMD_DIR)/system
+LICENSE_DIR = /usr/share/licenses/$(PKGNAME)
 
 ifeq ($(DEBUG),1)
 CFLAGS = -Wall -g
 else
-CFLAGS = 
+CFLAGS =
 endif
 
 .PHONY: default all clean install
 
-default: directories $(TARGET) 
+default: directories $(TARGET)
 all: default
 
 OBJDIR = obj
@@ -43,6 +44,8 @@ install:
 	install -p -m644 "umonitor.service" $(DESTDIR)$(SYSTEMD_USER_DIR)
 	install -d $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
 	install -p -m644 "udev_trigger.service" $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
+	install -d $(DESTDIR)$(LICENSE_DIR)
+	install -p -m644 "LICENSE" $(DESTDIR)$(LICENSE_DIR)
 
 uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)

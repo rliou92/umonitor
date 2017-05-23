@@ -7,7 +7,7 @@ pkgdesc="Dynamic monitor configuration"
 arch=('i686' 'x86_64')
 url="https://github.com/rliou92/umonitor"
 license=('MIT')
-depends=('libconfig' 'xorg-server' 'libxcb')
+depends=('libconfig' 'libxcb')
 makedepends=('git')
 checkdepends=()
 optdepends=()
@@ -20,7 +20,7 @@ install=${_gitname}.install
 changelog=
 source=("git://github.com/rliou92/${_gitname}.git")
 noextract=()
-md5sums=('SKIP')
+md5sums=('')
 validpgpkeys=()
 
 build() {
@@ -30,5 +30,5 @@ build() {
 
 package() {
 	cd $srcdir/$_gitname
-	make DESTDIR="$pkgdir" install
+	make DESTDIR="$pkgdir" PKGNAME="$pkgname" install
 }
