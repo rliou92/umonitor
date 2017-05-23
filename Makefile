@@ -5,7 +5,7 @@ BIN_DIR = /usr/bin
 SYSTEMD_DIR = /usr/lib/systemd
 SYSTEMD_USER_DIR = $(SYSTEMD_DIR)/user
 SYSTEMD_SYSTEM_DIR = $(SYSTEMD_DIR)/system
-LICENSE_DIR = /usr/share/licenses/$(PKGNAME)
+LICENSE_DIR = /usr/share/licenses/$(TARGET)
 
 ifeq ($(DEBUG),1)
 CFLAGS = -Wall -g
