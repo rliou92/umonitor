@@ -292,7 +292,7 @@ void for_each_output_mode(
 void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	 char **edid_string){
 
-	int i,j;
+	int i,j,model_name_found;
 	uint8_t delete = 0;
 	uint8_t pending = 0;
 	xcb_randr_get_output_property_cookie_t output_property_cookie;
@@ -342,9 +342,11 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 	// edid_info = malloc(length*sizeof(char));
 	// snprintf(edid_info, length, "%04X%04X%08X", vendor, product, serial);
 
+	model_name_found = 0;
 	for (i = 0x36; i < 0x7E; i += 0x12) { //read through descriptor blocks...
 		if (edid[i] == 0x00) { //not a timing descriptor
 			if (edid[i+3] == 0xfc) { //Model Name tag
+				model_name_found = 1;
 				for (j = 0; j < 13; j++) {
 					if (edid[i+5+j] == 0x0a)
 						modelname[j] = 0x00;
@@ -354,6 +356,8 @@ void fetch_edid(xcb_randr_output_t *output_p,	screen_class *screen_t_p,
 			}
 		}
 	}
+
+	if (!model_name_found) strcpy(modelname,"unknown");
 
 	// printf("vendor: %s\n",vendor);
 	// printf("modelname: %s\n",modelname);
