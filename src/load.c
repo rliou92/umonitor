@@ -17,6 +17,7 @@ void load_class_constructor(load_class **self,screen_class *screen_t){
   (*self)->umon_setting_val.outputs = NULL;
   (*self)->output_info_reply = NULL;
   (*self)->disable_crtc_head = NULL;
+  (*self)->assigned_crtc_head = NULL;
   (*self)->last_time = (xcb_timestamp_t) 0;
 
 
@@ -36,10 +37,10 @@ void load_class_destructor(load_class *self){
 /*! \brief Load the specified profile
  */
 
-static void load_profile(load_class *self,config_setting_t *profile_group){
+static void load_profile(load_class *self,config_setting_t *profile_group, int test_cur){
 
   set_crtc_param *cur_crtc_param,*old_crtc_param;
-  disable_crtc *new_disable_crtc;
+  crtc_ll *new_disable_crtc;
 
   xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
@@ -61,7 +62,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 	self->crtcs_p = xcb_randr_get_screen_resources_crtcs(
     self->screen_t_p->screen_resources_reply);
 
-	self->crtc_offset = 0;
+	// self->crtc_offset = 0;
   //self->crtc_ll_length = 0;
 	for_each_output(
     (void *) self,self->screen_t_p->screen_resources_reply,match_with_config);
@@ -112,7 +113,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     }
     if (should_disable && crtc_info_reply->mode){
       //printf("crtc_info_mode: %d\n",crtc_info_reply->mode);
-      new_disable_crtc = (disable_crtc *) malloc(sizeof(disable_crtc));
+      new_disable_crtc = (crtc_ll *) malloc(sizeof(crtc_ll));
       new_disable_crtc->crtc = self->crtcs_p[i];
       new_disable_crtc->next = self->disable_crtc_head;
       self->disable_crtc_head = new_disable_crtc;
@@ -129,7 +130,7 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
     self->cur_loaded = 1;
   }
   else{
-    apply_settings(self);
+    if (!test_cur) apply_settings(self);
     self->cur_loaded = 0;
   }
   // printf("crtc matches: %d\n",crtc_match);
@@ -138,6 +139,8 @@ static void load_profile(load_class *self,config_setting_t *profile_group){
 
   self->crtc_param_head = NULL;
   self->disable_crtc_head = NULL;
+  // TODO Must free the assigned crtc linked list
+  self->assigned_crtc_head = NULL;
 
 }
 
@@ -148,7 +151,7 @@ static void apply_settings(load_class *self){
   xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
 	xcb_randr_set_crtc_config_reply_t *crtc_config_reply;
   set_crtc_param *cur_crtc_param,*old_crtc_param;
-  disable_crtc *cur_disable_crtc,*old_disable_crtc;
+  crtc_ll *cur_disable_crtc,*old_disable_crtc;
 
   umon_print("Disable crtcs here\n");
   cur_disable_crtc = self->disable_crtc_head;
@@ -313,8 +316,7 @@ static void find_mode_id(load_class *self){
    			 //if (VERBOSE) printf("Found current mode info\n");
    			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
              new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
-             find_available_crtc(self,self->crtc_offset++,
-               &(new_crtc_param->crtc));
+             find_available_crtc(self,&(new_crtc_param->crtc));
              umon_print("Queing up crtc to load: %d\n",new_crtc_param->crtc);
              new_crtc_param->pos_x =
                self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
@@ -346,9 +348,10 @@ static void find_mode_id(load_class *self){
 
 /*! \brief Find an available crtc for the current output with a specified offset
  */
-static void find_available_crtc(load_class *self,int offset,
-  xcb_randr_crtc_t *crtc_p){
+static void find_available_crtc(load_class *self,xcb_randr_crtc_t *crtc_p){
 
+  crtc_ll *new_assigned_crtc,*cur_assigned_crtc;
+  int already_assigned;
 
   xcb_randr_crtc_t *output_crtcs =
     xcb_randr_get_output_info_crtcs(self->output_info_reply);
@@ -364,14 +367,28 @@ static void find_available_crtc(load_class *self,int offset,
 
   for (int i=0;i<num_available_crtcs;++i){
     for (int j=0;j<num_output_crtcs;++j){
-        if (available_crtcs[i] == output_crtcs[j]){
-          //if (VERBOSE) printf("offset crtc: %d\n",offset);
-          if(!(offset--)){
-            *crtc_p = available_crtcs[i];
-            return;
+      if (available_crtcs[i] == output_crtcs[j]){
+        already_assigned = 0;
+        umon_print("Found potential crtc %d. Is it already assigned?\n",available_crtcs[i]);
+        for (cur_assigned_crtc=self->assigned_crtc_head;
+            cur_assigned_crtc;
+            cur_assigned_crtc=cur_assigned_crtc->next){
+          umon_print("cur_assigned_crtc %d\n",cur_assigned_crtc->crtc);
+          if (cur_assigned_crtc->crtc == available_crtcs[i]){
+            umon_print("Crtc %d already assigned!\n",available_crtcs[i]);
+            already_assigned = 1;
           }
         }
+        if (!already_assigned){
+          new_assigned_crtc = (crtc_ll *) malloc(sizeof(crtc_ll));
+          new_assigned_crtc->crtc = available_crtcs[i];
+          new_assigned_crtc->next = self->assigned_crtc_head;
+          self->assigned_crtc_head = new_assigned_crtc;
+          *crtc_p = available_crtcs[i];
+          return;
+        }
       }
+    }
   }
 
   printf("failed to find a matching crtc\n");

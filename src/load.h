@@ -14,11 +14,11 @@ extern void for_each_output(
 void load_class_constructor(load_class **self,screen_class *screen_t);
 void load_class_destructor(load_class *);
 
-static void load_profile(load_class *self,config_setting_t *profile_group);
+static void load_profile(load_class *self,config_setting_t *profile_group,int);
 static void match_with_config(void *self_void,xcb_randr_output_t *output_p);
 static void find_mode_id(load_class *self);
 static void load_config_val(load_class *);
-static void find_available_crtc(load_class *,int,xcb_randr_crtc_t *);
+static void find_available_crtc(load_class *,xcb_randr_crtc_t *);
 static void apply_settings(load_class *);
 void umon_print(const char*,...);
 

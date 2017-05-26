@@ -116,10 +116,10 @@ typedef struct _save_class{
 }save_class;
 
 
-typedef struct _disable_crtc{
+typedef struct _crtc_ll{
 	xcb_randr_crtc_t crtc;
-	struct _disable_crtc *next;
-}disable_crtc;
+	struct _crtc_ll *next;
+}crtc_ll;
 
 
 /*! Class for loading specified profile from configuration file
@@ -146,11 +146,11 @@ typedef struct _load_class{
   config_setting_t *profile_group; /*!< which profile to be loaded*/
   xcb_timestamp_t last_time; /*!< last time the crtc setting was changed*/
   xcb_randr_crtc_t *crtcs_p; /*!< crtcs associated with the screen*/
-  disable_crtc *disable_crtc_head; /*!< disable crtcs linked list*/
+  crtc_ll *disable_crtc_head,*assigned_crtc_head; /*!< disable crtcs linked list*/
 
   // Methods
   /*! loads specified profile from configuration file*/
-  void (*load_profile)(struct _load_class *,config_setting_t *);
+  void (*load_profile)(struct _load_class *,config_setting_t *,int);
 }load_class;
 
 /*! Class for determining which profile to load based on the current

@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 
 			if (profile_group != NULL) {
 				load_class_constructor(&load_o,&screen_o);
-				load_o->load_profile(load_o,profile_group);
+				load_o->load_profile(load_o,profile_group,0);
 				load_class_destructor(load_o);
 			}
 			else {

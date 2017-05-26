@@ -182,7 +182,7 @@ static void find_profile_and_load(autoload_class *self, int test_cur){
           (self->num_out_pp == self->num_conn_outputs)){
         //Only loads first matching profile
   			umon_print("Found matching profile\n");
-        self->load_o->load_profile(self->load_o,cur_profile);
+        self->load_o->load_profile(self->load_o,cur_profile,test_cur);
         if (self->load_o->cur_loaded == 1 && test_cur){
           profile_found = 1;
           printf("*");
