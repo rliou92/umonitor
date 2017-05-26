@@ -285,52 +285,61 @@ the configuration's resolution x and y values
 
 static void find_mode_id(load_class *self){
 
-  int num_screen_modes,k;
+  int num_screen_modes,num_output_modes,i,j;
 
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
   set_crtc_param *new_crtc_param;
+  xcb_randr_mode_t *output_modes;
 
   mode_info_iterator =
     xcb_randr_get_screen_resources_modes_iterator(
      self->screen_t_p->screen_resources_reply);
 	num_screen_modes = xcb_randr_get_screen_resources_modes_length(
 		self->screen_t_p->screen_resources_reply);
+
+  output_modes = xcb_randr_get_output_info_modes(self->output_info_reply);
+  num_output_modes = xcb_randr_get_output_info_modes_length(self->output_info_reply);
+
   if ((self->umon_setting_val.outputs[self->conf_output_idx].res_x != 0) &&
       (self->umon_setting_val.outputs[self->conf_output_idx].res_y != 0)){
 
+    for (i=0;i<num_screen_modes;++i){
+      for(j=0;j<num_output_modes;++j){
+        if ((mode_info_iterator.data->width ==
+          self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
+          (mode_info_iterator.data->height ==
+          self->umon_setting_val.outputs[self->conf_output_idx].res_y) &&
+          (mode_info_iterator.data->id == output_modes[j])){
+   			 //if (VERBOSE) printf("Found current mode info\n");
+   			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
+             new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
+             find_available_crtc(self,self->crtc_offset++,
+               &(new_crtc_param->crtc));
+             umon_print("Queing up crtc to load: %d\n",new_crtc_param->crtc);
+             new_crtc_param->pos_x =
+               self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
+             new_crtc_param->pos_y =
+               self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
+             new_crtc_param->is_primary =
+               self->umon_setting_val.outputs[self->conf_output_idx].is_primary;
+             new_crtc_param->mode_id = mode_info_iterator.data->id;
+             new_crtc_param->output_p = self->cur_output;
+             new_crtc_param->next = self->crtc_param_head;
 
-    for (k=0;k<num_screen_modes;++k){
-  		 if ((mode_info_iterator.data->width ==
-         self->umon_setting_val.outputs[self->conf_output_idx].res_x) &&
-         (mode_info_iterator.data->height ==
-         self->umon_setting_val.outputs[self->conf_output_idx].res_y)){
-  			 //if (VERBOSE) printf("Found current mode info\n");
-  			 //sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
-            new_crtc_param = (set_crtc_param *) malloc(sizeof(set_crtc_param));
-            find_available_crtc(self,self->crtc_offset++,
-              &(new_crtc_param->crtc));
-            umon_print("Queing up crtc to load: %d\n",new_crtc_param->crtc);
-            new_crtc_param->pos_x =
-              self->umon_setting_val.outputs[self->conf_output_idx].pos_x;
-            new_crtc_param->pos_y =
-              self->umon_setting_val.outputs[self->conf_output_idx].pos_y;
-            new_crtc_param->is_primary =
-              self->umon_setting_val.outputs[self->conf_output_idx].is_primary;
-            new_crtc_param->mode_id = mode_info_iterator.data->id;
-            new_crtc_param->output_p = self->cur_output;
-            new_crtc_param->next = self->crtc_param_head;
+             new_crtc_param->prev = NULL;
+             //printf("did I make it here\n");
 
-            new_crtc_param->prev = NULL;
-            //printf("did I make it here\n");
+             self->crtc_param_head = new_crtc_param;
+             //printf("self->crtc_param_head->next: %d\n",self->crtc_param_head->next);
+             if (self->crtc_param_head->next) self->crtc_param_head->next->prev = new_crtc_param;
+             //self->crtc_ll_length++;
+             //printf("did I make it here\n");
+   			 }
+   			xcb_randr_mode_info_next(&mode_info_iterator);
+   		 }
 
-            self->crtc_param_head = new_crtc_param;
-            //printf("self->crtc_param_head->next: %d\n",self->crtc_param_head->next);
-            if (self->crtc_param_head->next) self->crtc_param_head->next->prev = new_crtc_param;
-            //self->crtc_ll_length++;
-            //printf("did I make it here\n");
-  			 }
-  			xcb_randr_mode_info_next(&mode_info_iterator);
-  		 }
+
+      }
   }
      		//if (VERBOSE) printf("Found current mode id\n");
 }
