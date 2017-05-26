@@ -40,7 +40,7 @@ void load_class_destructor(load_class *self){
 static void load_profile(load_class *self,config_setting_t *profile_group, int test_cur){
 
   set_crtc_param *cur_crtc_param,*old_crtc_param;
-  crtc_ll *new_disable_crtc;
+  crtc_ll *new_disable_crtc,*cur_free_crtc,*old_free_crtc;
 
   xcb_randr_get_crtc_info_cookie_t crtc_info_cookie;
   xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
@@ -130,7 +130,24 @@ static void load_profile(load_class *self,config_setting_t *profile_group, int t
     self->cur_loaded = 1;
   }
   else{
-    if (!test_cur) apply_settings(self);
+    if (!test_cur) {
+      apply_settings(self);
+    }
+    else{
+      cur_crtc_param=self->crtc_param_head;
+      while(cur_crtc_param){
+        old_crtc_param = cur_crtc_param;
+        cur_crtc_param=cur_crtc_param->next;
+        free(old_crtc_param);
+      }
+      cur_free_crtc=self->disable_crtc_head;
+      while(cur_free_crtc){
+        old_free_crtc = cur_free_crtc;
+        cur_free_crtc=cur_free_crtc->next;
+        free(old_free_crtc);
+      }
+
+    }
     self->cur_loaded = 0;
   }
   // printf("crtc matches: %d\n",crtc_match);
@@ -139,7 +156,13 @@ static void load_profile(load_class *self,config_setting_t *profile_group, int t
 
   self->crtc_param_head = NULL;
   self->disable_crtc_head = NULL;
-  // TODO Must free the assigned crtc linked list
+
+  cur_free_crtc=self->assigned_crtc_head;
+  while(cur_free_crtc){
+    old_free_crtc = cur_free_crtc;
+    cur_free_crtc=cur_free_crtc->next;
+    free(old_free_crtc);
+  }
   self->assigned_crtc_head = NULL;
 
 }
