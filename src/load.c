@@ -360,9 +360,8 @@ static void find_mode_id(load_class *self){
              //self->crtc_ll_length++;
              //printf("did I make it here\n");
    			 }
-   			xcb_randr_mode_info_next(&mode_info_iterator);
    		 }
-
+       xcb_randr_mode_info_next(&mode_info_iterator);
 
       }
   }
