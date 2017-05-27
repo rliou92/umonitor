@@ -20,7 +20,7 @@ void autoload_constructor(autoload_class **self,screen_class *screen_o,
 
 
 	xcb_randr_select_input(screen_o->c,screen_o->screen->root,
-		XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
+		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
   xcb_flush(screen_o->c);
 
 }
@@ -40,7 +40,9 @@ void autoload_destructor(autoload_class *self){
 static void wait_for_event(autoload_class *self){
 
 	xcb_generic_event_t *evt;
-	xcb_randr_screen_change_notify_event_t *randr_evt;
+  xcb_randr_screen_change_notify_event_t *randr_evt;
+  //xcb_randr_output_change_t *randr_evt;
+
 
   find_profile_and_load(self,0); //In order to get an output the first time
 	while(1){
@@ -48,11 +50,12 @@ static void wait_for_event(autoload_class *self){
     umon_print("Waiting for event\n");
   	evt = xcb_wait_for_event(self->screen_t_p->c);
     umon_print("Event type: %"PRIu8"\n",evt->response_type);
-    umon_print("screen change mask: %"PRIu16"\n",XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
-    umon_print("output change mask: %"PRIu16"\n",XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
+    umon_print("screen change masked: %"PRIu8"\n",evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+    umon_print("output change masked: %"PRIu8"\n",evt->response_type & XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
 
-  	if (evt->response_type) {
-  		randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+  	if (evt->response_type & XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
+      randr_evt = (xcb_randr_screen_change_notify_event_t*) evt;
+      //randr_evt = (xcb_randr_output_change_t*) evt;
       //printf("event received, should I load?\n");
       umon_print("Last time of configuration: %" PRIu32 "\n",self->load_o->last_time);
       umon_print("Time of event: %" PRIu32 "\n",randr_evt->timestamp);
