@@ -27,16 +27,47 @@ systemd unit called `udev_trigger` as a hack to trigger udev to send the screen
 change signal. This systemd unit should be enabled with the system systemd:
 `systemd enable --now udev_trigger`.
 
+For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/packages/umonitor-git/).
+
 # Usage
 * Setup your configuration using `xrandr` or related tools (`arandr` is a good one).
 * Run `umonitor --save <profile_name>`.
 * Run `umonitor --listen` to begin automatically applying monitor configuration.
 
 
- The configuration file is stored in `~/.config/umon2.conf`. You can load a
- profile manually by executing `umonitor --load <profile_name>`.
+The configuration file is stored in `~/.config/umon2.conf`. You can load a
+profile manually by executing `umonitor --load <profile_name>`. Profiles can be
+deleted `umonitor --delete <profile_name>`.
 
- Program help can also be viewed through `umonitor --help`.
+Example scenario: You are working on a laptop. You want to save just the monitor
+configuration of just the laptop screen into the profile name called 'home'. At
+home you plug in an external monitor, and you want to save that configuration as
+'docked'.
+
+```
+# With only the laptop screen (no external monitors)
+$ umonitor --save home
+Profile home saved!
+home*
+---------------------------------
+# Plug in external monitor
+$ umonitor --save docked
+Profile docked saved!
+home
+docked*
+---------------------------------
+# Begin autodetecting changes in monitor
+$ umonitor --listen
+home
+docked*
+---------------------------------
+# Monitor is unplugged
+home*
+docked
+---------------------------------
+```
+
+Program help can also be viewed through `umonitor --help`.
 
 # Features
 This program has only been tested on my setup. I need testers and feedback!
@@ -60,6 +91,7 @@ Future improvements:
 * Inspect why udev is not being triggered after wakeup from suspend and
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
+* Better coding style?
 
 # About
 This is my personal project. My motivation for writing this program comes from
@@ -72,24 +104,3 @@ envorinment.
 
 # Credits
 I borrowed the edid parsing code from [eds](https://github.com/compnerd/eds).
-
-# License
-Copyright (c) 2017 Ricky Liou
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
