@@ -65,13 +65,15 @@ docked*
 home*
 docked
 ---------------------------------
+^C
+# Alternatively use systemd to start umonitor
+$ systemctl --user enable --now umonitor
 ```
 
 Program help can also be viewed through `umonitor --help`.
 
 # Features
 This program has only been tested on my setup. I need testers and feedback!
-
 
 What is saved and applied dynamically:
 * Monitor vendor name + model number
@@ -92,6 +94,8 @@ Future improvements:
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
 * Better coding style?
+  * I have set my tabs to show up as 2 spaces in my editor, might have used tabs
+where I need to use spaces to align my source code
 
 # About
 This is my personal project. My motivation for writing this program comes from
