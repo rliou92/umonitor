@@ -22,7 +22,7 @@ Run `make`. `umonitor` binary will be created in `bin`.
 A systemd unit has been included for autostarting the application and can be
 enabled with `systemd --user enable umonitor`.
 
-In order to automatically apply updates after suspending, I have created a
+\[*Might not be necessary*\] In order to automatically apply updates after suspending, I have created a
 systemd unit called `udev_trigger` as a hack to trigger udev to send the screen
 change signal. This systemd unit should be enabled with the system systemd:
 `systemd enable --now udev_trigger`.
@@ -65,7 +65,8 @@ docked*
 home*
 docked
 ---------------------------------
-^C
+```
+```
 # Alternatively use systemd to start umonitor
 $ systemctl --user enable --now umonitor
 ```

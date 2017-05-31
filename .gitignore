@@ -7,4 +7,5 @@ latex/
 umon2.conf
 legacy
 docs/ext
-Arch/
+*~
+*.SRCINFO
