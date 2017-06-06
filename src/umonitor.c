@@ -20,8 +20,6 @@
 		Contains the main function plus some helper functions that are shared by the classes
 */
 
-static int verbose;
-
 static const char help_str[] =
     "Usage: umonitor [OPTION]\n"
     "\n"
@@ -37,12 +35,11 @@ static const char help_str[] =
 static const char version_str[] =
     "umonitor 20170518\n" "Written by Ricky Liou\n";
 
-int save = 0;
-int load = 0;
-int delete = 0;
-int listen = 0;
-int help = 0;
-int version = 0;
+static screen_class screen_o;
+static config_t config;
+static int c;
+static int option_index = 0;
+static int verbose;
 
 void umon_print(const char *format, ...)
 {
@@ -60,187 +57,174 @@ void umon_print(const char *format, ...)
 
 int main(int argc, char **argv)
 {
+	const char *home_directory, *conf_location;
+	const char *short_options = "s:l:d:n";
+	const char *long_options[] = {
+		{"save", required_argument, 0, 's'},
+		{"load", required_argument, 0, 'l'},
+		{"delete", required_argument, 0, 'd'},
+		{"listen", NO_ARGUMENT, 0, 'n'},
+		{"help", NO_ARGUMENT, &help, 1},
+		{"version", NO_ARGUMENT, &version, 1},
+		{"verbose", NO_ARGUMENT, &verbose, 1}
 
-	save_class *save_o;
-	load_class *load_o;
-	autoload_class *autoload_o;
-	screen_class screen_o;
-
-	config_t config;
-	config_setting_t *root, *profile_group;
-	char *profile_name;
-
-	int i, cfg_idx;
+	}
 
 	config_init(&config);
 
-	for (i = 1; i < argc; ++i) {
-		parse_arguments(argc,argv);
-	}
+	set_argument_flags();
 
-	if (help) {
-		printf("%s", help_str);
-		return 0;
-	}
-	if (version) {
-		printf("%s", version_str);
-		return 0;
-	}
-	if (save + load + listen >= 2)
-		exit(10);
+	print_info();
 
-	screen_class_constructor(&screen_o);
-
-	char *home_directory = getenv("HOME");
-	//char *display_env = getenv("DISPLAY");
-	//char *xauthority_env = getenv("XAUTHORITY");
-	//printf("Display: %s\n",display_env);
-	//printf("XAUTHORITY: %s\n",xauthority_env);
-	//printf("Home directory: %s\n",home_directory);
-	const char *conf_location = "/.config/umon2.conf";
-	char *path =
+	screen_o = screen_class_constructor();
+	home_directory = getenv("HOME");
+	conf_location = "/.config/umon2.conf";
+	CONFIG_FILE =
 	    malloc((strlen(home_directory) + strlen(conf_location)));
-	strcpy(path, home_directory);
-	strcat(path, conf_location);
-	//printf("Path: %s\n",path);
-	CONFIG_FILE = path;
-	//CONF_FP = fopen(path,"r");
-	//if (!CONF_FP) printf("Cannot find configuration file\n");
-	//printf("File pointer: %d\n",CONF_FP);
-	// Existing config file to load setting values
+	strcpy(CONFIG_FILE, home_directory);
+	strcat(CONFIG_FILE, conf_location);
 
-	if (save || delete) {
-		config_read_file(&config, CONFIG_FILE);
-		profile_group = config_lookup(&config, profile_name);
-		if (profile_group != NULL) {
-			// Overwrite existing profile
-			cfg_idx = config_setting_index(profile_group);
-			root = config_root_setting(&config);
-			config_setting_remove_elem(root, cfg_idx);
-			umon_print("Deleted profile %s\n", profile_name);
-			if (delete) {
-				printf("Profile %s deleted!\n",
-				       profile_name);
-				config_write_file(&config, CONFIG_FILE);
-			}
-		}
-		if (save) {
-			umon_print
-			    ("Saving current settings into profile: %s\n",
-			     profile_name);
-			/*
-			 * Always create the new profile group because above code has already
-			 * deleted it if it existed before
-			 */
-			root = config_root_setting(&config);
-			profile_group =
-			    config_setting_add(root, profile_name,
-					       CONFIG_TYPE_GROUP);
-
-			save_class_constructor(&save_o, &screen_o,
-					       &config);
-			save_o->save_profile(save_o, profile_group);
-			save_class_destructor(save_o);
-			printf("Profile %s saved!\n", profile_name);
-		}
+	optind = 1;
+	while (c=getopt_long(argc,argv,short_options,long_options,&option_index)) {
+		parse_arguments();
 	}
 
-
-	if (load) {
-		if (config_read_file(&config, CONFIG_FILE)) {
-			umon_print("Loading profile: %s\n", profile_name);
-			// Load profile
-			profile_group =
-			    config_lookup(&config, profile_name);
-
-			if (profile_group != NULL) {
-				load_class_constructor(&load_o, &screen_o);
-				load_o->load_profile(load_o, profile_group,
-						     0);
-				load_class_destructor(load_o);
-			} else {
-				printf("Profile %s not found\n",
-				       profile_name);
-				exit(2);
-			}
-		} else {
-			printf("No configuration file to load\n");
-			exit(3);
-		}
-	}
-
-	if (listen) {
-		// TODO Will not use new configuration file if it is changed
-		if (config_read_file(&config, CONFIG_FILE)) {
-			autoload_constructor(&autoload_o, &screen_o,
-					     &config);
-			//autoload_o->find_profile_and_load(autoload_o);
-			autoload_o->wait_for_event(autoload_o);
-			umon_print("Autoloading\n");
-			autoload_destructor(autoload_o);
-		} else {
-			printf("No configuration file to load\n");
-			exit(3);
-		}
-	} else {
-		// Print current state
-		if (config_read_file(&config, CONFIG_FILE)) {
-			autoload_constructor(&autoload_o, &screen_o,
-					     &config);
-			//autoload_o->find_profile_and_load(autoload_o);
-			autoload_o->find_profile_and_load(autoload_o, 1);
-			autoload_destructor(autoload_o);
-		} else {
-			printf("No configuration file detected\n");
-			exit(5);
-		}
-	}
+	print_current_state();
 
 	// Free things
 	// Screen destructor
 	screen_class_destructor(&screen_o);
 
 	config_destroy(&config);
-	free(path);
+	free(CONFIG_FILE);
 
 }
 
-static void parse_arguments()
+static void set_argument_flags()
 {
-
-	if (!strcmp("--save", argv[i])) {
-		if (++i >= argc) {
-			printf("Saving needs an argument!\n");
-			exit(6);
-		}
-		profile_name = argv[i];
-		save = 1;
-	} else if (!strcmp("--load", argv[i])) {
-		if (++i >= argc) {
-			printf("Loading needs an argument!\n");
-			exit(6);
-		}
-		profile_name = argv[i];
-		load = 1;
-	} else if (!strcmp("--delete", argv[i])) {
-		if (++i >= argc) {
-			printf("Deleting needs an argument!\n");
-			exit(6);
-		}
-		profile_name = argv[i];
-		delete = 1;
-	} else if (!strcmp("--verbose", argv[i])) {
-		verbose = 1;
-	} else if (!strcmp("--listen", argv[i])) {
-		listen = 1;
-	} else if (!strcmp("--help", argv[i])) {
-		help = 1;
-	} else if (!strcmp("--version", argv[i])) {
-		version = 1;
-	} else {
-		printf("Unrecognized argument: %s\n", argv[i]);
+	while (c=getop_long(argc,argv,short_options,long_options,&option_index)) {
 	}
 
+}
+
+static void print_info()
+{
+	if (version)
+		print("%s",version_str);
+	if (help)
+		print("%s",help_str);
+
+}
+
+static void print_current_state()
+{
+	autoload_class *autoload_o;
+
+	// Print current state
+	if (!config_read_file(&config, CONFIG_FILE))
+		exit(NO_CONF_FILE_FOUND);
+	autoload_constructor(&autoload_o, &screen_o, &config);
+	//autoload_o->find_profile_and_load(autoload_o);
+	autoload_o->find_profile_and_load(autoload_o, 1);
+	autoload_destructor(autoload_o);
+
+}
+
+static void start_listening()
+{
+	autoload_class *autoload_o;
+
+	// TODO Will not use new configuration file if it is changed
+	if (!config_read_file(&config, CONFIG_FILE))
+	 	exit(NO_CONF_FILE_FOUND);
+
+	autoload_constructor(&autoload_o, &screen_o, &config);
+	autoload_o->wait_for_event(autoload_o);
+	umon_print("Autoloading\n");
+	autoload_destructor(autoload_o);
+
+}
+
+
+
+static void start_load(char *profile_name)
+{
+	load_class *load_o;
+	config_setting_t *profile_group;
+
+	if (!config_read_file(&config, CONFIG_FILE))
+		exit(NO_CONF_FILE_FOUND);
+
+	umon_print("Loading profile: %s\n", profile_name);
+	// Load profile
+	profile_group = config_lookup(&config, profile_name);
+
+	if (profile_group == NULL)
+	 	exit(NO_PROFILE_FOUND);
+
+	load_class_constructor(&load_o, &screen_o);
+	load_o->load_profile(load_o, profile_group, 0);
+	load_class_destructor(load_o);
+
+}
+
+static void start_delete_and_save(save_or_delete_t save_or_delete, char *profile_name)
+{
+	save_class *save_o;
+	config_setting_t *root,*profile_group;
+	int cfg_idx;
+
+	config_read_file(&config, CONFIG_FILE);
+	profile_group = config_lookup(&config, profile_name);
+	if (profile_group == NULL)
+		exit(NO_PROFILE_FOUND);
+	// Overwrite existing profile
+	cfg_idx = config_setting_index(profile_group);
+	root = config_root_setting(&config);
+	config_setting_remove_elem(root, cfg_idx);
+	umon_print("Deleted profile %s\n", profile_name);
+	if (save_or_delete == DELETE) {
+		printf("Profile %s deleted!\n", profile_name);
+		config_write_file(&config, CONFIG_FILE);
+		return;
+	}
+
+	umon_print
+	    ("Saving current settings into profile: %s\n",
+	     profile_name);
+	/*
+	 * Always create the new profile group because above code has already
+	 * deleted it if it existed before
+	 */
+	root = config_root_setting(&config);
+	profile_group =
+	    config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);
+
+	save_class_constructor(&save_o, &screen_o, &config);
+	save_o->save_profile(save_o, profile_group);
+	save_class_destructor(save_o);
+	printf("Profile %s saved!\n", profile_name);
+
+}
+
+
+
+static void parse_arguments()
+{
+	switch (c) {
+	case 's':
+		start_delete_and_save(SAVE,optarg);
+		break;
+	case 'l':
+		start_load(optarg);
+		break;
+	case 'd':
+		start_delete_and_save(DELETE,optarg);
+		break;
+	case 'n':
+		start_listening();
+		break;
+	}
 
 }
 
@@ -251,9 +235,8 @@ static void parse_arguments()
  */
 void for_each_output(void *self,
 		     xcb_randr_get_screen_resources_reply_t *
-		     screen_resources_reply, void (*callback) (void *,
-							       xcb_randr_output_t
-							       *))
+		     screen_resources_reply,
+		     void (*callback) (void *,xcb_randr_output_t*))
 {
 
 	int i, outputs_length;
@@ -279,9 +262,9 @@ Calls the callback function for each output mode
  */
 void for_each_output_mode(void *self,
 			  xcb_randr_get_output_info_reply_t *
-			  output_info_reply, void (*callback) (void *,
-							       xcb_randr_mode_t
-							       *))
+			  output_info_reply,
+			  void (*callback) (void *,
+					    xcb_randr_mode_t *))
 {
 
 	int j, num_output_modes;
@@ -290,7 +273,6 @@ void for_each_output_mode(void *self,
 
 	num_output_modes =
 	    xcb_randr_get_output_info_modes_length(output_info_reply);
-	//if (VERBOSE) printf("number of modes %d\n",num_output_modes);
 	mode_id_p = xcb_randr_get_output_info_modes(output_info_reply);
 
 	for (j = 0; j < num_output_modes; ++j) {
@@ -335,8 +317,6 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 						&screen_t_p->e);
 
 	edid = xcb_randr_get_output_property_data(output_property_reply);
-	//length = xcb_randr_get_output_property_data_length(
-	//output_property_reply);
 
 	umon_print("Starting edid_to_string\n");
 	// *edid_string = (char *) malloc((length+1)*sizeof(char));
@@ -364,18 +344,30 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	// snprintf(edid_info, length, "%04X%04X%08X", vendor, product, serial);
 
 	model_name_found = 0;
+	// for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
+	// 	if (edid[i] == 0x00) {	//not a timing descriptor
+	// 		if (edid[i + 3] == 0xfc) {	//Model Name tag
+	// 			model_name_found = 1;
+	// 			for (j = 0; j < 13; j++) {
+	// 				if (edid[i + 5 + j] == 0x0a)
+	// 					modelname[j] = 0x00;
+	// 				else
+	// 					modelname[j] =
+	// 					    edid[i + 5 + j];
+	// 			}
+	// 		}
+	// 	}
+	// }
 	for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
-		if (edid[i] == 0x00) {	//not a timing descriptor
-			if (edid[i + 3] == 0xfc) {	//Model Name tag
-				model_name_found = 1;
-				for (j = 0; j < 13; j++) {
-					if (edid[i + 5 + j] == 0x0a)
-						modelname[j] = 0x00;
-					else
-						modelname[j] =
-						    edid[i + 5 + j];
-				}
-			}
+		if (edid[i] != 0x00 && edid[i + 3] != 0xfc)
+		 	continue	//not a timing descriptor
+
+		model_name_found = 1;
+		for (j = 0; j < 13; ++j) {
+			if (edid[i + 5 + j] == 0x0a)
+				modelname[j] = 0x00;
+			else
+				modelname[j] = edid[i + 5 + j];
 		}
 	}
 

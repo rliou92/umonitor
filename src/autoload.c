@@ -1,11 +1,23 @@
 #include "autoload.h"
-
-#DEFINE PVAR ((autoload_pvar *) (self->pvar))
+#include "load.h"
+#include "common.h"
 
 /*! \file
 	\brief Detect which profile to load
 
 */
+
+#DEFINE PVAR ((autoload_pvar *) (self->pvar))
+
+static void find_profile_and_load(autoload_class * self, int test_cur);
+static void determine_profile_match(autoload_class * self);
+static void wait_for_event(autoload_class * self);
+static void validate_timestamp_and_load(autoload_class *self);
+static void count_output_match(void *self_void,
+			       xcb_randr_output_t * output_p);
+static void determine_output_match(autoload_class * self);
+
+
 
 // Autoload class private variables
 typedef struct {
@@ -29,9 +41,10 @@ typedef struct {
 
 
 /*! Autload constructor*/
-autoload_class * autoload_constructor(screen_class * screen_o,
+void autoload_constructor(autoload_class **self_p, screen_class * screen_o,
 			  config_t * config)
 {
+	autoload_class *self;
 
 	self = (autoload_class *) malloc(sizeof(autoload_class));
 	self->pvar = (void *) malloc(sizeof(autoload_pvar));
@@ -41,12 +54,13 @@ autoload_class * autoload_constructor(screen_class * screen_o,
 	self->wait_for_event = wait_for_event;
 
 	self->find_profile_and_load = find_profile_and_load;
-	PVAR->load_o = load_class_constructor(screen_o, config);
-
+	load_class_constructor(&(PVAR->load_o), screen_o, config);
 
 	xcb_randr_select_input(screen_o->c, screen_o->screen->root,
 			       XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
 	xcb_flush(screen_o->c);
+
+	*self_p = self;
 
 }
 
@@ -82,7 +96,7 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 		//if (PVAR->num_out_pp ==
 		//PVAR->screen_o->screen_resources_reply->num_outputs){
 		PVAR->num_conn_outputs = 0;
-		output_iter((void *) self,
+		for_each_output((void *) self,
 				PVAR->
 				screen_o->screen_resources_reply,
 				count_output_match);
@@ -99,7 +113,7 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 }
 
 
-static void determine_profile_match(self)
+static void determine_profile_match(autoload_class * self)
 {
 
 	// if (VERBOSE) printf("PVAR->output_match: %d\n",PVAR->output_match);
