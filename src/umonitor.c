@@ -1,5 +1,6 @@
+#include "common.h"
 #include "umonitor.h"
-
+#include <getopt.h>
 /*! \mainpage Main Page
  *
  * \section intro_sec Introduction
@@ -19,6 +20,34 @@
 
 		Contains the main function plus some helper functions that are shared by the classes
 */
+
+// private prototypes
+static void set_argument_flags(void);
+static void print_info(void);
+static void print_current_state(void);
+static void start_listening(void);
+static void start_load(char *profile_name);
+static void start_delete_and_save(save_or_delete_t save_or_delete, char *profile_name);
+static void parse_arguments(void);
+
+// extern
+extern void screen_class_constructor(screen_class *);
+extern void screen_class_destructor(screen_class *);
+
+extern void load_class_constructor(load_class **,screen_class *);
+extern void load_class_destructor(load_class *);
+
+extern void save_class_constructor(save_class **,screen_class *,
+	config_t *);
+extern void save_class_destructor(save_class *);
+
+extern void autoload_constructor(autoload_class **,screen_class *,config_t *);
+extern void autoload_destructor(autoload_class *);
+
+typedef enum {
+	SAVE,
+	DELETE
+}save_or_delete_t;
 
 static const char help_str[] =
     "Usage: umonitor [OPTION]\n"
