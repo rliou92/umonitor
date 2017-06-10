@@ -1,9 +1,7 @@
-#include "classes.h"
+#include "common.h"
+#include "umonitor.h"
 
-void screen_class_constructor(screen_class *);
-void screen_class_destructor(screen_class *);
 static void update_screen(screen_class *);
-extern void umon_print(const char *, ...);
 
 
 /*! \file

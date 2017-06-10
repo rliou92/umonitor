@@ -1,6 +1,7 @@
+#include "common.h"
+#include "umonitor.h"
 #include "autoload.h"
 #include "load.h"
-#include "common.h"
 
 /*! \file
 	\brief Detect which profile to load
@@ -176,11 +177,13 @@ static void wait_for_event(autoload_class * self)
 
 static void validate_timestamp_and_load(autoload_class *self)
 {
+	xcb_timestamp_t load_last_time;
 
+	load_o->get_last_time(load_o,&load_last_time);
 	//randr_evt = (xcb_randr_output_change_t*) evt;
 	//printf("event received, should I load?\n");
 	umon_print("Last time of configuration: %" PRIu32
-		   "\n", PVAR->load_o->last_time);
+		   "\n", load_last_time);
 	umon_print("Time of event: %" PRIu32 "\n",
 		   PVAR->randr_evt->timestamp);
 	//xcb_timestamp_t time_difference =
@@ -190,7 +193,7 @@ static void validate_timestamp_and_load(autoload_class *self)
 
 
 	if (PVAR->randr_evt->timestamp >=
-	    PVAR->load_o->last_time) {
+	    load_last_time) {
 		umon_print("Now I should load\n");
 		PVAR->screen_o->
 		    update_screen(PVAR->screen_o);

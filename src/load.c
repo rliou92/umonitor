@@ -61,6 +61,23 @@ static void find_mode_id(load_class * self);
 static void load_config_val(load_class *);
 static void find_available_crtc(load_class *, xcb_randr_crtc_t *);
 static void apply_settings(load_class *);
+static void get_cur_loaded(load_class * self, int *cur_loaded);
+static void free_crtc_ll(crtc_ll * crtc_ll_head);
+static void modify_crtc_ll(load_class * self, int i);
+static void add_disable_crtc(load_class * self);
+static void remove_matching_crtc_from_ll(load_class * self);
+static void apply_settings_disable_crtcs(load_class * self);
+static void apply_settings_screen_size(load_class * self);
+static void apply_settings_enable_crtcs(load_class * self);
+static void get_last_time(load_class * self, xcb_timestamp_t * last_time);
+static void determine_mode_id_match(load_class * self,
+				    xcb_randr_mode_info_iterator_t
+				    mode_info_iterator, int j);
+static void add_crtc_param(load_class * self);
+static void determine_crtc_match(load_class * self, int i, int j);
+
+
+
 
 /*! \file
     \brief Load a profile and apply the changes to the current
