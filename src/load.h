@@ -1,7 +1,3 @@
-void load_class_constructor(load_class ** self, screen_class * screen_o);
-void load_class_destructor(load_class *);
-
-
 /*! Class for loading specified profile from configuration file
 */
 typedef struct _load_class {
@@ -13,3 +9,6 @@ typedef struct _load_class {
 	void (*get_last_time) (struct _load_class *, xcb_timestamp_t *);
 	void (*get_cur_loaded) (struct _load_class *, int * cur_loaded);
 } load_class;
+
+void load_class_constructor(load_class ** self, screen_class * screen_o);
+void load_class_destructor(load_class *);

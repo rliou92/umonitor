@@ -1,6 +1,3 @@
-void autoload_constructor(autoload_class ** self_p, screen_class * screen_o, config_t * config);
-void autoload_destructor(autoload_class * self);
-
 /*! Class for determining which profile to load based on the current
 display settings */
 
@@ -17,3 +14,6 @@ typedef struct _autoload_class {
 
 
 } autoload_class;
+
+void autoload_constructor(autoload_class ** self_p, screen_class * screen_o, config_t * config);
+void autoload_destructor(autoload_class * self);

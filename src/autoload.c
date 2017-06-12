@@ -8,12 +8,12 @@
 
 */
 
-#DEFINE PVAR ((autoload_pvar *) (self->pvar))
+#define PVAR ((autoload_pvar *) (self->pvar))
 
 static void find_profile_and_load(autoload_class * self, int test_cur);
 static void determine_profile_match(autoload_class * self);
 static void wait_for_event(autoload_class * self);
-static void validate_timestamp_and_load(autoload_class *self);
+static void validate_timestamp_and_load(autoload_class * self);
 static void count_output_match(void *self_void,
 			       xcb_randr_output_t * output_p);
 static void determine_output_match(autoload_class * self);
@@ -29,7 +29,7 @@ typedef struct {
 
 	// Variables
 	config_t *config;	/*!< config handle */
-	config_setting_t *mon_group,cur_profile;	/*!< current monitor group */
+	config_setting_t *mon_group, cur_profile;	/*!< current monitor group */
 	/*! how many outputs in configuration file match current display settings */
 	int output_match;
 	int num_out_pp;		/*!< Number of outputs per profile */
@@ -38,12 +38,12 @@ typedef struct {
 	int profile_found;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 
-}autoload_pvar;
+} autoload_pvar;
 
 
 /*! Autload constructor*/
-void autoload_constructor(autoload_class **self_p, screen_class * screen_o,
-			  config_t * config)
+void autoload_constructor(autoload_class ** self_p,
+			  screen_class * screen_o, config_t * config)
 {
 	autoload_class *self;
 
@@ -91,15 +91,13 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 		PVAR->output_match = 0;
 		PVAR->mon_group =
 		    config_setting_lookup(PVAR->cur_profile, "Monitors");
-		PVAR->num_out_pp =
-		    config_setting_length(PVAR->mon_group);
+		PVAR->num_out_pp = config_setting_length(PVAR->mon_group);
 
 		//if (PVAR->num_out_pp ==
 		//PVAR->screen_o->screen_resources_reply->num_outputs){
 		PVAR->num_conn_outputs = 0;
 		for_each_output((void *) self,
-				PVAR->
-				screen_o->screen_resources_reply,
+				PVAR->screen_o->screen_resources_reply,
 				count_output_match);
 
 		determine_profile_match(self);
@@ -127,8 +125,7 @@ static void determine_profile_match(autoload_class * self)
 		PVAR->load_o->load_profile(PVAR->load_o,
 					   PVAR->cur_profile,
 					   PVAR->test_cur);
-		if (PVAR->load_o->cur_loaded == 1
-		    && PVAR->test_cur) {
+		if (PVAR->load_o->cur_loaded == 1 && PVAR->test_cur) {
 			PVAR->profile_found = 1;
 			printf("*");
 		}
@@ -165,8 +162,8 @@ static void wait_for_event(autoload_class * self)
 		    XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE) {
 
 			PVAR->randr_evt =
-			(xcb_randr_screen_change_notify_event_t *)
-				evt;
+			    (xcb_randr_screen_change_notify_event_t *)
+			    evt;
 			validate_timestamp_and_load(self);
 		}
 		free(evt);
@@ -175,11 +172,11 @@ static void wait_for_event(autoload_class * self)
 
 }
 
-static void validate_timestamp_and_load(autoload_class *self)
+static void validate_timestamp_and_load(autoload_class * self)
 {
 	xcb_timestamp_t load_last_time;
 
-	load_o->get_last_time(load_o,&load_last_time);
+	load_o->get_last_time(load_o, &load_last_time);
 	//randr_evt = (xcb_randr_output_change_t*) evt;
 	//printf("event received, should I load?\n");
 	umon_print("Last time of configuration: %" PRIu32
@@ -192,11 +189,9 @@ static void validate_timestamp_and_load(autoload_class *self)
 	umon_print("Screen change event detected\n");
 
 
-	if (PVAR->randr_evt->timestamp >=
-	    load_last_time) {
+	if (PVAR->randr_evt->timestamp >= load_last_time) {
 		umon_print("Now I should load\n");
-		PVAR->screen_o->
-		    update_screen(PVAR->screen_o);
+		PVAR->screen_o->update_screen(PVAR->screen_o);
 		find_profile_and_load(self, 0);
 	}
 	// Find matching profile
@@ -258,7 +253,7 @@ static void count_output_match(void *self_void,
 
 static void determine_output_match(autoload_class * self)
 {
-	int j,output_match_unique;
+	int j, output_match_unique;
 	config_setting_t *group;
 	const char *conf_edid;
 	char *edid_string;
@@ -271,10 +266,8 @@ static void determine_output_match(autoload_class * self)
 		//if (VERBOSE) printf("output match, %d\n",PVAR->output_match);
 
 		//if (VERBOSE) printf("output_match_unique, %d\n",output_match_unique);
-		group =
-		    config_setting_get_elem(PVAR->mon_group, j);
-		config_setting_lookup_string(group, "EDID",
-					     &conf_edid);
+		group = config_setting_get_elem(PVAR->mon_group, j);
+		config_setting_lookup_string(group, "EDID", &conf_edid);
 		// if (VERBOSE) printf("conf_edid: %s\n",conf_edid);
 		// if (VERBOSE) printf("edid_string: %s\n",edid_string);
 		if (!strcmp(conf_edid, edid_string)) {
@@ -286,8 +279,7 @@ static void determine_output_match(autoload_class * self)
 	free(edid_string);
 
 	if (output_match_unique == 1) {
-		umon_print("output match, %d\n",
-			   PVAR->output_match);
+		umon_print("output match, %d\n", PVAR->output_match);
 		PVAR->output_match++;
 	}
 

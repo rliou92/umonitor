@@ -8,3 +8,6 @@
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <stdarg.h>
+
+#include "errors.h"
+#include "screen.h"

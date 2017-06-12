@@ -1,5 +1,9 @@
 #include "common.h"
 #include "umonitor.h"
+#include "screen.h"
+#include "save.h"
+#include "load.h"
+#include "autoload.h"
 #include <getopt.h>
 /*! \mainpage Main Page
  *
@@ -27,27 +31,29 @@ static void print_info(void);
 static void print_current_state(void);
 static void start_listening(void);
 static void start_load(char *profile_name);
-static void start_delete_and_save(save_or_delete_t save_or_delete, char *profile_name);
+static void start_delete_and_save(save_or_delete_t save_or_delete,
+				  char *profile_name);
 static void parse_arguments(void);
 
 // extern
 extern void screen_class_constructor(screen_class *);
 extern void screen_class_destructor(screen_class *);
 
-extern void load_class_constructor(load_class **,screen_class *);
+extern void load_class_constructor(load_class **, screen_class *);
 extern void load_class_destructor(load_class *);
 
-extern void save_class_constructor(save_class **,screen_class *,
-	config_t *);
+extern void save_class_constructor(save_class **, screen_class *,
+				   config_t *);
 extern void save_class_destructor(save_class *);
 
-extern void autoload_constructor(autoload_class **,screen_class *,config_t *);
+extern void autoload_constructor(autoload_class **, screen_class *,
+				 config_t *);
 extern void autoload_destructor(autoload_class *);
 
 typedef enum {
 	SAVE,
 	DELETE
-}save_or_delete_t;
+} save_or_delete_t;
 
 static const char help_str[] =
     "Usage: umonitor [OPTION]\n"
@@ -114,7 +120,9 @@ int main(int argc, char **argv)
 	strcat(CONFIG_FILE, conf_location);
 
 	optind = 1;
-	while (c=getopt_long(argc,argv,short_options,long_options,&option_index)) {
+	while (c =
+	       getopt_long(argc, argv, short_options, long_options,
+			   &option_index)) {
 		parse_arguments();
 	}
 
@@ -131,7 +139,9 @@ int main(int argc, char **argv)
 
 static void set_argument_flags()
 {
-	while (c=getop_long(argc,argv,short_options,long_options,&option_index)) {
+	while (c =
+	       getop_long(argc, argv, short_options, long_options,
+			  &option_index)) {
 	}
 
 }
@@ -139,9 +149,9 @@ static void set_argument_flags()
 static void print_info()
 {
 	if (version)
-		print("%s",version_str);
+		print("%s", version_str);
 	if (help)
-		print("%s",help_str);
+		print("%s", help_str);
 
 }
 
@@ -165,7 +175,7 @@ static void start_listening()
 
 	// TODO Will not use new configuration file if it is changed
 	if (!config_read_file(&config, CONFIG_FILE))
-	 	exit(NO_CONF_FILE_FOUND);
+		exit(NO_CONF_FILE_FOUND);
 
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	autoload_o->wait_for_event(autoload_o);
@@ -189,7 +199,7 @@ static void start_load(char *profile_name)
 	profile_group = config_lookup(&config, profile_name);
 
 	if (profile_group == NULL)
-	 	exit(NO_PROFILE_FOUND);
+		exit(NO_PROFILE_FOUND);
 
 	load_class_constructor(&load_o, &screen_o);
 	load_o->load_profile(load_o, profile_group, 0);
@@ -197,10 +207,11 @@ static void start_load(char *profile_name)
 
 }
 
-static void start_delete_and_save(save_or_delete_t save_or_delete, char *profile_name)
+static void start_delete_and_save(save_or_delete_t save_or_delete,
+				  char *profile_name)
 {
 	save_class *save_o;
-	config_setting_t *root,*profile_group;
+	config_setting_t *root, *profile_group;
 	int cfg_idx;
 
 	config_read_file(&config, CONFIG_FILE);
@@ -219,8 +230,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete, char *profile
 	}
 
 	umon_print
-	    ("Saving current settings into profile: %s\n",
-	     profile_name);
+	    ("Saving current settings into profile: %s\n", profile_name);
 	/*
 	 * Always create the new profile group because above code has already
 	 * deleted it if it existed before
@@ -242,13 +252,13 @@ static void parse_arguments()
 {
 	switch (c) {
 	case 's':
-		start_delete_and_save(SAVE,optarg);
+		start_delete_and_save(SAVE, optarg);
 		break;
 	case 'l':
 		start_load(optarg);
 		break;
 	case 'd':
-		start_delete_and_save(DELETE,optarg);
+		start_delete_and_save(DELETE, optarg);
 		break;
 	case 'n':
 		start_listening();
@@ -265,7 +275,7 @@ static void parse_arguments()
 void for_each_output(void *self,
 		     xcb_randr_get_screen_resources_reply_t *
 		     screen_resources_reply,
-		     void (*callback) (void *,xcb_randr_output_t*))
+		     void (*callback) (void *, xcb_randr_output_t *))
 {
 
 	int i, outputs_length;
@@ -292,8 +302,7 @@ Calls the callback function for each output mode
 void for_each_output_mode(void *self,
 			  xcb_randr_get_output_info_reply_t *
 			  output_info_reply,
-			  void (*callback) (void *,
-					    xcb_randr_mode_t *))
+			  void (*callback) (void *, xcb_randr_mode_t *))
 {
 
 	int j, num_output_modes;
@@ -373,25 +382,24 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	// snprintf(edid_info, length, "%04X%04X%08X", vendor, product, serial);
 
 	model_name_found = 0;
-	// for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
-	// 	if (edid[i] == 0x00) {	//not a timing descriptor
-	// 		if (edid[i + 3] == 0xfc) {	//Model Name tag
-	// 			model_name_found = 1;
-	// 			for (j = 0; j < 13; j++) {
-	// 				if (edid[i + 5 + j] == 0x0a)
-	// 					modelname[j] = 0x00;
-	// 				else
-	// 					modelname[j] =
-	// 					    edid[i + 5 + j];
-	// 			}
-	// 		}
-	// 	}
+	// for (i = 0x36; i < 0x7E; i += 0x12) {        //read through descriptor blocks...
+	//      if (edid[i] == 0x00) {  //not a timing descriptor
+	//              if (edid[i + 3] == 0xfc) {      //Model Name tag
+	//                      model_name_found = 1;
+	//                      for (j = 0; j < 13; j++) {
+	//                              if (edid[i + 5 + j] == 0x0a)
+	//                                      modelname[j] = 0x00;
+	//                              else
+	//                                      modelname[j] =
+	//                                          edid[i + 5 + j];
+	//                      }
+	//              }
+	//      }
 	// }
 	for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
 		if (edid[i] != 0x00 && edid[i + 3] != 0xfc)
-		 	continue	//not a timing descriptor
-
-		model_name_found = 1;
+			continue	//not a timing descriptor
+			    model_name_found = 1;
 		for (j = 0; j < 13; ++j) {
 			if (edid[i + 5 + j] == 0x0a)
 				modelname[j] = 0x00;

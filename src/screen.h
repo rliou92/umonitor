@@ -1,6 +1,3 @@
-void screen_class_constructor(screen_class *);
-void screen_class_destructor(screen_class *);
-
 /*! Contains the connection and screen information
 */
 typedef struct _screen_class {
@@ -19,3 +16,6 @@ typedef struct _screen_class {
 	void (*update_screen) (struct _screen_class *);
 
 } screen_class;
+
+void screen_class_constructor(screen_class *);
+void screen_class_destructor(screen_class *);
