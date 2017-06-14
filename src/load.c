@@ -56,7 +56,6 @@ typedef struct {
 struct modify_crtc_ll_param_t {
 	int *i_p;
 	xcb_randr_crtc_t *crtcs_p;	/*!< crtcs associated with the screen */
-	set_crtc_param **crtc_param_head_p;	/*!< head of crtc queue */
 	crtc_ll **disable_crtc_head_p;
 };
 
@@ -73,12 +72,34 @@ struct remove_matching_crtc_from_ll_param_t {
 	set_crtc_param **cur_crtc_param_p;
 	xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
 	xcb_randr_output_t *conn_output;
-	set_crtc_param **crtc_param_head_p;	/*!< head of crtc queue */
+};
+
+struct find_mode_id_param_t {
+	int *conf_output_idx_p;
+	xcb_randr_get_output_info_reply_t *output_info_reply;
+	xcb_randr_output_t *cur_output;
+
+};
+
+struct determine_mode_id_match_param_t {
+	int *j_p, conf_output_idx;
+	xcb_randr_mode_info_iterator_t *mode_info_iterator_p;
+	xcb_randr_mode_t *output_modes;
+	xcb_randr_output_t *cur_output;
+};
+
+struct add_crtc_param_t {
+	int conf_output_idx;
+	xcb_randr_output_t *cur_output;
+	xcb_randr_mode_info_iterator_t *mode_info_iterator_p;
+};
+
+struct find_available_crtc_param_t {
+
 };
 
 struct determine_crtc_match_param_t {
-	int i,j;
-	xcb_randr_crtc_t * crtc_p;
+
 };
 
 static void load_profile(load_class * self,
@@ -120,7 +141,7 @@ typedef struct {
 	umon_setting_val_t umon_setting_val;
 	/*! current output info */
 	/*! current output id */
-	xcb_randr_output_t *cur_output;
+	set_crtc_param *crtc_param_head;
 
 
 	int conf_output_idx;	/*!< current output index */
@@ -129,7 +150,6 @@ typedef struct {
 	int cur_loaded;		/*!< whether or not current profile is loaded */
 	int already_assigned;
 	xcb_timestamp_t last_time;	/*!< last time the crtc setting was changed */
-	xcb_randr_crtc_t *available_crtcs;
 	xcb_randr_crtc_t *output_crtcs;
 	crtc_ll *assigned_crtc_head;	/*!< disable crtcs linked list */
 	xcb_randr_mode_t *output_modes;
@@ -184,40 +204,41 @@ static void load_profile(load_class * self,
 	int i;
 	struct modify_crtc_ll_param_t modify_crtc_ll_param;
 	crtc_ll *disable_crtc_head;
-	set_crtc_param *crtc_param_head;
 	xcb_randr_crtc_t *crtcs_p;
 
 	load_config_val(self,profile_group);
+
+	// Queue up crtc linked list to load
 	for_each_output((void *) self,
 			PVAR->screen_o->screen_resources_reply,
 			match_with_config);
 	// Check against redundant loading
 	//TODO Only assuming 1 output connected to crtc
+	// Examine current configuration state to determine which crtcs should actually be loaded and which should be disabled
 	crtcs_p =
 	    xcb_randr_get_screen_resources_crtcs(PVAR->
 						 screen_o->screen_resources_reply);
 
 	modify_crtc_ll_param.i_p = &i;
 	modify_crtc_ll_param.crtcs_p = crtcs_p;
-	modify_crtc_ll_param.crtc_param_head_p = &crtc_param_head;
 	modify_crtc_ll_param.disable_crtc_head_p = &disable_crtc_head;
 	for (i = 0;
 	     i < PVAR->screen_o->screen_resources_reply->num_crtcs; ++i) {
 		modify_crtc_ll(self, &modify_crtc_ll_param);
 	}
-	if ((crtc_param_head == NULL) &&
+	if ((PVAR->crtc_param_head == NULL) &&
 	    (disable_crtc_head == NULL)) {
 		PVAR->cur_loaded = 1;
 	} else {
 		if (!test_cur) {
-			apply_settings(self,crtc_param_head,disable_crtc_head);
+			apply_settings(self,PVAR->crtc_param_head,disable_crtc_head);
 		} else {
-			free_crtc_param_ll(crtc_param_head);
+			free_crtc_param_ll(PVAR->crtc_param_head);
 			free_crtc_ll(disable_crtc_head);
 		}
 		PVAR->cur_loaded = 0;
 	}
-	crtc_param_head = NULL;
+	PVAR->crtc_param_head = NULL;
 	disable_crtc_head = NULL;
 	// TODO should move assigned crtc head to more appropriate location
 	free_crtc_ll(PVAR->assigned_crtc_head);
@@ -274,11 +295,10 @@ static void modify_crtc_ll(load_class * self, struct modify_crtc_ll_param_t *par
 					  &PVAR->screen_o->e);
 	conn_output =
 	    xcb_randr_get_crtc_info_outputs(crtc_info_reply);
-	cur_crtc_param = param->crtc_param_head;
+	cur_crtc_param = PVAR->crtc_param_head;
 
 	remove_crtc_param.should_disable_p = &should_disable;
 	remove_crtc_param.cur_crtc_param_p = &cur_crtc_param;
-	remove_crtc_param.crtc_param_head_p = param->crtc_param_head_p;
 	remove_crtc_param.crtc_info_reply = crtc_info_reply;
 	remove_crtc_param.conn_output = conn_output;
 	while (cur_crtc_param) {
@@ -327,7 +347,7 @@ static void remove_matching_crtc_from_ll(load_class * self, remove_matching_crtc
 			cur_crtc_param->prev->next =
 			    cur_crtc_param->next;
 		} else {
-			*(param->crtc_param_head_p) = cur_crtc_param->next;
+			PVAR->crtc_param_head = cur_crtc_param->next;
 		}
 		if (cur_crtc_param->next)
 			cur_crtc_param->next->prev =
@@ -345,7 +365,7 @@ static void remove_matching_crtc_from_ll(load_class * self, remove_matching_crtc
 /*! \brief Set the crtcs to the queued up configuration stored in the
 linked list crtc_param_head */
 
-static void apply_settings(load_class * self, set_crtc_param *crtc_param_head, crtc_ll * disable_crtc_head)
+static void apply_settings(load_class * self, crtc_ll * disable_crtc_head)
 {
 
 	apply_settings_disable_crtcs(self, disable_crtc_head);
@@ -353,7 +373,7 @@ static void apply_settings(load_class * self, set_crtc_param *crtc_param_head, c
 	apply_settings_screen_size(self);
 	//TODO implement
 	//find_duplicate_crtc(self);
-	apply_settings_enable_crtcs(self, crtc_param_head);
+	apply_settings_enable_crtcs(self, PVAR->crtc_param_head);
 
 }
 
@@ -410,15 +430,15 @@ static void apply_settings_screen_size(load_class * self)
 
 }
 
-static void apply_settings_enable_crtcs(load_class * self,set_crtc_param * crtc_param_head)
+static void apply_settings_enable_crtcs(load_class * self)
 {
 	xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
 	xcb_randr_set_crtc_config_reply_t *crtc_config_reply;
 	set_crtc_param *cur_crtc_param, *old_crtc_param;
 
-	if (!crtc_param_head)
+	if (!PVAR->crtc_param_head)
 		return;
-	cur_crtc_param = crtc_param_head;
+	cur_crtc_param = PVAR->crtc_param_head;
 	while (cur_crtc_param) {
 
 		crtc_config_cookie =
@@ -468,9 +488,10 @@ static void match_with_config(void *self_void,
 			      xcb_randr_output_t * output_p)
 {
 
-	int i;
+	int conf_output_idx;
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
+	struct find_mode_id_param_t mode_id_param;
 
 	load_class *self = (load_class *) self_void;
 
@@ -485,19 +506,19 @@ static void match_with_config(void *self_void,
 					    output_info_cookie,
 					    &PVAR->screen_o->e);
 
-	fetch_edid(PVAR->cur_output, PVAR->screen_o, &edid_string);
+	fetch_edid(output_p, PVAR->screen_o, &edid_string);
 
 	umon_print("Num outputs per profile: %d\n", PVAR->num_out_pp);
 
-	for (i = 0; i < PVAR->num_out_pp; ++i) {
+	mode_id_param.conf_output_idx_p = &conf_output_idx;
+	mode_id_param.output_info_reply = output_info_reply;
+	mode_id_param.cur_output = output_p;
+	for (conf_output_idx = 0; conf_output_idx < PVAR->num_out_pp; ++conf_output_idx) {
 		if (!strcmp
 		    (PVAR->umon_setting_val.
 		     outputs[i].edid_val,
 		     edid_string)) {
-			//if (VERBOSE) printf("Before for each output mode\n");
-			// Which crtc has the same resolution?
-			find_mode_id(self);
-			//if (VERBOSE) printf("Finish find_mode_id\n");
+			find_mode_id(self,&mode_id_param);
 		}
 	}
 	free(edid_string);
@@ -509,13 +530,14 @@ the configuration's resolution x and y values
   Queues up the crtc to be loaded in apply_settings
  */
 
-static void find_mode_id(load_class * self)
+static void find_mode_id(load_class * self, struct find_mode_id_param_t *param)
 {
-
-	int num_screen_modes, num_output_modes, i, j;
-
+	int num_screen_modes, num_output_modes, i, j, conf_output_idx;
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
+	struct determine_mode_id_match_param_t id_match_param;
+	xcb_randr_mode_t *output_modes;
 
+	conf_output_idx = *(param->conf_output_idx_p);
 	mode_info_iterator =
 	    xcb_randr_get_screen_resources_modes_iterator
 	    (PVAR->screen_o->screen_resources_reply);
@@ -523,50 +545,60 @@ static void find_mode_id(load_class * self)
 	    xcb_randr_get_screen_resources_modes_length(PVAR->
 							screen_o->screen_resources_reply);
 
-	PVAR->output_modes =
-	    xcb_randr_get_output_info_modes(PVAR->output_info_reply);
+	output_modes =
+	    xcb_randr_get_output_info_modes(param->output_info_reply);
 	num_output_modes =
 	    xcb_randr_get_output_info_modes_length
-	    (PVAR->output_info_reply);
+	    (param->output_info_reply);
 
-	if ((PVAR->umon_setting_val.outputs[PVAR->conf_output_idx].res_x ==
+	if ((PVAR->umon_setting_val.outputs[conf_output_idx].res_x ==
 	     0)
 	    || (PVAR->umon_setting_val.
-		outputs[PVAR->conf_output_idx].res_y == 0))
+		outputs[conf_output_idx].res_y == 0))
 		return;
 
+	id_match_param.conf_output_idx = conf_output_idx;
+	id_match_param.j_p = &j;
+	id_match_param.output_modes = output_modes;
+	id_match_param.cur_output = param->cur_output;
 	for (i = 0; i < num_screen_modes; ++i) {
+		id_match_param.mode_info_iterator_p = &mode_info_iterator;
 		for (j = 0; j < num_output_modes; ++j) {
-			determine_mode_id_match(self, mode_info_iterator,
-						j);
+			determine_mode_id_match(self, &id_match_param);
 		}
 		xcb_randr_mode_info_next(&mode_info_iterator);
-
 	}
 
 	//if (VERBOSE) printf("Found current mode id\n");
 }
 
-static void determine_mode_id_match(load_class * self,
-				    xcb_randr_mode_info_iterator_t
-				    mode_info_iterator, int j)
+static void determine_mode_id_match(load_class * self, struct determine_mode_id_match_param_t *param)
 {
+	int j;
+	xcb_randr_mode_info_iterator_t mode_info_iterator;
+	struct add_crtc_param_t crtc_parameters;
 
+	j = *(param->j_p);
+	mode_info_iterator = *(param->mode_info_iterator_p);
 	if ((mode_info_iterator.data->width !=
-	     PVAR->umon_setting_val.outputs[PVAR->conf_output_idx].res_x)
+	     PVAR->umon_setting_val.outputs[param->conf_output_idx].res_x)
 	    || (mode_info_iterator.data->height !=
-		PVAR->umon_setting_val.outputs[PVAR->
+		PVAR->umon_setting_val.outputs[param->
 					       conf_output_idx].res_y)
-	    || (mode_info_iterator.data->id != PVAR->output_modes[j]))
+	    || (param->mode_info_iterator.data->id != param->output_modes[j]))
 		return;
 	//if (VERBOSE) printf("Found current mode info\n");
 	//sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
-	add_crtc_param(self,mode_info_iterator);
+
+	crtc_parameters.conf_output_idx = param->conf_output_idx;
+	crtc_parameters.mode_info_iterator = param->mode_info_iterator;
+	crtc_parameters.cur_output = param->cur_output;
+	add_crtc_param(self,&crtc_parameters);
 
 
 }
 
-static void add_crtc_param(load_class * self, xcb_randr_mode_info_iterator_t mode_info_iterator)
+static void add_crtc_param(load_class * self, struct add_crtc_param_t * param)
 {
 	set_crtc_param *new_crtc_param;
 
@@ -575,14 +607,14 @@ static void add_crtc_param(load_class * self, xcb_randr_mode_info_iterator_t mod
 	find_available_crtc(self, &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
 	new_crtc_param->pos_x =
-	    PVAR->umon_setting_val.outputs[PVAR->conf_output_idx].pos_x;
+	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =
-	    PVAR->umon_setting_val.outputs[PVAR->conf_output_idx].pos_y;
+	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y;
 	new_crtc_param->is_primary =
-	    PVAR->umon_setting_val.outputs[PVAR->
+	    PVAR->umon_setting_val.outputs[param->
 					   conf_output_idx].is_primary;
-	new_crtc_param->mode_id = mode_info_iterator.data->id;
-	new_crtc_param->output_p = PVAR->cur_output;
+	new_crtc_param->mode_id = param->mode_info_iterator.data->id;
+	new_crtc_param->output_p = param->cur_output;
 	new_crtc_param->next = PVAR->crtc_param_head;
 
 	new_crtc_param->prev = NULL;
@@ -600,11 +632,13 @@ static void add_crtc_param(load_class * self, xcb_randr_mode_info_iterator_t mod
  */
 
 
-static void find_available_crtc(load_class * self,
+static void find_available_crtc(load_class * self, struct find_available_crtc_param_t *param,
 				xcb_randr_crtc_t * crtc_p)
 {
 	struct determine_crtc_match_param_t determine_crtc_match_param;
 	int i,j,already_assigned;
+	xcb_randr_crtc_t *available_crtcs;
+
 
 	determine_crtc_match_param.crtc_p = crtc_p;
 	PVAR->available_crtcs =
