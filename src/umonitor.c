@@ -4,6 +4,7 @@
 #include "save.h"
 #include "load.h"
 #include "autoload.h"
+#include ""
 #include <getopt.h>
 /*! \mainpage Main Page
  *
@@ -34,21 +35,6 @@ static void start_load(char *profile_name);
 static void start_delete_and_save(save_or_delete_t save_or_delete,
 				  char *profile_name);
 static void parse_arguments(void);
-
-// extern
-extern void screen_class_constructor(screen_class *);
-extern void screen_class_destructor(screen_class *);
-
-extern void load_class_constructor(load_class **, screen_class *);
-extern void load_class_destructor(load_class *);
-
-extern void save_class_constructor(save_class **, screen_class *,
-				   config_t *);
-extern void save_class_destructor(save_class *);
-
-extern void autoload_constructor(autoload_class **, screen_class *,
-				 config_t *);
-extern void autoload_destructor(autoload_class *);
 
 typedef enum {
 	SAVE,
@@ -178,8 +164,8 @@ static void start_listening()
 		exit(NO_CONF_FILE_FOUND);
 
 	autoload_constructor(&autoload_o, &screen_o, &config);
-	autoload_o->wait_for_event(autoload_o);
 	umon_print("Autoloading\n");
+	autoload_o->wait_for_event(autoload_o);
 	autoload_destructor(autoload_o);
 
 }

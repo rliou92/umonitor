@@ -74,19 +74,18 @@ settings), or the newly loaded configuration. */
 
 static void find_profile_and_load(autoload_class * self, int test_cur)
 {
-	config_setting_t *root;
+	config_setting_t *root, *cur_profile;
 
-	int num_profiles;
+	int num_profiles, profile_found, output_match;
 
-	PVAR->test_cur = test_cur;
-	PVAR->profile_found = 0;
+	profile_found = 0;
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
 	umon_print("Number of profiles:%d\n", num_profiles);
 	for (int i = 0; i < num_profiles; i++) {
-		PVAR->cur_profile = config_setting_get_elem(root, i);
-		printf("%s", config_setting_name(PVAR->cur_profile));
-		if (PVAR->profile_found)
+		cur_profile = config_setting_get_elem(root, i);
+		printf("%s", config_setting_name(cur_profile));
+		if (profile_found)
 			break;
 		PVAR->output_match = 0;
 		PVAR->mon_group =
