@@ -249,6 +249,8 @@ static void parse_arguments()
 	case 'n':
 		start_listening();
 		break;
+	default:
+		exit(NO_ARGUMENT_GIVEN);
 	}
 
 }
