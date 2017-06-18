@@ -16,7 +16,8 @@ static void wait_for_event(autoload_class * self);
 static void validate_timestamp_and_load(autoload_class * self);
 static void count_output_match(void *self_void,
 			       xcb_randr_output_t * output_p);
-static void determine_output_match(autoload_class * self);
+static void determine_output_match(autoload_class * self,
+				   xcb_randr_output_t * output_p);
 
 
 
@@ -29,7 +30,7 @@ typedef struct {
 
 	// Variables
 	config_t *config;	/*!< config handle */
-	config_setting_t *mon_group, cur_profile;	/*!< current monitor group */
+	config_setting_t *mon_group, *cur_profile;	/*!< current monitor group */
 	/*! how many outputs in configuration file match current display settings */
 	int output_match;
 	int num_out_pp;		/*!< Number of outputs per profile */
@@ -55,7 +56,7 @@ void autoload_constructor(autoload_class ** self_p,
 	self->wait_for_event = wait_for_event;
 
 	self->find_profile_and_load = find_profile_and_load;
-	load_class_constructor(&(PVAR->load_o), screen_o, config);
+	load_class_constructor(&(PVAR->load_o), screen_o);
 
 	xcb_randr_select_input(screen_o->c, screen_o->screen->root,
 			       XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
@@ -65,6 +66,14 @@ void autoload_constructor(autoload_class ** self_p,
 
 }
 
+/*! Autload destructor*/
+void autoload_destructor(autoload_class * self)
+{
+
+	load_class_destructor(PVAR->load_o);
+	free(self);
+
+}
 
 /*! \brief Find which profile matches the current setup and load it
 
@@ -74,17 +83,18 @@ settings), or the newly loaded configuration. */
 
 static void find_profile_and_load(autoload_class * self, int test_cur)
 {
-	config_setting_t *root, *cur_profile;
+	config_setting_t *root;
 
-	int num_profiles, profile_found, output_match;
+	int num_profiles, profile_found, output_match, i;
 
+	PVAR->test_cur = test_cur;
 	profile_found = 0;
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
 	umon_print("Number of profiles:%d\n", num_profiles);
-	for (int i = 0; i < num_profiles; i++) {
-		cur_profile = config_setting_get_elem(root, i);
-		printf("%s", config_setting_name(cur_profile));
+	for (i = 0; i < num_profiles; i++) {
+		PVAR->cur_profile = config_setting_get_elem(root, i);
+		printf("%s", config_setting_name(PVAR->cur_profile));
 		if (profile_found)
 			break;
 		PVAR->output_match = 0;
@@ -113,10 +123,8 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 
 static void determine_profile_match(autoload_class * self)
 {
+	int cur_loaded;
 
-	// if (VERBOSE) printf("PVAR->output_match: %d\n",PVAR->output_match);
-	// if (VERBOSE) printf("PVAR->num_out_pp: %d\n",PVAR->num_out_pp);
-	// if (VERBOSE) printf("PVAR->num_conn_outputs: %d\n",PVAR->num_conn_outputs);
 	if ((PVAR->output_match == PVAR->num_out_pp) &&
 	    (PVAR->num_out_pp == PVAR->num_conn_outputs)) {
 		//Only loads first matching profile
@@ -124,7 +132,8 @@ static void determine_profile_match(autoload_class * self)
 		PVAR->load_o->load_profile(PVAR->load_o,
 					   PVAR->cur_profile,
 					   PVAR->test_cur);
-		if (PVAR->load_o->cur_loaded == 1 && PVAR->test_cur) {
+		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
+		if (cur_loaded == 1 && PVAR->test_cur) {
 			PVAR->profile_found = 1;
 			printf("*");
 		}
@@ -175,7 +184,7 @@ static void validate_timestamp_and_load(autoload_class * self)
 {
 	xcb_timestamp_t load_last_time;
 
-	load_o->get_last_time(load_o, &load_last_time);
+	PVAR->load_o->get_last_time(PVAR->load_o, &load_last_time);
 	//randr_evt = (xcb_randr_output_change_t*) evt;
 	//printf("event received, should I load?\n");
 	umon_print("Last time of configuration: %" PRIu32
@@ -237,7 +246,7 @@ static void count_output_match(void *self_void,
 		umon_print("Found output that is connected \n");
 		PVAR->num_conn_outputs++;
 
-		determine_output_match(self);
+		determine_output_match(self, output_p);
 
 
 	} else {
@@ -250,7 +259,8 @@ static void count_output_match(void *self_void,
 
 }
 
-static void determine_output_match(autoload_class * self)
+static void determine_output_match(autoload_class * self,
+				   xcb_randr_output_t * output_p)
 {
 	int j, output_match_unique;
 	config_setting_t *group;
@@ -282,16 +292,5 @@ static void determine_output_match(autoload_class * self)
 		PVAR->output_match++;
 	}
 
-
-}
-
-
-
-/*! Autload destructor*/
-void autoload_destructor(autoload_class * self)
-{
-
-	load_class_destructor(PVAR->load_o);
-	free(self);
 
 }

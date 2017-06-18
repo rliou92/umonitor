@@ -1,10 +1,8 @@
 #include "common.h"
 #include "umonitor.h"
-#include "screen.h"
 #include "save.h"
 #include "load.h"
 #include "autoload.h"
-#include ""
 #include <getopt.h>
 /*! \mainpage Main Page
  *
@@ -26,8 +24,13 @@
 		Contains the main function plus some helper functions that are shared by the classes
 */
 
+typedef enum {
+	SAVE,
+	DELETE
+} save_or_delete_t;
+
 // private prototypes
-static void set_argument_flags(void);
+static void set_argument_flags(int argc, char **argv);
 static void print_info(void);
 static void print_current_state(void);
 static void start_listening(void);
@@ -36,10 +39,6 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 				  char *profile_name);
 static void parse_arguments(void);
 
-typedef enum {
-	SAVE,
-	DELETE
-} save_or_delete_t;
 
 static const char help_str[] =
     "Usage: umonitor [OPTION]\n"
@@ -60,7 +59,20 @@ static screen_class screen_o;
 static config_t config;
 static int c;
 static int option_index = 0;
-static int verbose;
+static int verbose, version, help;
+
+static const char *short_options = "s:l:d:n";
+static const struct option long_options[] = {
+	{"save", required_argument, 0, 's'},
+	{"load", required_argument, 0, 'l'},
+	{"delete", required_argument, 0, 'd'},
+	{"listen", no_argument, 0, 'n'},
+	{"help", no_argument, &help, 1},
+	{"version", no_argument, &version, 1},
+	{"verbose", no_argument, &verbose, 1}
+
+};
+
 
 void umon_print(const char *format, ...)
 {
@@ -78,28 +90,16 @@ void umon_print(const char *format, ...)
 
 int main(int argc, char **argv)
 {
-	const char *home_directory, *conf_location;
-	const char *short_options = "s:l:d:n";
-	const char *long_options[] = {
-		{"save", required_argument, 0, 's'},
-		{"load", required_argument, 0, 'l'},
-		{"delete", required_argument, 0, 'd'},
-		{"listen", NO_ARGUMENT, 0, 'n'},
-		{"help", NO_ARGUMENT, &help, 1},
-		{"version", NO_ARGUMENT, &version, 1},
-		{"verbose", NO_ARGUMENT, &verbose, 1}
-
-	}
+	char *home_directory = getenv("HOME");
+	const char *conf_location = "/.config/umon2.conf";
 
 	config_init(&config);
 
-	set_argument_flags();
+	set_argument_flags(argc, argv);
 
 	print_info();
 
-	screen_o = screen_class_constructor();
-	home_directory = getenv("HOME");
-	conf_location = "/.config/umon2.conf";
+	screen_class_constructor(&screen_o);
 	CONFIG_FILE =
 	    malloc((strlen(home_directory) + strlen(conf_location)));
 	strcpy(CONFIG_FILE, home_directory);
@@ -123,11 +123,11 @@ int main(int argc, char **argv)
 
 }
 
-static void set_argument_flags()
+static void set_argument_flags(int argc, char **argv)
 {
 	while (c =
-	       getop_long(argc, argv, short_options, long_options,
-			  &option_index)) {
+	       getopt_long(argc, argv, short_options, long_options,
+			   &option_index)) {
 	}
 
 }
@@ -135,9 +135,9 @@ static void set_argument_flags()
 static void print_info()
 {
 	if (version)
-		print("%s", version_str);
+		printf("%s", version_str);
 	if (help)
-		print("%s", help_str);
+		printf("%s", help_str);
 
 }
 
@@ -384,8 +384,8 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	// }
 	for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
 		if (edid[i] != 0x00 && edid[i + 3] != 0xfc)
-			continue	//not a timing descriptor
-			    model_name_found = 1;
+			continue;	//not a timing descriptor
+		model_name_found = 1;
 		for (j = 0; j < 13; ++j) {
 			if (edid[i + 5 + j] == 0x0a)
 				modelname[j] = 0x00;
