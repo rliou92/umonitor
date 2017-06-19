@@ -106,9 +106,12 @@ int main(int argc, char **argv)
 	strcat(CONFIG_FILE, conf_location);
 
 	optind = 1;
-	while (c =
-	       getopt_long(argc, argv, short_options, long_options,
-			   &option_index)) {
+	while (1) {
+		c = getopt_long(argc, argv, short_options, long_options,
+				   &option_index);
+		if (c == -1)
+			break;
+
 		parse_arguments();
 	}
 
@@ -125,9 +128,11 @@ int main(int argc, char **argv)
 
 static void set_argument_flags(int argc, char **argv)
 {
-	while (c =
-	       getopt_long(argc, argv, short_options, long_options,
-			   &option_index)) {
+	while (1) {
+		c = getopt_long(argc, argv, short_options, long_options,
+				&option_index);
+		if (c == -1)
+			break;
 	}
 
 }
@@ -202,17 +207,18 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 
 	config_read_file(&config, CONFIG_FILE);
 	profile_group = config_lookup(&config, profile_name);
-	if (profile_group == NULL)
-		exit(NO_PROFILE_FOUND);
-	// Overwrite existing profile
-	cfg_idx = config_setting_index(profile_group);
-	root = config_root_setting(&config);
-	config_setting_remove_elem(root, cfg_idx);
-	umon_print("Deleted profile %s\n", profile_name);
-	if (save_or_delete == DELETE) {
-		printf("Profile %s deleted!\n", profile_name);
-		config_write_file(&config, CONFIG_FILE);
-		return;
+	if (profile_group != NULL) {
+		// Overwrite existing profile
+		cfg_idx = config_setting_index(profile_group);
+		root = config_root_setting(&config);
+		config_setting_remove_elem(root, cfg_idx);
+		umon_print("Deleted profile %s\n", profile_name);
+		if (save_or_delete == DELETE) {
+			printf("Profile %s deleted!\n", profile_name);
+			config_write_file(&config, CONFIG_FILE);
+			return;
+		}
+
 	}
 
 	umon_print
@@ -250,6 +256,7 @@ static void parse_arguments()
 		start_listening();
 		break;
 	default:
+		printf("No argument given\n");
 		exit(NO_ARGUMENT_GIVEN);
 	}
 
@@ -385,7 +392,7 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	//      }
 	// }
 	for (i = 0x36; i < 0x7E; i += 0x12) {	//read through descriptor blocks...
-		if (edid[i] != 0x00 && edid[i + 3] != 0xfc)
+		if (edid[i] != 0x00 || edid[i + 3] != 0xfc)
 			continue;	//not a timing descriptor
 		model_name_found = 1;
 		for (j = 0; j < 13; ++j) {
