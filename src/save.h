@@ -8,6 +8,5 @@ typedef struct _save_class {
 	void (*save_profile) (struct _save_class *, config_setting_t *);
 } save_class;
 
-void save_class_constructor(save_class **, screen_class *,
-				    config_t *);
+void save_class_constructor(save_class **, screen_class *, config_t *);
 void save_class_destructor(save_class *);

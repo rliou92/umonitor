@@ -69,7 +69,9 @@ static void update_screen(screen_class * self)
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
 
 	screen_resources_cookie = xcb_randr_get_screen_resources(self->c,
-								 self->screen->root);
+								 self->
+								 screen->
+								 root);
 	free(self->screen_resources_reply);
 	self->screen_resources_reply =
 	    xcb_randr_get_screen_resources_reply(self->c,

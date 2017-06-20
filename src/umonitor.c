@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 	optind = 1;
 	while (1) {
 		c = getopt_long(argc, argv, short_options, long_options,
-				   &option_index);
+				&option_index);
 		if (c == -1)
 			break;
 
@@ -255,9 +255,12 @@ static void parse_arguments()
 	case 'n':
 		start_listening();
 		break;
-	default:
+	case '?':
 		printf("No argument given\n");
 		exit(NO_ARGUMENT_GIVEN);
+		break;
+	case '0':		// just setting flags
+		break;
 	}
 
 }
