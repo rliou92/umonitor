@@ -163,8 +163,8 @@ void load_class_constructor(load_class ** self_p, screen_class * screen_o)
 {
 	load_class *self;
 
-	self = (load_class *) malloc(sizeof(load_class));
-	self->pvar = (void *) malloc(sizeof(load_pvar));
+	self = (load_class *) umalloc(sizeof(load_class));
+	self->pvar = (void *) umalloc(sizeof(load_pvar));
 
 	self->load_profile = load_profile;
 	self->get_last_time = get_last_time;
@@ -187,6 +187,7 @@ void load_class_destructor(load_class * self)
 {
 
 	free(PVAR->umon_setting_val.outputs);
+	free(PVAR);
 	free(self);
 
 }
@@ -406,7 +407,7 @@ static void add_crtc_param(load_class * self,
 
 	mode_info_iterator = *(param->mode_info_iterator_p);
 	new_crtc_param = (set_crtc_param *)
-	    malloc(sizeof(set_crtc_param));
+	    umalloc(sizeof(set_crtc_param));
 
 	available_crtc_param.output_info_reply = param->output_info_reply;
 	find_available_crtc(self, &available_crtc_param,
@@ -444,6 +445,7 @@ static void find_available_crtc(load_class * self,
 	int i, j, already_assigned, num_output_crtcs, num_available_crtcs;
 	xcb_randr_crtc_t *available_crtcs, *output_crtcs;
 
+	already_assigned = 1;
 	available_crtcs =
 	    xcb_randr_get_screen_resources_crtcs(PVAR->screen_o->
 						 screen_resources_reply);
@@ -508,7 +510,7 @@ static void determine_crtc_match(load_class * self, struct determine_crtc_match_
 	}
 	if (!*(param->already_assigned_p)) {
 		new_assigned_crtc = (crtc_ll *)
-		    malloc(sizeof(crtc_ll));
+		    umalloc(sizeof(crtc_ll));
 		new_assigned_crtc->crtc = param->available_crtcs[i];
 		new_assigned_crtc->next = PVAR->assigned_crtc_head;
 		PVAR->assigned_crtc_head = new_assigned_crtc;
@@ -599,7 +601,7 @@ static void add_disable_crtc(load_class * self,
 
 	umon_print("adding disable crtc\n");
 	i = *(param->i_p);
-	new_disable_crtc = (crtc_ll *) malloc(sizeof(crtc_ll));
+	new_disable_crtc = (crtc_ll *) umalloc(sizeof(crtc_ll));
 	new_disable_crtc->crtc = param->crtcs_p[i];
 	new_disable_crtc->next = *(param->disable_crtc_head_p);
 	*(param->disable_crtc_head_p) = new_disable_crtc;
@@ -736,7 +738,7 @@ static void load_config_val(load_class * self,
 	PVAR->num_out_pp = config_setting_length(mon_group);
 	free(PVAR->umon_setting_val.outputs);
 	PVAR->umon_setting_val.outputs =
-	    (umon_setting_output_t *) malloc(PVAR->num_out_pp *
+	    (umon_setting_output_t *) umalloc(PVAR->num_out_pp *
 					     sizeof
 					     (umon_setting_output_t));
 

@@ -48,8 +48,8 @@ void autoload_constructor(autoload_class ** self_p,
 {
 	autoload_class *self;
 
-	self = (autoload_class *) malloc(sizeof(autoload_class));
-	self->pvar = (void *) malloc(sizeof(autoload_pvar));
+	self = (autoload_class *) umalloc(sizeof(autoload_class));
+	self->pvar = (void *) umalloc(sizeof(autoload_pvar));
 
 	PVAR->screen_o = screen_o;
 	PVAR->config = config;
@@ -71,6 +71,7 @@ void autoload_destructor(autoload_class * self)
 {
 
 	load_class_destructor(PVAR->load_o);
+	free(PVAR);
 	free(self);
 
 }
@@ -85,7 +86,7 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 {
 	config_setting_t *root;
 
-	int num_profiles, profile_found, output_match, i;
+	int num_profiles, profile_found, i;
 
 	PVAR->test_cur = test_cur;
 	profile_found = 0;

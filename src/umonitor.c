@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
 	screen_class_constructor(&screen_o);
 	CONFIG_FILE =
-	    malloc((strlen(home_directory) + strlen(conf_location)));
+	    umalloc((strlen(home_directory) + strlen(conf_location)));
 	strcpy(CONFIG_FILE, home_directory);
 	strcat(CONFIG_FILE, conf_location);
 
@@ -369,7 +369,7 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	// }
 	// *(*edid_string+z) = '\0';
 
-	*edid_string = (char *) malloc(17 * sizeof(char));
+	*edid_string = (char *) umalloc(17 * sizeof(char));
 	char sc = 'A' - 1;
 	vendor[0] = sc + (edid[8] >> 2);
 	vendor[1] = sc + (((edid[8] & 0x03) << 3) | (edid[9] >> 5));
@@ -418,4 +418,12 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 
 	free(output_property_reply);
 	umon_print("Finished edid_to_string\n");
+}
+
+void *umalloc(size_t size){
+	void *mem_addr;
+	mem_addr = malloc(size);
+	if(mem_addr == NULL)
+		exit(INSUFFICIENT_MEMORY);
+	return mem_addr;
 }

@@ -63,8 +63,8 @@ void save_class_constructor(save_class ** self_p, screen_class * screen_t,
 {
 	save_class *self;
 
-	self = (save_class *) malloc(sizeof(save_class));
-	self->pvar = (void *) malloc(sizeof(save_pvar));
+	self = (save_class *) umalloc(sizeof(save_class));
+	self->pvar = (void *) umalloc(sizeof(save_pvar));
 	self->save_profile = save_profile;
 
 	PVAR->screen_t_p = screen_t;
@@ -79,6 +79,7 @@ void save_class_constructor(save_class ** self_p, screen_class * screen_t,
 
 void save_class_destructor(save_class * self)
 {
+	free(PVAR);
 	free(self);
 }
 
@@ -242,7 +243,7 @@ static void get_output_name(xcb_randr_get_output_info_reply_t *
 	int output_name_length =
 	    xcb_randr_get_output_info_name_length(output_info_reply);
 	*output_name =
-	    (char *) malloc((output_name_length + 1) * sizeof(char));
+	    (char *) umalloc((output_name_length + 1) * sizeof(char));
 
 	for (i = 0; i < output_name_length; ++i) {
 		(*output_name)[i] = (char) output_name_raw[i];

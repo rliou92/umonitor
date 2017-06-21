@@ -17,3 +17,4 @@ void for_each_output_mode(void *self,
 							       *)
     );
 void umon_print(const char *, ...);
+void *umalloc(size_t size);
