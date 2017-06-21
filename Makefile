@@ -40,17 +40,17 @@ $(TARGET): $(OBJECTS)
 install:
 	install -d $(DESTDIR)$(BIN_DIR)
 	install -p -m755 $(TARGETDIR)/$(TARGET) $(DESTDIR)$(BIN_DIR)
-	install -d $(DESTDIR)$(SYSTEMD_USER_DIR)
-	install -p -m644 "umonitor.service" $(DESTDIR)$(SYSTEMD_USER_DIR)
-	install -d $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
-	install -p -m644 "udev_trigger.service" $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
+	#install -d $(DESTDIR)$(SYSTEMD_USER_DIR)
+	#install -p -m644 "umonitor.service" $(DESTDIR)$(SYSTEMD_USER_DIR)
+	#install -d $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
+	#install -p -m644 "udev_trigger.service" $(DESTDIR)$(SYSTEMD_SYSTEM_DIR)
 	install -d $(DESTDIR)$(LICENSE_DIR)
 	install -p -m644 "LICENSE" $(DESTDIR)$(LICENSE_DIR)
 
 uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)
-	rm -f "$(DESTDIR)$(SYSTEMD_USER_DIR)/umonitor.service"
-	rm -f "$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/udev_trigger.service"
+	#rm -f "$(DESTDIR)$(SYSTEMD_USER_DIR)/umonitor.service"
+	#rm -f "$(DESTDIR)$(SYSTEMD_SYSTEM_DIR)/udev_trigger.service"
 
 clean:
 	rm -f $(OBJDIR)/*.o

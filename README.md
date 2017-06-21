@@ -66,10 +66,6 @@ home*
 docked
 ---------------------------------
 ```
-```
-# Alternatively use systemd to start umonitor
-$ systemctl --user enable --now umonitor
-```
 
 Program help can also be viewed through `umonitor --help`.
 
@@ -88,6 +84,7 @@ Future improvements:
 * Updating Doxygen documentation
 * More commandline options
   * Alternate configuration file location
+  * Quiet mode
 * Refresh configuration file when it is changed while listening to events
 * Handling the case when multiple outputs are connected to same crtc?
 * Inspect why sometimes udev is not being triggered after wakeup from suspend and
