@@ -150,6 +150,8 @@ static void print_current_state()
 {
 	autoload_class *autoload_o;
 
+	if (help || version)
+		return;
 	// Print current state
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);

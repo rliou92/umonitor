@@ -175,6 +175,7 @@ void load_class_constructor(load_class ** self_p, screen_class * screen_o)
 	PVAR->umon_setting_val.outputs = NULL;
 	PVAR->last_time = (xcb_timestamp_t) 0;
 	PVAR->cur_loaded = 0;
+	PVAR->assigned_crtc_head = NULL;
 
 	*self_p = self;
 
@@ -233,6 +234,7 @@ static void load_profile(load_class * self,
 	crtc_ll *disable_crtc_head;
 	xcb_randr_crtc_t *crtcs_p;
 
+	disable_crtc_head = NULL;
 	load_config_val(self, profile_group);
 
 	// Queue up crtc linked list to load
@@ -256,7 +258,7 @@ static void load_profile(load_class * self,
 	if ((PVAR->crtc_param_head == NULL) && (disable_crtc_head == NULL)) {
 		PVAR->cur_loaded = 1;
 	} else {
-		printf("Am I here?\n");
+		//printf("Am I here?\n");
 		if (!test_cur) {
 			apply_settings(self, disable_crtc_head);
 		} else {
@@ -595,6 +597,7 @@ static void add_disable_crtc(load_class * self,
 	int i;
 	crtc_ll *new_disable_crtc;
 
+	umon_print("adding disable crtc\n");
 	i = *(param->i_p);
 	new_disable_crtc = (crtc_ll *) malloc(sizeof(crtc_ll));
 	new_disable_crtc->crtc = param->crtcs_p[i];
