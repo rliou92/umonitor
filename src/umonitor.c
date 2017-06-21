@@ -420,10 +420,11 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	umon_print("Finished edid_to_string\n");
 }
 
-void *umalloc(size_t size){
+void *umalloc(size_t size)
+{
 	void *mem_addr;
 	mem_addr = malloc(size);
-	if(mem_addr == NULL)
+	if (mem_addr == NULL)
 		exit(INSUFFICIENT_MEMORY);
 	return mem_addr;
 }

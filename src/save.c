@@ -113,11 +113,11 @@ static void save_profile(save_class * self,
 			       PVAR->screen_t_p->screen->height_in_pixels);
 	//printf("Screen width in millimeters: %d\n",PVAR->screen_t_p->screen->width_in_millimeters);
 	config_setting_set_int(PVAR->umon_setting.disp_widthMM,
-			       PVAR->screen_t_p->
-			       screen->width_in_millimeters);
+			       PVAR->screen_t_p->screen->
+			       width_in_millimeters);
 	config_setting_set_int(PVAR->umon_setting.disp_heightMM,
-			       PVAR->screen_t_p->
-			       screen->height_in_millimeters);
+			       PVAR->screen_t_p->screen->
+			       height_in_millimeters);
 
 	PVAR->umon_setting.mon_group =
 	    config_setting_add(profile_group, "Monitors",
@@ -217,9 +217,9 @@ static void check_output_status(void *self_void,
 		if (*output_p == PVAR->primary_output) {
 			umon_print("Found primary output\n");
 			primary_output_setting =
-			    config_setting_add(PVAR->
-					       umon_setting.output_group,
-					       "primary", CONFIG_TYPE_INT);
+			    config_setting_add(PVAR->umon_setting.
+					       output_group, "primary",
+					       CONFIG_TYPE_INT);
 			config_setting_set_int(primary_output_setting, 1);
 
 		}
@@ -262,8 +262,9 @@ static void output_info_to_config(save_class * self)
 	crtc_info_cookie =
 	    xcb_randr_get_crtc_info(PVAR->screen_t_p->c,
 				    PVAR->output_info_reply->crtc,
-				    PVAR->
-				    screen_t_p->screen_resources_reply->config_timestamp);
+				    PVAR->screen_t_p->
+				    screen_resources_reply->
+				    config_timestamp);
 	PVAR->crtc_info_reply =
 	    xcb_randr_get_crtc_info_reply(PVAR->screen_t_p->c,
 					  crtc_info_cookie,
@@ -349,11 +350,11 @@ static void find_res_to_config(void *self_void,
 			//if (VERBOSE) printf("Found current mode info\n");
 			//sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
 			config_setting_set_int(PVAR->umon_setting.res_x,
-					       mode_info_iterator.data->
-					       width);
+					       mode_info_iterator.
+					       data->width);
 			config_setting_set_int(PVAR->umon_setting.res_y,
-					       mode_info_iterator.data->
-					       height);
+					       mode_info_iterator.
+					       data->height);
 		}
 		xcb_randr_mode_info_next(&mode_info_iterator);
 

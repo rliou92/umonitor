@@ -85,18 +85,14 @@ What is saved and applied dynamically:
 
 Future improvements:
 
-* Expanding Doxygen documentation
+* Updating Doxygen documentation
 * More commandline options
   * Alternate configuration file location
-* Improved debugging support
 * Refresh configuration file when it is changed while listening to events
-* Handling the case when multiple outputs are connected to same crtc
-* Inspect why udev is not being triggered after wakeup from suspend and
+* Handling the case when multiple outputs are connected to same crtc?
+* Inspect why sometimes udev is not being triggered after wakeup from suspend and
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
-* Better coding style?
-  * I have set my tabs to show up as 2 spaces in my editor, might have used tabs
-where I need to use spaces to align my source code
 
 # About
 This is my personal project. My motivation for writing this program comes from
