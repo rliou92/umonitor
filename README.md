@@ -19,14 +19,6 @@ features missing such as setting the crtc xy positions.
 # Installation
 Run `make`. `umonitor` binary will be created in `bin`.
 
-A systemd unit has been included for autostarting the application and can be
-enabled with `systemd --user enable umonitor`.
-
-\[*Might not be necessary*\] In order to automatically apply updates after suspending, I have created a
-systemd unit called `udev_trigger` as a hack to trigger udev to send the screen
-change signal. This systemd unit should be enabled with the system systemd:
-`systemd enable --now udev_trigger`.
-
 For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/packages/umonitor-git/).
 
 # Usage
@@ -90,6 +82,8 @@ Future improvements:
 * Inspect why sometimes udev is not being triggered after wakeup from suspend and
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
+* Bugs:
+  * Sometimes event detection is triggered more than once
 
 # About
 This is my personal project. My motivation for writing this program comes from
