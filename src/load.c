@@ -79,7 +79,7 @@ struct find_mode_id_param_t {
 };
 
 struct determine_mode_id_match_param_t {
-	int *j_p, conf_output_idx;
+	int *j_p, conf_output_idx, mode_found;
 	xcb_randr_mode_info_iterator_t *mode_info_iterator_p;
 	xcb_randr_mode_t *output_modes;
 	xcb_randr_output_t *cur_output;
@@ -349,6 +349,7 @@ static void find_mode_id(load_class * self,
 		0))
 		return;
 
+	id_match_param.mode_found = 0;
 	id_match_param.conf_output_idx = conf_output_idx;
 	id_match_param.j_p = &j;
 	id_match_param.output_modes = output_modes;
@@ -360,6 +361,8 @@ static void find_mode_id(load_class * self,
 		for (j = 0; j < num_output_modes; ++j) {
 			determine_mode_id_match(self, &id_match_param);
 		}
+		if(id_match_param.mode_found == 1)
+			return;
 		xcb_randr_mode_info_next(&mode_info_iterator);
 	}
 
@@ -388,6 +391,7 @@ static void determine_mode_id_match(load_class * self, struct determine_mode_id_
 		return;
 	//if (VERBOSE) printf("Found current mode info\n");
 	//sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
+	param->mode_found = 1;
 
 	crtc_parameters.conf_output_idx = param->conf_output_idx;
 	crtc_parameters.mode_info_iterator_p = param->mode_info_iterator_p;
