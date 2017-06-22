@@ -43,6 +43,12 @@ Profile home saved!
 home*
 ---------------------------------
 # Plug in external monitor
+
+# Setup your desired configuration
+$ xrandr --output HDMI-1 --mode 1920x1080 --pos 1600x0
+$ xrandr --output eDP1 --mode 1600x900 --pos 0x0
+
+# Save the current configuration into a profile
 $ umonitor --save docked
 Profile docked saved!
 home
