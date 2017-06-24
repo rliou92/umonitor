@@ -9,3 +9,4 @@ legacy
 docs/ext
 *~
 *.SRCINFO
+*.log

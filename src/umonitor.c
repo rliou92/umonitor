@@ -4,6 +4,7 @@
 #include "load.h"
 #include "autoload.h"
 #include <getopt.h>
+#include <syslog.h>
 /*! \mainpage Main Page
  *
  * \section intro_sec Introduction
@@ -61,6 +62,7 @@ static config_t config;
 static int c;
 static int option_index = 0;
 static int verbose = 0, version = 0, help = 0, autoload = 0;
+static FILE *log_file;
 
 static const char *short_options = "s:l:d:na";
 static const struct option long_options[] = {
@@ -86,6 +88,9 @@ void umon_print(const char *format, ...)
 	vprintf(format, args);
 	va_end(args);
 
+	vfprintf(log_file,format, args);
+
+
 }
 
 /*! Logic for parsing options here*/
@@ -96,6 +101,7 @@ int main(int argc, char **argv)
 	const char *conf_location = "/.config/umon2.conf";
 
 	config_init(&config);
+	log_file = fopen("umonitor.log","w");
 
 	set_argument_flags(argc, argv);
 
