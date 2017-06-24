@@ -14,7 +14,7 @@ static void update_screen(screen_class *);
 void screen_class_constructor(screen_class * self)
 {
 
-	int i, screenNum;
+	int i, screenNum, conn_error;
 	static const xcb_setup_t *setup;	//Must not be freed
 	static xcb_screen_iterator_t iter;
 	xcb_intern_atom_cookie_t atom_cookie;
@@ -24,6 +24,11 @@ void screen_class_constructor(screen_class * self)
 	uint16_t name_len = strlen(edid_name);
 	/* Open the connection to the X server. Use the DISPLAY environment variable */
 	self->c = xcb_connect(NULL, &screenNum);
+	conn_error = xcb_connection_has_error(self->c);
+	if (conn_error){
+		printf("Connection error!\n");
+		exit(conn_error);
+	}
 
 	/* Get the screen whose number is screenNum */
 

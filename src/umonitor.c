@@ -44,13 +44,14 @@ static const char help_str[] =
     "Usage: umonitor [OPTION]\n"
     "\n"
     "Options:\n"
-    "\t--save <profile_name>\tSaves current setup into profile_name\n"
-    "\t--delete <profile_name>\tRemoves profile_name from configuration file\n"
-    "\t--load <profile_name>\tLoads setup from profile name\n"
-    "\t--listen\t\tListens for changes in the setup and applies the new"
+    "\t-s,--save <profile_name>\tSaves current setup into profile_name\n"
+    "\t-d,--delete <profile_name>\tRemoves profile_name from configuration file\n"
+    "\t-l,--load <profile_name>\tLoads setup from profile name\n"
+    "\t-n,--listen\t\t\tListens for changes in the setup and applies the new"
     " configuration automatically\n"
-    "\t--help\t\t\tDisplay this help and exit\n"
-    "\t--version\t\tOutput version information and exit\n";
+    "\t-a,--autoload\t\t\tLoad profile that matches with current configuration once\n"
+    "\t--help\t\t\t\tDisplay this help and exit\n"
+    "\t--version\t\t\tOutput version information and exit\n";
 
 static const char version_str[] =
     "umonitor 20170518\n" "Written by Ricky Liou\n";
@@ -59,14 +60,15 @@ static screen_class screen_o;
 static config_t config;
 static int c;
 static int option_index = 0;
-static int verbose, version, help;
+static int verbose = 0, version = 0, help = 0, autoload = 0;
 
-static const char *short_options = "s:l:d:n";
+static const char *short_options = "s:l:d:na";
 static const struct option long_options[] = {
 	{"save", required_argument, 0, 's'},
 	{"load", required_argument, 0, 'l'},
 	{"delete", required_argument, 0, 'd'},
 	{"listen", no_argument, 0, 'n'},
+	{"autoload", no_argument, 0, 'a'},
 	{"help", no_argument, &help, 1},
 	{"version", no_argument, &version, 1},
 	{"verbose", no_argument, &verbose, 1}
@@ -106,6 +108,7 @@ int main(int argc, char **argv)
 	strcat(CONFIG_FILE, conf_location);
 
 	optind = 1;
+	opterr = 1;
 	while (1) {
 		c = getopt_long(argc, argv, short_options, long_options,
 				&option_index);
@@ -128,6 +131,7 @@ int main(int argc, char **argv)
 
 static void set_argument_flags(int argc, char **argv)
 {
+	opterr = 0;
 	while (1) {
 		c = getopt_long(argc, argv, short_options, long_options,
 				&option_index);
@@ -150,7 +154,7 @@ static void print_current_state()
 {
 	autoload_class *autoload_o;
 
-	if (help || version)
+	if (help || version || autoload)
 		return;
 	// Print current state
 	if (!config_read_file(&config, CONFIG_FILE))
@@ -240,7 +244,19 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 
 }
 
+static void start_autoload()
+{
+	autoload_class *autoload_o;
 
+	autoload = 1; // Flag to prevent printing state twice
+	if (!config_read_file(&config, CONFIG_FILE))
+		exit(NO_CONF_FILE_FOUND);
+	autoload_constructor(&autoload_o, &screen_o, &config);
+	//autoload_o->find_profile_and_load(autoload_o);
+	autoload_o->find_profile_and_load(autoload_o, 0);
+	autoload_destructor(autoload_o);
+
+}
 
 static void parse_arguments()
 {
@@ -256,6 +272,9 @@ static void parse_arguments()
 		break;
 	case 'n':
 		start_listening();
+		break;
+	case 'a':
+		start_autoload();
 		break;
 	case '?':
 		printf("No argument given\n");
