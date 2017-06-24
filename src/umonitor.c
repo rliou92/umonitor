@@ -89,7 +89,8 @@ void umon_print(const char *format, ...)
 	va_end(args);
 
 	vfprintf(log_file,format, args);
-
+	fflush(log_file);
+	fsync(fileno(log_file));
 
 }
 
