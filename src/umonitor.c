@@ -4,7 +4,6 @@
 #include "load.h"
 #include "autoload.h"
 #include <getopt.h>
-#include <syslog.h>
 /*! \mainpage Main Page
  *
  * \section intro_sec Introduction
@@ -51,7 +50,7 @@ static const char help_str[] =
     "\t-n,--listen\t\t\tListens for changes in the setup and applies the new"
     " configuration automatically\n"
     "\t-a,--autoload\t\t\tLoad profile that matches with current configuration once\n"
-    "\t-q,--quiet\t\t\tSupress program output"
+    "\t--quiet\t\t\t\tSupress program output\n"
     "\t--help\t\t\t\tDisplay this help and exit\n"
     "\t--version\t\t\tOutput version information and exit\n";
 

@@ -93,8 +93,6 @@ Future improvements:
 * Updating Doxygen documentation
 * More commandline options
   * Alternate configuration file location
-  * Quiet mode
-  * Add support for oneshot mode (automatically change to detected profile)
 * Refresh configuration file when it is changed while listening to events
 * Handling the case when multiple outputs are connected to same crtc?
 * Inspect why sometimes udev is not being triggered after wakeup from suspend and
