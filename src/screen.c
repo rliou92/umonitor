@@ -25,7 +25,7 @@ void screen_class_constructor(screen_class * self)
 	/* Open the connection to the X server. Use the DISPLAY environment variable */
 	self->c = xcb_connect(NULL, &screenNum);
 	conn_error = xcb_connection_has_error(self->c);
-	if (conn_error){
+	if (conn_error) {
 		printf("Connection error!\n");
 		exit(conn_error);
 	}
@@ -48,9 +48,10 @@ void screen_class_constructor(screen_class * self)
 	self->edid_atom =
 	    xcb_intern_atom_reply(self->c, atom_cookie, &self->e);
 
-	while (self->edid_atom->atom == XCB_ATOM_NONE){
+	while (self->edid_atom->atom == XCB_ATOM_NONE) {
 		atom_cookie =
-		    xcb_intern_atom(self->c, only_if_exists, name_len, edid_name);
+		    xcb_intern_atom(self->c, only_if_exists, name_len,
+				    edid_name);
 
 		self->edid_atom =
 		    xcb_intern_atom_reply(self->c, atom_cookie, &self->e);
@@ -82,7 +83,9 @@ static void update_screen(screen_class * self)
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie;
 
 	screen_resources_cookie = xcb_randr_get_screen_resources(self->c,
-								 self->screen->root);
+								 self->
+								 screen->
+								 root);
 	free(self->screen_resources_reply);
 	self->screen_resources_reply =
 	    xcb_randr_get_screen_resources_reply(self->c,

@@ -67,6 +67,17 @@ docked
 
 Program help can also be viewed through `umonitor --help`.
 
+If you would like to auto start this program, you can add the program to your .xinitrc:
+```
+$ cat ~/.xinitrc
+#!/bin/sh
+...
+...
+...
+exec umonitor --listen --quiet &
+exec i3 # your window manager of choice
+```
+
 # Features
 This program has only been tested on my setup. I need testers and feedback!
 

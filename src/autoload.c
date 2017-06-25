@@ -95,7 +95,7 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 	umon_print("Number of profiles:%d\n", num_profiles);
 	for (i = 0; i < num_profiles; i++) {
 		PVAR->cur_profile = config_setting_get_elem(root, i);
-		printf("%s", config_setting_name(PVAR->cur_profile));
+		print_state("%s", config_setting_name(PVAR->cur_profile));
 		if (profile_found)
 			break;
 		PVAR->output_match = 0;
@@ -112,12 +112,11 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 
 		determine_profile_match(self);
 
-
-		printf("\n");
+		print_state("\n");
 	}
 	if (!PVAR->profile_found)
-		printf("Unknown profile*\n");
-	printf("---------------------------------\n");
+		print_state("Unknown profile*\n");
+	print_state("---------------------------------\n");
 
 }
 

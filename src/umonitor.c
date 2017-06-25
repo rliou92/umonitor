@@ -51,6 +51,7 @@ static const char help_str[] =
     "\t-n,--listen\t\t\tListens for changes in the setup and applies the new"
     " configuration automatically\n"
     "\t-a,--autoload\t\t\tLoad profile that matches with current configuration once\n"
+    "\t-q,--quiet\t\t\tSupress program output"
     "\t--help\t\t\t\tDisplay this help and exit\n"
     "\t--version\t\t\tOutput version information and exit\n";
 
@@ -61,16 +62,17 @@ static screen_class screen_o;
 static config_t config;
 static int c;
 static int option_index = 0;
-static int verbose = 0, version = 0, help = 0, autoload = 0;
+static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0;
 static FILE *log_file;
 
-static const char *short_options = "s:l:d:na";
+static const char *short_options = "s:l:d:naq";
 static const struct option long_options[] = {
 	{"save", required_argument, 0, 's'},
 	{"load", required_argument, 0, 'l'},
 	{"delete", required_argument, 0, 'd'},
 	{"listen", no_argument, 0, 'n'},
 	{"autoload", no_argument, 0, 'a'},
+	{"quiet", no_argument, &quiet, 1},
 	{"help", no_argument, &help, 1},
 	{"version", no_argument, &version, 1},
 	{"verbose", no_argument, &verbose, 1}
@@ -89,9 +91,23 @@ void umon_print(const char *format, ...)
 	va_end(args);
 	fflush(stdout);
 
-	vfprintf(log_file,format, args);
+#ifdef DEBUG
+	vfprintf(log_file, format, args);
 	fflush(log_file);
 	fsync(fileno(log_file));
+#endif
+
+}
+
+void print_state(const char *format, ...)
+{
+	va_list args;
+
+	if (quiet)
+		return;
+	va_start(args, format);
+	vprintf(format, args);
+	va_end(args);
 
 }
 
@@ -103,7 +119,7 @@ int main(int argc, char **argv)
 	const char *conf_location = "/.config/umon2.conf";
 
 	config_init(&config);
-	log_file = fopen("umonitor.log","w");
+	log_file = fopen("umonitor.log", "w");
 
 	set_argument_flags(argc, argv);
 
@@ -256,7 +272,7 @@ static void start_autoload()
 {
 	autoload_class *autoload_o;
 
-	autoload = 1; // Flag to prevent printing state twice
+	autoload = 1;		// Flag to prevent printing state twice
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);
 	autoload_constructor(&autoload_o, &screen_o, &config);
