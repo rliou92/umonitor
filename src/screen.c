@@ -48,6 +48,14 @@ void screen_class_constructor(screen_class * self)
 	self->edid_atom =
 	    xcb_intern_atom_reply(self->c, atom_cookie, &self->e);
 
+	while (self->edid_atom->atom == XCB_ATOM_NONE){
+		atom_cookie =
+		    xcb_intern_atom(self->c, only_if_exists, name_len, edid_name);
+
+		self->edid_atom =
+		    xcb_intern_atom_reply(self->c, atom_cookie, &self->e);
+	}
+
 
 	self->update_screen = update_screen;
 	self->screen_resources_reply = NULL;
