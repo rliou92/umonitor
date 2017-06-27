@@ -55,14 +55,11 @@ typedef struct {
 struct modify_crtc_ll_param_t {
 	int *i_p;
 	xcb_randr_crtc_t *crtcs_p;	/*!< crtcs associated with the screen */
-	crtc_ll **disable_crtc_head_p;
 };
 
 struct add_disable_crtc_param_t {
 	int *i_p;
 	xcb_randr_crtc_t *crtcs_p;	/*!< crtcs associated with the screen */
-	crtc_ll **disable_crtc_head_p;
-
 };
 
 struct remove_matching_crtc_from_ll_param_t {
@@ -129,9 +126,8 @@ static void remove_matching_crtc_from_ll(load_class * self, struct remove_matchi
 					 *param);
 static void add_disable_crtc(load_class * self,
 			     struct add_disable_crtc_param_t *param);
-static void apply_settings(load_class * self, crtc_ll * disable_crtc_head);
-static void apply_settings_disable_crtcs(load_class * self,
-					 crtc_ll * disable_crtc_head);
+static void apply_settings(load_class * self);
+static void apply_settings_disable_crtcs(load_class * self);
 static void apply_settings_screen_size(load_class * self);
 static void apply_settings_enable_crtcs(load_class * self);
 static void load_config_val(load_class * self,
@@ -151,6 +147,7 @@ typedef struct {
 	umon_setting_val_t umon_setting_val;
 	set_crtc_param *crtc_param_head;
 	crtc_ll *assigned_crtc_head;
+	crtc_ll *disable_crtc_head;
 
 	int cur_loaded;
 	int num_out_pp;
@@ -232,11 +229,14 @@ static void load_profile(load_class * self,
 {
 	int i;
 	struct modify_crtc_ll_param_t modify_crtc_ll_param;
-	crtc_ll *disable_crtc_head;
 	xcb_randr_crtc_t *crtcs_p;
+	char *profile_name;
 
-	disable_crtc_head = NULL;
+	PVAR->disable_crtc_head = NULL;
 	load_config_val(self, profile_group);
+	profile_name = config_setting_name(profile_group);
+	umon_print("Loading profile %s\n", profile_name);
+	umon_print("Num outputs per profile %s: %d\n", profile_name, PVAR->num_out_pp);
 
 	// Queue up crtc linked list to load
 	for_each_output((void *) self,
@@ -251,20 +251,19 @@ static void load_profile(load_class * self,
 
 	modify_crtc_ll_param.i_p = &i;
 	modify_crtc_ll_param.crtcs_p = crtcs_p;
-	modify_crtc_ll_param.disable_crtc_head_p = &disable_crtc_head;
 	for (i = 0;
 	     i < PVAR->screen_o->screen_resources_reply->num_crtcs; ++i) {
 		modify_crtc_ll(self, &modify_crtc_ll_param);
 	}
-	if ((PVAR->crtc_param_head == NULL) && (disable_crtc_head == NULL)) {
+	if ((PVAR->crtc_param_head == NULL) && (PVAR->disable_crtc_head == NULL)) {
 		PVAR->cur_loaded = 1;
 	} else {
 		//printf("Am I here?\n");
 		if (!test_cur) {
-			apply_settings(self, disable_crtc_head);
+			apply_settings(self);
 		} else {
 			free_crtc_param_ll(PVAR->crtc_param_head);
-			free_crtc_ll(disable_crtc_head);
+			free_crtc_ll(PVAR->disable_crtc_head);
 		}
 		PVAR->cur_loaded = 0;
 	}
@@ -272,7 +271,7 @@ static void load_profile(load_class * self,
 	free_crtc_ll(PVAR->assigned_crtc_head);
 
 	PVAR->crtc_param_head = NULL;
-	disable_crtc_head = NULL;
+	PVAR->disable_crtc_head = NULL;
 	PVAR->assigned_crtc_head = NULL;
 }
 
@@ -298,9 +297,12 @@ static void match_with_config(void *self_void,
 					    output_info_cookie,
 					    &PVAR->screen_o->e);
 
-	fetch_edid(output_p, PVAR->screen_o, &edid_string);
+	// Should fetch edid of every output, just the outputs that have connection
+	if (output_info_reply->connection)
+		return;
 
-	umon_print("Num outputs per profile: %d\n", PVAR->num_out_pp);
+	fetch_edid(output_p, PVAR->screen_o, &edid_string);
+	umon_print("Trying to find configuration file output that matches %s\n", edid_string);
 
 	mode_id_param.conf_output_idx_p = &conf_output_idx;
 	mode_id_param.output_info_reply = output_info_reply;
@@ -310,6 +312,8 @@ static void match_with_config(void *self_void,
 		if (!strcmp
 		    (PVAR->umon_setting_val.
 		     outputs[conf_output_idx].edid_val, edid_string)) {
+			umon_print("Found output in configuration file that matches %s\n", edid_string);
+			umon_print("Trying match up the configuration resolution with the mode id\n");
 			find_mode_id(self, &mode_id_param);
 		}
 	}
@@ -346,8 +350,10 @@ static void find_mode_id(load_class * self,
 
 	if ((PVAR->umon_setting_val.outputs[conf_output_idx].res_x == 0)
 	    || (PVAR->umon_setting_val.outputs[conf_output_idx].res_y ==
-		0))
-		return;
+		0)){
+			umon_print("No need to find mode id, just let this output be disabled later\n");
+			return;
+		}
 
 	id_match_param.mode_found = 0;
 	id_match_param.conf_output_idx = conf_output_idx;
@@ -389,7 +395,8 @@ static void determine_mode_id_match(load_class * self, struct determine_mode_id_
 		res_y)
 	    || (mode_info_iterator.data->id != param->output_modes[j]))
 		return;
-	//if (VERBOSE) printf("Found current mode info\n");
+
+	umon_print("Found matching mode id: %d\n", mode_info_iterator.data->id);
 	//sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
 	param->mode_found = 1;
 
@@ -417,6 +424,8 @@ static void add_crtc_param(load_class * self,
 	find_available_crtc(self, &available_crtc_param,
 			    &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
+	umon_print("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %d\n", PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x, PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y, PVAR->umon_setting_val.outputs[param->conf_output_idx].is_primary,
+	mode_info_iterator.data->id, param->cur_output);
 	new_crtc_param->pos_x =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =
@@ -502,8 +511,8 @@ static void determine_crtc_match(load_class * self, struct determine_crtc_match_
 	cur_assigned_crtc = PVAR->assigned_crtc_head;
 	// printf("Assigned crtc head: %d\n",assigned_crtc_head);
 	while (cur_assigned_crtc) {
-		umon_print
-		    ("cur_assigned_crtc %d\n", cur_assigned_crtc->crtc);
+		//umon_print
+		    //("cur_assigned_crtc %d\n", cur_assigned_crtc->crtc);
 		if (cur_assigned_crtc->crtc == param->available_crtcs[i]) {
 			umon_print
 			    ("Crtc %d already assigned!\n",
@@ -558,12 +567,11 @@ static void modify_crtc_ll(load_class * self,
 
 	add_disable_param.i_p = param->i_p;
 	add_disable_param.crtcs_p = param->crtcs_p;
-	add_disable_param.disable_crtc_head_p = param->disable_crtc_head_p;
 	if (should_disable && crtc_info_reply->mode) {
 		add_disable_crtc(self, &add_disable_param);
 	}
-	umon_print("Crtc %d should be disabled? %d\n",
-		   param->crtcs_p[i], should_disable);
+	//umon_print("Crtc %d should be disabled? %d\n",
+		   //param->crtcs_p[i], should_disable);
 	free(crtc_info_reply);
 
 }
@@ -581,7 +589,7 @@ static void remove_matching_crtc_from_ll(load_class * self, struct remove_matchi
 	    && cur_crtc_param->output_p[0] == param->conn_output[0]) {
 		*(param->should_disable_p) = 0;
 		//Remove current crtc_param from linked list
-		//printf("Remove current crtc_param from ll\n");
+		umon_print("Remove duplicate crtc %d from ll\n",cur_crtc_param->crtc);
 		if (cur_crtc_param->prev) {
 			cur_crtc_param->prev->next = cur_crtc_param->next;
 		} else {
@@ -603,12 +611,12 @@ static void add_disable_crtc(load_class * self,
 	int i;
 	crtc_ll *new_disable_crtc;
 
-	umon_print("adding disable crtc\n");
 	i = *(param->i_p);
+	//umon_print("adding disable crtc %d\n",param->crtcs_p[i]);
 	new_disable_crtc = (crtc_ll *) umalloc(sizeof(crtc_ll));
 	new_disable_crtc->crtc = param->crtcs_p[i];
-	new_disable_crtc->next = *(param->disable_crtc_head_p);
-	*(param->disable_crtc_head_p) = new_disable_crtc;
+	new_disable_crtc->next = PVAR->disable_crtc_head;
+	PVAR->disable_crtc_head = new_disable_crtc;
 
 }
 
@@ -617,10 +625,10 @@ static void add_disable_crtc(load_class * self,
 /*! \brief Set the crtcs to the queued up configuration stored in the
 linked list crtc_param_head */
 
-static void apply_settings(load_class * self, crtc_ll * disable_crtc_head)
+static void apply_settings(load_class * self)
 {
 
-	apply_settings_disable_crtcs(self, disable_crtc_head);
+	apply_settings_disable_crtcs(self);
 
 	apply_settings_screen_size(self);
 	//TODO implement
@@ -629,17 +637,16 @@ static void apply_settings(load_class * self, crtc_ll * disable_crtc_head)
 
 }
 
-static void apply_settings_disable_crtcs(load_class * self,
-					 crtc_ll * disable_crtc_head)
+static void apply_settings_disable_crtcs(load_class * self)
 {
 	xcb_randr_set_crtc_config_cookie_t crtc_config_cookie;
 	xcb_randr_set_crtc_config_reply_t *crtc_config_reply;
 	crtc_ll *cur_disable_crtc, *old_disable_crtc;
 
-	umon_print("Disable crtcs here\n");
-	if (!disable_crtc_head)
+	//umon_print("Disable crtcs here\n");
+	if (!PVAR->disable_crtc_head)
 		return;
-	cur_disable_crtc = disable_crtc_head;
+	cur_disable_crtc = PVAR->disable_crtc_head;
 	while (cur_disable_crtc) {
 		umon_print("Disabling this crtc: %d\n",
 			   cur_disable_crtc->crtc);
@@ -693,7 +700,7 @@ static void apply_settings_enable_crtcs(load_class * self)
 		return;
 	cur_crtc_param = PVAR->crtc_param_head;
 	while (cur_crtc_param) {
-
+		umon_print("Enable crtc %d\n", cur_crtc_param->crtc);
 		crtc_config_cookie =
 		    xcb_randr_set_crtc_config(PVAR->screen_o->c,
 					      cur_crtc_param->crtc,
@@ -715,7 +722,7 @@ static void apply_settings_enable_crtcs(load_class * self)
 		cur_crtc_param = cur_crtc_param->next;
 		free(old_crtc_param);
 	}
-	umon_print("Enable crtcs here\n");
+	// umon_print("Enable crtcs here\n");
 
 	crtc_config_reply =
 	    xcb_randr_set_crtc_config_reply(PVAR->screen_o->c,

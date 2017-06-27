@@ -398,7 +398,7 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 
 	edid = xcb_randr_get_output_property_data(output_property_reply);
 
-	umon_print("Starting edid_to_string\n");
+	//umon_print("Starting edid_to_string\n");
 	// *edid_string = (char *) malloc((length+1)*sizeof(char));
 	// for (z=0;z<length;++z) {
 	//      if ((char) edid[z] == '\0') {
@@ -459,7 +459,7 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	snprintf(*edid_string, 17, "%s %s", vendor, modelname);
 
 	free(output_property_reply);
-	umon_print("Finished edid_to_string\n");
+	//umon_print("Finished edid_to_string on output %s\n", *edid_string);
 }
 
 void *umalloc(size_t size)

@@ -93,9 +93,12 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
 	umon_print("Number of profiles:%d\n", num_profiles);
+	umon_print("Trying to find which profile matches current setup\n");
 	for (i = 0; i < num_profiles; i++) {
 		PVAR->cur_profile = config_setting_get_elem(root, i);
+		umon_print("Looping over profile ");
 		print_state("%s", config_setting_name(PVAR->cur_profile));
+		umon_print("\n");
 		if (profile_found)
 			break;
 		PVAR->output_match = 0;
@@ -124,22 +127,26 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 static void determine_profile_match(autoload_class * self)
 {
 	int cur_loaded;
+	char *profile_name;
 
 	if ((PVAR->output_match == PVAR->num_out_pp) &&
 	    (PVAR->num_out_pp == PVAR->num_conn_outputs)) {
 		//Only loads first matching profile
-		umon_print("Found matching profile\n");
+		profile_name = config_setting_name(PVAR->cur_profile);
+		umon_print("Profile %s matches current setup\n", profile_name);
 		PVAR->load_o->load_profile(PVAR->load_o,
 					   PVAR->cur_profile,
 					   PVAR->test_cur);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
 		if (cur_loaded == 1 && PVAR->test_cur) {
 			PVAR->profile_found = 1;
-			printf("*");
+			print_state("*");
+			umon_print("\n");
 		}
 		if (!PVAR->test_cur) {
 			PVAR->profile_found = 1;
-			printf("*");
+			print_state("*");
+			umon_print("\n");
 		}
 	}
 }
@@ -243,9 +250,8 @@ static void count_output_match(void *self_void,
 					    &(PVAR->screen_o->e));
 
 	if (!output_info_reply->connection) {
-		umon_print("Found output that is connected \n");
 		PVAR->num_conn_outputs++;
-
+		umon_print("output %s is connected \n", xcb_randr_get_output_info_name(output_info_reply));
 		determine_output_match(self, output_p);
 
 
@@ -271,6 +277,7 @@ static void determine_output_match(autoload_class * self,
 	output_match_unique = 0;
 	fetch_edid(output_p, PVAR->screen_o, &edid_string);
 
+
 	for (j = 0; j < PVAR->num_out_pp; j++) {
 		//if (VERBOSE) printf("output match, %d\n",PVAR->output_match);
 
@@ -288,7 +295,7 @@ static void determine_output_match(autoload_class * self,
 	free(edid_string);
 
 	if (output_match_unique == 1) {
-		umon_print("output match, %d\n", PVAR->output_match);
+		//umon_print("output match, %d\n", PVAR->output_match);
 		PVAR->output_match++;
 	}
 
