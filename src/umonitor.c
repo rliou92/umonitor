@@ -118,7 +118,10 @@ int main(int argc, char **argv)
 	const char *conf_location = "/.config/umon2.conf";
 
 	config_init(&config);
+	
+	#ifdef DEBUG
 	log_file = fopen("umonitor.log", "w");
+	#endif
 
 	set_argument_flags(argc, argv);
 

@@ -424,8 +424,8 @@ static void add_crtc_param(load_class * self,
 	find_available_crtc(self, &available_crtc_param,
 			    &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
-	umon_print("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %d\n", PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x, PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y, PVAR->umon_setting_val.outputs[param->conf_output_idx].is_primary,
-	mode_info_iterator.data->id, param->cur_output);
+	umon_print("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %s\n", PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x, PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y, PVAR->umon_setting_val.outputs[param->conf_output_idx].is_primary,
+	mode_info_iterator.data->id, xcb_randr_get_output_info_name(param->output_info_reply));
 	new_crtc_param->pos_x =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =
