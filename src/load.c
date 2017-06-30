@@ -284,7 +284,7 @@ static void match_with_config(void *self_void,
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 	struct find_mode_id_param_t mode_id_param;
-	const char *output_name;
+	char *output_name;
 
 	load_class *self = (load_class *) self_void;
 
@@ -303,15 +303,16 @@ static void match_with_config(void *self_void,
 	if (output_info_reply->connection)
 		return;
 
-	output_name = xcb_randr_get_output_info_name(output_info_reply);
+	get_output_name(output_info_reply,&output_name);
 	fetch_edid(output_p, PVAR->screen_o, &edid_string);
-	umon_print("Trying to find configuration file output that matches %s\n", edid_string);
+	umon_print("Trying to find matching setting for output: %s edid: %s\n", output_name, edid_string);
 
 	mode_id_param.conf_output_idx_p = &conf_output_idx;
 	mode_id_param.output_info_reply = output_info_reply;
 	mode_id_param.cur_output = output_p;
 	for (conf_output_idx = 0; conf_output_idx < PVAR->num_out_pp;
 	     ++conf_output_idx) {
+		// umon_print("")
 		if (!strcmp
 		    (PVAR->umon_setting_val.
 		     outputs[conf_output_idx].edid_val, edid_string) && !strcmp(PVAR->umon_setting_val.outputs[conf_output_idx].output_name, output_name)) {
@@ -419,17 +420,19 @@ static void add_crtc_param(load_class * self,
 	set_crtc_param *new_crtc_param;
 	struct find_available_crtc_param_t available_crtc_param;
 	xcb_randr_mode_info_iterator_t mode_info_iterator;
+	char *output_name;
 
 	mode_info_iterator = *(param->mode_info_iterator_p);
 	new_crtc_param = (set_crtc_param *)
 	    umalloc(sizeof(set_crtc_param));
+	get_output_name(param->output_info_reply,&output_name);
 
 	available_crtc_param.output_info_reply = param->output_info_reply;
 	find_available_crtc(self, &available_crtc_param,
 			    &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
 	umon_print("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %s\n", PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x, PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y, PVAR->umon_setting_val.outputs[param->conf_output_idx].is_primary,
-	mode_info_iterator.data->id, xcb_randr_get_output_info_name(param->output_info_reply));
+	mode_info_iterator.data->id, output_name);
 	new_crtc_param->pos_x =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =

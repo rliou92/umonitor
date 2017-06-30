@@ -19,3 +19,4 @@ void for_each_output_mode(void *self,
 void umon_print(const char *, ...);
 void print_state(const char *, ...);
 void *umalloc(size_t size);
+void get_output_name(xcb_randr_get_output_info_reply_t *, char **);

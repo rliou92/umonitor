@@ -16,7 +16,6 @@ static void output_info_to_config(save_class *);
 static void find_res_to_config(void *, xcb_randr_mode_t *);
 static void disabled_to_config(save_class *);
 static void check_output_status(void *, xcb_randr_output_t *);
-static void get_output_name(xcb_randr_get_output_info_reply_t *, char **);
 static void check_for_duplicate_crtc(save_class * self);
 
 
@@ -229,26 +228,6 @@ static void check_output_status(void *self_void,
 	}
 
 	free(PVAR->output_info_reply);
-
-}
-
-/*! \brief Convert the raw output name obtained from server into char
- */
-static void get_output_name(xcb_randr_get_output_info_reply_t *
-			    output_info_reply, char **output_name)
-{
-	int i;
-	uint8_t *output_name_raw =
-	    xcb_randr_get_output_info_name(output_info_reply);
-	int output_name_length =
-	    xcb_randr_get_output_info_name_length(output_info_reply);
-	*output_name =
-	    (char *) umalloc((output_name_length + 1) * sizeof(char));
-
-	for (i = 0; i < output_name_length; ++i) {
-		(*output_name)[i] = (char) output_name_raw[i];
-	}
-	(*output_name)[i] = '\0';
 
 }
 

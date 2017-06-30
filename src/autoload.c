@@ -239,7 +239,7 @@ static void count_output_match(void *self_void,
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
-	const char * output_name;
+	char * output_name;
 
 
 	output_info_cookie =
@@ -249,7 +249,7 @@ static void count_output_match(void *self_void,
 	    xcb_randr_get_output_info_reply(PVAR->screen_o->c,
 					    output_info_cookie,
 					    &(PVAR->screen_o->e));
-	output_name = xcb_randr_get_output_info_name(output_info_reply);
+	get_output_name(output_info_reply, &output_name);
 	if (!output_info_reply->connection) {
 		PVAR->num_conn_outputs++;
 		umon_print("output %s is connected \n", output_name);

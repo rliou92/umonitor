@@ -62,7 +62,9 @@ static config_t config;
 static int c;
 static int option_index = 0;
 static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0;
+#ifdef DEBUG
 static FILE *log_file;
+#endif
 
 static const char *short_options = "s:l:d:naq";
 static const struct option long_options[] = {
@@ -118,7 +120,7 @@ int main(int argc, char **argv)
 	const char *conf_location = "/.config/umon2.conf";
 
 	config_init(&config);
-	
+
 	#ifdef DEBUG
 	log_file = fopen("umonitor.log", "w");
 	#endif
@@ -472,4 +474,24 @@ void *umalloc(size_t size)
 	if (mem_addr == NULL)
 		exit(INSUFFICIENT_MEMORY);
 	return mem_addr;
+}
+
+/*! \brief Convert the raw output name obtained from server into char
+ */
+void get_output_name(xcb_randr_get_output_info_reply_t *
+			    output_info_reply, char **output_name)
+{
+	int i;
+	uint8_t *output_name_raw =
+	    xcb_randr_get_output_info_name(output_info_reply);
+	int output_name_length =
+	    xcb_randr_get_output_info_name_length(output_info_reply);
+	*output_name =
+	    (char *) umalloc((output_name_length + 1) * sizeof(char));
+
+	for (i = 0; i < output_name_length; ++i) {
+		(*output_name)[i] = (char) output_name_raw[i];
+	}
+	(*output_name)[i] = '\0';
+
 }
