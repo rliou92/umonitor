@@ -36,6 +36,7 @@ typedef struct {
 /*! Output information that is saved into configuration file
 */
 typedef struct {
+	const char *output_name;
 	const char *edid_val;	/*!< the edid value as a string */
 	int pos_x;		/*!< the output x coordinate */
 	int pos_y;		/*!< the output y coordinate */
@@ -283,6 +284,7 @@ static void match_with_config(void *self_void,
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
 	struct find_mode_id_param_t mode_id_param;
+	const char *output_name;
 
 	load_class *self = (load_class *) self_void;
 
@@ -301,6 +303,7 @@ static void match_with_config(void *self_void,
 	if (output_info_reply->connection)
 		return;
 
+	output_name = xcb_randr_get_output_info_name(output_info_reply);
 	fetch_edid(output_p, PVAR->screen_o, &edid_string);
 	umon_print("Trying to find configuration file output that matches %s\n", edid_string);
 
@@ -311,13 +314,14 @@ static void match_with_config(void *self_void,
 	     ++conf_output_idx) {
 		if (!strcmp
 		    (PVAR->umon_setting_val.
-		     outputs[conf_output_idx].edid_val, edid_string)) {
+		     outputs[conf_output_idx].edid_val, edid_string) && !strcmp(PVAR->umon_setting_val.outputs[conf_output_idx].output_name, output_name)) {
 			umon_print("Found output in configuration file that matches %s\n", edid_string);
 			umon_print("Trying match up the configuration resolution with the mode id\n");
 			find_mode_id(self, &mode_id_param);
 		}
 	}
 	free(edid_string);
+	free(output_info_reply);
 }
 
 /*! \brief After matching edid has been found, find the matching mode id from
@@ -488,6 +492,7 @@ static void find_available_crtc(load_class * self,
 		}
 	}
 
+	umon_print("ERROR: No available crtc found\n");
 	exit(NO_AVAILABLE_CRTC);
 
 }
@@ -757,7 +762,7 @@ static void load_config_val(load_class * self,
 		group = config_setting_get_elem(mon_group, i);
 		// printf("Checking group %d\n",group);
 		// Check if output is disabled
-
+		PVAR->umon_setting_val.outputs[i].output_name = config_setting_name(group);
 		res_group = config_setting_lookup(group, "resolution");
 		pos_group = config_setting_lookup(group, "pos");
 		config_setting_lookup_string(group, "EDID",
