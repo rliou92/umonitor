@@ -237,7 +237,8 @@ static void load_profile(load_class * self,
 	load_config_val(self, profile_group);
 	profile_name = config_setting_name(profile_group);
 	umon_print("Loading profile %s\n", profile_name);
-	umon_print("Num outputs per profile %s: %d\n", profile_name, PVAR->num_out_pp);
+	umon_print("Num outputs per profile %s: %d\n", profile_name,
+		   PVAR->num_out_pp);
 
 	// Queue up crtc linked list to load
 	for_each_output((void *) self,
@@ -247,8 +248,8 @@ static void load_profile(load_class * self,
 	//TODO Only assuming 1 output connected to crtc
 	// Examine current configuration state to determine which crtcs should actually be loaded and which should be disabled
 	crtcs_p =
-	    xcb_randr_get_screen_resources_crtcs(PVAR->screen_o->
-						 screen_resources_reply);
+	    xcb_randr_get_screen_resources_crtcs(PVAR->
+						 screen_o->screen_resources_reply);
 
 	modify_crtc_ll_param.i_p = &i;
 	modify_crtc_ll_param.crtcs_p = crtcs_p;
@@ -256,7 +257,9 @@ static void load_profile(load_class * self,
 	     i < PVAR->screen_o->screen_resources_reply->num_crtcs; ++i) {
 		modify_crtc_ll(self, &modify_crtc_ll_param);
 	}
-	if ((PVAR->crtc_param_head == NULL) && (PVAR->disable_crtc_head == NULL)) {
+	if ((PVAR->crtc_param_head == NULL)
+	    && (PVAR->disable_crtc_head == NULL)) {
+		umon_print("No crtcs to disable or enable. Profile %s is currently active\n", profile_name);
 		PVAR->cur_loaded = 1;
 	} else {
 		//printf("Am I here?\n");
@@ -303,9 +306,11 @@ static void match_with_config(void *self_void,
 	if (output_info_reply->connection)
 		return;
 
-	get_output_name(output_info_reply,&output_name);
+	get_output_name(output_info_reply, &output_name);
 	fetch_edid(output_p, PVAR->screen_o, &edid_string);
-	umon_print("Trying to find matching setting for output: %s edid: %s\n", output_name, edid_string);
+	umon_print
+	    ("Trying to find matching setting for %s (%s)\n",
+	     output_name, edid_string);
 
 	mode_id_param.conf_output_idx_p = &conf_output_idx;
 	mode_id_param.output_info_reply = output_info_reply;
@@ -314,10 +319,16 @@ static void match_with_config(void *self_void,
 	     ++conf_output_idx) {
 		// umon_print("")
 		if (!strcmp
-		    (PVAR->umon_setting_val.
-		     outputs[conf_output_idx].edid_val, edid_string) && !strcmp(PVAR->umon_setting_val.outputs[conf_output_idx].output_name, output_name)) {
-			umon_print("Found output in configuration file that matches %s\n", edid_string);
-			umon_print("Trying match up the configuration resolution with the mode id\n");
+		    (PVAR->umon_setting_val.outputs[conf_output_idx].
+		     edid_val, edid_string)
+		    && !strcmp(PVAR->umon_setting_val.
+			       outputs[conf_output_idx].output_name,
+			       output_name)) {
+			umon_print
+			    ("Found output in configuration file that matches %s (%s)\n",
+			     output_name, edid_string);
+			umon_print
+			    ("Trying match up the configuration resolution with the mode id\n");
 			find_mode_id(self, &mode_id_param);
 		}
 	}
@@ -344,8 +355,8 @@ static void find_mode_id(load_class * self,
 	    xcb_randr_get_screen_resources_modes_iterator
 	    (PVAR->screen_o->screen_resources_reply);
 	num_screen_modes =
-	    xcb_randr_get_screen_resources_modes_length(PVAR->screen_o->
-							screen_resources_reply);
+	    xcb_randr_get_screen_resources_modes_length(PVAR->
+							screen_o->screen_resources_reply);
 
 	output_modes =
 	    xcb_randr_get_output_info_modes(param->output_info_reply);
@@ -355,10 +366,11 @@ static void find_mode_id(load_class * self,
 
 	if ((PVAR->umon_setting_val.outputs[conf_output_idx].res_x == 0)
 	    || (PVAR->umon_setting_val.outputs[conf_output_idx].res_y ==
-		0)){
-			umon_print("No need to find mode id, just let this output be disabled later\n");
-			return;
-		}
+		0)) {
+		umon_print
+		    ("No need to find mode id, just let this output be disabled later\n");
+		return;
+	}
 
 	id_match_param.mode_found = 0;
 	id_match_param.conf_output_idx = conf_output_idx;
@@ -396,12 +408,13 @@ static void determine_mode_id_match(load_class * self, struct determine_mode_id_
 	if ((mode_info_iterator.data->width !=
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].res_x)
 	    || (mode_info_iterator.data->height !=
-		PVAR->umon_setting_val.outputs[param->conf_output_idx].
-		res_y)
+		PVAR->umon_setting_val.outputs[param->
+					       conf_output_idx].res_y)
 	    || (mode_info_iterator.data->id != param->output_modes[j]))
 		return;
 
-	umon_print("Found matching mode id: %d\n", mode_info_iterator.data->id);
+	umon_print("Found matching mode id: %d\n",
+		   mode_info_iterator.data->id);
 	//sprintf(res_string,"%dx%d",mode_info_iterator.data->width,mode_info_iterator.data->height);
 	param->mode_found = 1;
 
@@ -425,21 +438,25 @@ static void add_crtc_param(load_class * self,
 	mode_info_iterator = *(param->mode_info_iterator_p);
 	new_crtc_param = (set_crtc_param *)
 	    umalloc(sizeof(set_crtc_param));
-	get_output_name(param->output_info_reply,&output_name);
+	get_output_name(param->output_info_reply, &output_name);
 
 	available_crtc_param.output_info_reply = param->output_info_reply;
 	find_available_crtc(self, &available_crtc_param,
 			    &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
-	umon_print("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %s\n", PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x, PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y, PVAR->umon_setting_val.outputs[param->conf_output_idx].is_primary,
-	mode_info_iterator.data->id, output_name);
+	umon_print
+	    ("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %s\n",
+	     PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x,
+	     PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y,
+	     PVAR->umon_setting_val.outputs[param->conf_output_idx].
+	     is_primary, mode_info_iterator.data->id, output_name);
 	new_crtc_param->pos_x =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y;
 	new_crtc_param->is_primary =
-	    PVAR->umon_setting_val.outputs[param->conf_output_idx].
-	    is_primary;
+	    PVAR->umon_setting_val.outputs[param->
+					   conf_output_idx].is_primary;
 	new_crtc_param->mode_id = mode_info_iterator.data->id;
 	new_crtc_param->output_p = param->cur_output;
 	new_crtc_param->next = PVAR->crtc_param_head;
@@ -467,8 +484,8 @@ static void find_available_crtc(load_class * self,
 
 	already_assigned = 1;
 	available_crtcs =
-	    xcb_randr_get_screen_resources_crtcs(PVAR->screen_o->
-						 screen_resources_reply);
+	    xcb_randr_get_screen_resources_crtcs(PVAR->
+						 screen_o->screen_resources_reply);
 
 	output_crtcs =
 	    xcb_randr_get_output_info_crtcs(param->output_info_reply);
@@ -520,12 +537,13 @@ static void determine_crtc_match(load_class * self, struct determine_crtc_match_
 	// printf("Assigned crtc head: %d\n",assigned_crtc_head);
 	while (cur_assigned_crtc) {
 		//umon_print
-		    //("cur_assigned_crtc %d\n", cur_assigned_crtc->crtc);
+		//("cur_assigned_crtc %d\n", cur_assigned_crtc->crtc);
 		if (cur_assigned_crtc->crtc == param->available_crtcs[i]) {
 			umon_print
 			    ("Crtc %d already assigned!\n",
 			     param->available_crtcs[i]);
 			*(param->already_assigned_p) = 1;
+			// TODO can optimize here with break or return?
 		}
 		cur_assigned_crtc = cur_assigned_crtc->next;
 	}
@@ -552,6 +570,12 @@ static void modify_crtc_ll(load_class * self,
 	set_crtc_param *cur_crtc_param;
 	struct remove_matching_crtc_from_ll_param_t remove_crtc_param;
 	struct add_disable_crtc_param_t add_disable_param;
+// #ifdef DEBUG
+	xcb_randr_get_output_info_cookie_t output_info_cookie;
+	xcb_randr_get_output_info_reply_t *output_info_reply;
+	char *output_name;
+// #endif
+
 
 	i = *(param->i_p);
 	should_disable = 1;
@@ -565,6 +589,26 @@ static void modify_crtc_ll(load_class * self,
 	conn_output = xcb_randr_get_crtc_info_outputs(crtc_info_reply);
 	cur_crtc_param = PVAR->crtc_param_head;
 
+// #ifdef DEBUG
+	umon_print("Does any of queued crtc match currently loaded crtc %d?\n", param->crtcs_p[i]);
+	output_info_cookie =
+	    xcb_randr_get_output_info(PVAR->screen_o->c, xcb_randr_get_crtc_info_outputs(crtc_info_reply)[0],
+				      XCB_CURRENT_TIME);
+
+	output_info_reply =
+	    xcb_randr_get_output_info_reply(PVAR->screen_o->c,
+					    output_info_cookie,
+					    &PVAR->screen_o->e);
+	get_output_name(output_info_reply, &output_name);
+
+	umon_print
+	    ("Crtc: x:%d, y:%d, mode_id: %d, output: %s\n",
+	     crtc_info_reply->x,
+	     crtc_info_reply->y,
+	     crtc_info_reply->mode, output_name);
+	free(output_info_reply);
+	free(output_name);
+// #endif
 	remove_crtc_param.should_disable_p = &should_disable;
 	remove_crtc_param.cur_crtc_param_p = &cur_crtc_param;
 	remove_crtc_param.crtc_info_reply = crtc_info_reply;
@@ -579,7 +623,7 @@ static void modify_crtc_ll(load_class * self,
 		add_disable_crtc(self, &add_disable_param);
 	}
 	//umon_print("Crtc %d should be disabled? %d\n",
-		   //param->crtcs_p[i], should_disable);
+	//param->crtcs_p[i], should_disable);
 	free(crtc_info_reply);
 
 }
@@ -597,7 +641,9 @@ static void remove_matching_crtc_from_ll(load_class * self, struct remove_matchi
 	    && cur_crtc_param->output_p[0] == param->conn_output[0]) {
 		*(param->should_disable_p) = 0;
 		//Remove current crtc_param from linked list
-		umon_print("Remove duplicate crtc %d from ll\n",cur_crtc_param->crtc);
+		umon_print("Queued crtc %d matches! ", cur_crtc_param->crtc);
+		umon_print("Remove duplicate crtc %d from ll\n",
+			   cur_crtc_param->crtc);
 		if (cur_crtc_param->prev) {
 			cur_crtc_param->prev->next = cur_crtc_param->next;
 		} else {
@@ -620,7 +666,7 @@ static void add_disable_crtc(load_class * self,
 	crtc_ll *new_disable_crtc;
 
 	i = *(param->i_p);
-	//umon_print("adding disable crtc %d\n",param->crtcs_p[i]);
+	umon_print("Queing disable crtc %d\n", param->crtcs_p[i]);
 	new_disable_crtc = (crtc_ll *) umalloc(sizeof(crtc_ll));
 	new_disable_crtc->crtc = param->crtcs_p[i];
 	new_disable_crtc->next = PVAR->disable_crtc_head;
@@ -686,14 +732,14 @@ static void apply_settings_screen_size(load_class * self)
 	umon_print("Change screen size here\n");
 	xcb_randr_set_screen_size(PVAR->screen_o->c,
 				  PVAR->screen_o->screen->root,
-				  (uint16_t) PVAR->umon_setting_val.screen.
-				  width,
-				  (uint16_t) PVAR->umon_setting_val.screen.
-				  height,
-				  (uint32_t) PVAR->umon_setting_val.screen.
-				  widthMM,
-				  (uint32_t) PVAR->umon_setting_val.screen.
-				  heightMM);
+				  (uint16_t) PVAR->umon_setting_val.
+				  screen.width,
+				  (uint16_t) PVAR->umon_setting_val.
+				  screen.height,
+				  (uint32_t) PVAR->umon_setting_val.
+				  screen.widthMM,
+				  (uint32_t) PVAR->umon_setting_val.
+				  screen.heightMM);
 	//xcb_flush(PVAR->screen_o->c);
 
 }
@@ -765,29 +811,35 @@ static void load_config_val(load_class * self,
 		group = config_setting_get_elem(mon_group, i);
 		// printf("Checking group %d\n",group);
 		// Check if output is disabled
-		PVAR->umon_setting_val.outputs[i].output_name = config_setting_name(group);
+		PVAR->umon_setting_val.outputs[i].output_name =
+		    config_setting_name(group);
 		res_group = config_setting_lookup(group, "resolution");
 		pos_group = config_setting_lookup(group, "pos");
 		config_setting_lookup_string(group, "EDID",
-					     &(PVAR->umon_setting_val.
-					       outputs[i].edid_val));
+					     &(PVAR->
+					       umon_setting_val.outputs[i].
+					       edid_val));
 		if (!config_setting_lookup_int
 		    (group, "primary",
 		     &(PVAR->umon_setting_val.outputs[i].is_primary))) {
 			PVAR->umon_setting_val.outputs[i].is_primary = 0;
 		}
 		config_setting_lookup_int(res_group, "x",
-					  &(PVAR->umon_setting_val.
-					    outputs[i].res_x));
+					  &(PVAR->
+					    umon_setting_val.outputs[i].
+					    res_x));
 		config_setting_lookup_int(res_group, "y",
-					  &(PVAR->umon_setting_val.
-					    outputs[i].res_y));
+					  &(PVAR->
+					    umon_setting_val.outputs[i].
+					    res_y));
 		config_setting_lookup_int(pos_group, "x",
-					  &(PVAR->umon_setting_val.
-					    outputs[i].pos_x));
+					  &(PVAR->
+					    umon_setting_val.outputs[i].
+					    pos_x));
 		config_setting_lookup_int(pos_group, "y",
-					  &(PVAR->umon_setting_val.
-					    outputs[i].pos_y));
+					  &(PVAR->
+					    umon_setting_val.outputs[i].
+					    pos_y));
 
 	}
 
@@ -797,11 +849,11 @@ static void load_config_val(load_class * self,
 	config_setting_lookup_int(group, "height",
 				  &(PVAR->umon_setting_val.screen.height));
 	config_setting_lookup_int(group, "widthMM",
-				  &(PVAR->umon_setting_val.screen.
-				    widthMM));
+				  &(PVAR->umon_setting_val.
+				    screen.widthMM));
 	config_setting_lookup_int(group, "heightMM",
-				  &(PVAR->umon_setting_val.screen.
-				    heightMM));
+				  &(PVAR->umon_setting_val.
+				    screen.heightMM));
 
 	umon_print("Done loading values from configuration file\n");
 }

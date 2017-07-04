@@ -17,7 +17,11 @@ static void validate_timestamp_and_load(autoload_class * self);
 static void count_output_match(void *self_void,
 			       xcb_randr_output_t * output_p);
 static void determine_output_match(autoload_class * self,
-				   xcb_randr_output_t * output_p);
+				   xcb_randr_output_t * output_p,
+				   char *output_name);
+static void print_connected_outputs(void *self_void,
+				    xcb_randr_output_t * output_p);
+
 
 
 
@@ -88,12 +92,25 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 
 	int num_profiles, profile_found, i;
 
+// #ifdef DEBUG
+	int j;
+	config_setting_t *group;
+	const char *conf_output, *conf_edid;
+// #endif
+
 	PVAR->test_cur = test_cur;
 	profile_found = 0;
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
-	umon_print("Number of profiles:%d\n", num_profiles);
+	umon_print("Number of profiles: %d\n", num_profiles);
 	umon_print("Trying to find which profile matches current setup\n");
+	umon_print("Current connected outputs: ");
+//#ifdef DEBUG
+	for_each_output((void *) self,
+			PVAR->screen_o->screen_resources_reply,
+			print_connected_outputs);
+	umon_print("\n");
+//#endif
 	for (i = 0; i < num_profiles; i++) {
 		PVAR->cur_profile = config_setting_get_elem(root, i);
 		umon_print("Looping over profile ");
@@ -105,7 +122,18 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 		PVAR->mon_group =
 		    config_setting_lookup(PVAR->cur_profile, "Monitors");
 		PVAR->num_out_pp = config_setting_length(PVAR->mon_group);
-
+//#ifdef DEBUG
+		umon_print("Configuration outputs: ");
+		for (j = 0; j < PVAR->num_out_pp; j++) {
+			// TODO Print edid as well
+			group =
+			    config_setting_get_elem(PVAR->mon_group, j);
+			conf_output = config_setting_name(group);
+			config_setting_lookup_string(group, "EDID", &conf_edid);
+			umon_print("%s (%s) ", conf_output, conf_edid);
+		}
+		umon_print("\n");
+//#endif
 		//if (PVAR->num_out_pp ==
 		//PVAR->screen_o->screen_resources_reply->num_outputs){
 		PVAR->num_conn_outputs = 0;
@@ -123,6 +151,35 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 
 }
 
+// #ifdef DEBUG
+static void print_connected_outputs(void *self_void,
+				    xcb_randr_output_t * output_p)
+{
+	autoload_class *self = (autoload_class *) self_void;
+
+	xcb_randr_get_output_info_cookie_t output_info_cookie;
+	xcb_randr_get_output_info_reply_t *output_info_reply;
+	char *output_name, *edid_string;
+
+	output_info_cookie =
+	    xcb_randr_get_output_info(PVAR->screen_o->c, *output_p,
+				      XCB_CURRENT_TIME);
+	output_info_reply =
+	    xcb_randr_get_output_info_reply(PVAR->screen_o->c,
+					    output_info_cookie,
+					    &(PVAR->screen_o->e));
+	get_output_name(output_info_reply, &output_name);
+	fetch_edid(output_p, PVAR->screen_o, &edid_string);
+
+	if (!output_info_reply->connection)
+		umon_print("%s (%s) ", output_name, edid_string);
+
+	free(output_name);
+	free(output_info_reply);
+	free(edid_string);
+
+}
+// #endif
 
 static void determine_profile_match(autoload_class * self)
 {
@@ -133,9 +190,9 @@ static void determine_profile_match(autoload_class * self)
 	    (PVAR->num_out_pp == PVAR->num_conn_outputs)) {
 		//Only loads first matching profile
 		profile_name = config_setting_name(PVAR->cur_profile);
-		umon_print("Profile %s matches current setup\n", profile_name);
-		PVAR->load_o->load_profile(PVAR->load_o,
-					   PVAR->cur_profile,
+		umon_print("Profile %s matches current setup\n",
+			   profile_name);
+		PVAR->load_o->load_profile(PVAR->load_o, PVAR->cur_profile,
 					   PVAR->test_cur);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
 		if (cur_loaded == 1 && PVAR->test_cur) {
@@ -239,7 +296,7 @@ static void count_output_match(void *self_void,
 
 	xcb_randr_get_output_info_cookie_t output_info_cookie;
 	xcb_randr_get_output_info_reply_t *output_info_reply;
-	char * output_name;
+	char *output_name;
 
 
 	output_info_cookie =
@@ -252,27 +309,28 @@ static void count_output_match(void *self_void,
 	get_output_name(output_info_reply, &output_name);
 	if (!output_info_reply->connection) {
 		PVAR->num_conn_outputs++;
-		umon_print("output %s is connected \n", output_name);
-		determine_output_match(self, output_p);
+		//umon_print("output %s is connected \n", output_name);
+		determine_output_match(self, output_p, output_name);
 
 
 	} else {
 		// TODO just disable
 	}
 
-
+	free(output_name);
 	free(output_info_reply);
 	//if (VERBOSE) printf("output_property_reply %d\n",output_property_reply);
 
 }
 
 static void determine_output_match(autoload_class * self,
-				   xcb_randr_output_t * output_p)
+				   xcb_randr_output_t * output_p,
+				   char *output_name)
 {
 	int j, output_match_unique;
 	config_setting_t *group;
 	const char *conf_edid;
-	char *edid_string;
+	char *edid_string, *conf_output;
 
 
 	output_match_unique = 0;
@@ -285,9 +343,11 @@ static void determine_output_match(autoload_class * self,
 		//if (VERBOSE) printf("output_match_unique, %d\n",output_match_unique);
 		group = config_setting_get_elem(PVAR->mon_group, j);
 		config_setting_lookup_string(group, "EDID", &conf_edid);
+		conf_output = config_setting_name(group);
 		// if (VERBOSE) printf("conf_edid: %s\n",conf_edid);
 		// if (VERBOSE) printf("edid_string: %s\n",edid_string);
-		if (!strcmp(conf_edid, edid_string)) {
+		if (!strcmp(conf_edid, edid_string)
+		    && !strcmp(output_name, conf_output)) {
 			output_match_unique++;
 			//if (VERBOSE) printf("match, %d\n",output_match_unique);
 		}
@@ -298,6 +358,10 @@ static void determine_output_match(autoload_class * self,
 	if (output_match_unique == 1) {
 		//umon_print("output match, %d\n", PVAR->output_match);
 		PVAR->output_match++;
+	}
+	else if(output_match_unique > 1) {
+		umon_print("ERROR: Found more than one edid/output combo in configuration file that matches current setup\n");
+		exit(DUPLICATE_OUTPUT);
 	}
 
 

@@ -91,6 +91,8 @@ What is saved and applied dynamically:
 Future improvements:
 
 * Updating Doxygen documentation
+* Prevent duplicate profile from being saved
+* Prevent program from having multiple instances
 * More commandline options
   * Alternate configuration file location
 * Refresh configuration file when it is changed while listening to events
@@ -99,7 +101,7 @@ Future improvements:
 hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
 * Bugs:
-  * Sometimes event detection is triggered more than once
+  * Tell me! Run umonitor with the `--verbose` flag to get debugging output
 
 # About
 This is my personal project. My motivation for writing this program comes from

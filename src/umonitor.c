@@ -62,6 +62,7 @@ static config_t config;
 static int c;
 static int option_index = 0;
 static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0;
+
 #ifdef DEBUG
 static FILE *log_file;
 #endif
@@ -121,9 +122,9 @@ int main(int argc, char **argv)
 
 	config_init(&config);
 
-	#ifdef DEBUG
+#ifdef DEBUG
 	log_file = fopen("umonitor.log", "w");
-	#endif
+#endif
 
 	set_argument_flags(argc, argv);
 
@@ -479,7 +480,7 @@ void *umalloc(size_t size)
 /*! \brief Convert the raw output name obtained from server into char
  */
 void get_output_name(xcb_randr_get_output_info_reply_t *
-			    output_info_reply, char **output_name)
+		     output_info_reply, char **output_name)
 {
 	int i;
 	uint8_t *output_name_raw =

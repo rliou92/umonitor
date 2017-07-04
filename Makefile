@@ -8,9 +8,9 @@ SYSTEMD_SYSTEM_DIR = $(SYSTEMD_DIR)/system
 LICENSE_DIR = /usr/share/licenses/$(TARGET)
 
 ifeq ($(DEBUG),1)
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -DDEBUG
 else
-CFLAGS =
+CFLAGS = -Wall
 endif
 
 .PHONY: default all clean install
