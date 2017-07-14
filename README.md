@@ -16,20 +16,28 @@ binary. Unlike autorandr, there is no need to install rules for udev or hooks
 for pmutils. Srandrd + screenconfig seems pretty promising to me, but there are
 features missing such as setting the crtc xy positions.
 
+# Inspiration
+I drew inspiration of this program from [udiskie](https://github.com/coldfix/udiskie). I enjoy using only window managers. For me, udiskie is one essential program to automount removable storage media. I would just include it in my .xinitrc and not have to worry about mounting anything manually again. I thought to myself, "Why not have the same program but for managing monitor hotplugging?"
+
+At first, I found that the most common solutions to managing monitor hotplugging were using xrandr scripts. These scripts seemed really hacky to me, involving hardcoding of the DISPLAY environment variable. The reason why the DISPLAY environment variable needed to be hardcoded is because these scripts would be run by udev. udev runs your desired script as root and has no idea of the desired user's DISPLAY environment variable when it detects monitors being hotplugged.
+
+The most popular program that manages monitor setups autorandr also has this problem, as it is setup to be run from a udev rule. It solves it by checking all processes not owned by root and seeing if the user of that process has a DISPLAY variable. For *all users* that do, it forks itself and changes its uid/guid to that user. Autorandr does not know which user you are, it just runs for all users!
+
+I believed a better solution existed. By using the XCB library, I can communicate directly with the X11 server with this program running as just a single user. I do not need to rely on udev because the X11 server itself sends signals when monitors are hotplugged. Furthermore, using this program is as simple as including it in the .xinitrc, just like udiskie. For a Linux laptop user who uses a window manager only like me, I believe this software is almost a necessity for a good user experience!
+
 # Installation
 Run `make`. `umonitor` binary will be created in `bin`.
 
 For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/packages/umonitor-git/).
 
 # Usage
-* Setup your configuration using `xrandr` or related tools (`arandr` is a good one).
+* Setup your monitor resolutions and positions using `xrandr` or related tools (`arandr` is a good one).
 * Run `umonitor --save <profile_name>`.
 * Run `umonitor --listen` to begin automatically applying monitor configuration.
 
 
 The configuration file is stored in `~/.config/umon2.conf`. You can load a
-profile manually by executing `umonitor --load <profile_name>`. Profiles can be
-deleted `umonitor --delete <profile_name>`.
+profile manually by executing `umonitor --load <profile_name>`. Profiles can be deleted `umonitor --delete <profile_name>`.
 
 Example scenario: You are working on a laptop. You want to save just the monitor
 configuration of just the laptop screen into the profile name called 'home'. At
@@ -90,6 +98,7 @@ What is saved and applied dynamically:
 
 Future improvements:
 
+* Implement debug as compile option
 * Updating Doxygen documentation
 * Prevent duplicate profile from being saved
 * Prevent program from having multiple instances
@@ -97,11 +106,10 @@ Future improvements:
   * Alternate configuration file location
 * Refresh configuration file when it is changed while listening to events
 * Handling the case when multiple outputs are connected to same crtc?
-* Inspect why sometimes udev is not being triggered after wakeup from suspend and
-hibernate (udev bug?)
 * I could just use `xrandr` to load the changes, might be a lot easier that way
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
+* Any feature requests
 
 # About
 This is my personal project. My motivation for writing this program comes from
