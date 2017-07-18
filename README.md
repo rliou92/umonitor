@@ -85,31 +85,20 @@ What is saved and applied dynamically:
 * Crtc x and y position
 * Resolution
 * Primary output
-* Will not load duplicate crtcs
 
 Future improvements:
 
-* Implement debug as compile option
-* Updating Doxygen documentation
 * Prevent duplicate profile from being saved
 * Prevent program from having multiple instances
+* Implement debug as compile option
+* Change configuration file name to umon.conf (trivial, but a breaking change)
 * More commandline options
   * Alternate configuration file location
-* Refresh configuration file when it is changed while listening to events
+* Updating Doxygen documentation
 * Handling the case when multiple outputs are connected to same crtc?
-* I could just use `xrandr` to load the changes, might be a lot easier that way
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
 * Any feature requests
-
-# About
-This is my personal project. My motivation for writing this program comes from
-using i3 wm on my laptop. From writing this program I have learned a great
-deal about how to interact with the X11 server, trying out OOP in C (even when
-it is overkill), and hope to continue learning even more in the future. I want
-to work on this project until I deem that it is "complete", fufilling its
-purpose of dynamic monitor management for those who do not use a desktop
-envorinment.
 
 # Inspiration
 I drew inspiration of this program from [udiskie](https://github.com/coldfix/udiskie). I enjoy using only window managers. For me, udiskie is one essential program to automount removable storage media. I would just include it in my .xinitrc and not have to worry about mounting anything manually again. I thought to myself, "Why not have the same program but for managing monitor hotplugging?"
@@ -119,6 +108,15 @@ At first, I found that the most common solutions to managing monitor hotplugging
 The most popular program that manages monitor setups autorandr also has this problem, as it is setup to be run from a udev rule. It solves it by checking all processes not owned by root and seeing if the user of that process has a DISPLAY variable. For *all users* that do, it forks itself and changes its uid/guid to that user. Autorandr does not know which user you are, it just runs for all users!
 
 I believed a better solution existed. By using the XCB library, I can communicate directly with the X11 server with this program running as just a single user. I do not need to rely on udev because the X11 server itself sends signals when monitors are hotplugged. Furthermore, using this program is as simple as including it in the .xinitrc, just like udiskie. For a Linux laptop user who uses a window manager only like me, I believe this software is almost a necessity for a good user experience!
+
+# About
+This is my personal project. My motivation for writing this program comes from
+using i3 wm on my laptop. From writing this program I have learned a great
+deal about how to interact with the X11 server, trying out OOP in C (even when
+it is overkill), and hope to continue learning even more in the future. I want
+to work on this project until I deem that it is "complete", fufilling its
+purpose of dynamic monitor management for those who do not use a desktop
+envorinment.
 
 # Credits
 I borrowed the edid parsing code from [eds](https://github.com/compnerd/eds).
