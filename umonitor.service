@@ -1,8 +1,0 @@
-[Unit]
-Description=Start managing monitor configuration
-
-[Service]
-ExecStart=/usr/bin/umonitor --listen
-
-[Install]
-WantedBy=graphical.target
