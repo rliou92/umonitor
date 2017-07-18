@@ -63,7 +63,7 @@ static int c;
 static int option_index = 0;
 static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0;
 
-#ifdef DEBUG
+#ifdef LOG
 static FILE *log_file;
 #endif
 
@@ -93,7 +93,7 @@ void umon_print(const char *format, ...)
 	va_end(args);
 	fflush(stdout);
 
-#ifdef DEBUG
+#ifdef LOG
 	vfprintf(log_file, format, args);
 	fflush(log_file);
 	fsync(fileno(log_file));
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
 	config_init(&config);
 
-#ifdef DEBUG
+#ifdef LOG
 	log_file = fopen("umonitor.log", "w");
 #endif
 
@@ -278,8 +278,9 @@ static void start_autoload()
 	autoload_class *autoload_o;
 
 	autoload = 1;		// Flag to prevent printing state twice
-	if (!config_read_file(&config, CONFIG_FILE))
-		exit(NO_CONF_FILE_FOUND);
+	// Will check for configuration file later, not now
+	// if (!config_read_file(&config, CONFIG_FILE))
+	// 	exit(NO_CONF_FILE_FOUND);
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	//autoload_o->find_profile_and_load(autoload_o);
 	autoload_o->find_profile_and_load(autoload_o, 0);

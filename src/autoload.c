@@ -264,6 +264,8 @@ static void validate_timestamp_and_load(autoload_class * self)
 	if (PVAR->randr_evt->timestamp >= load_last_time) {
 		umon_print("Now I should load\n");
 		PVAR->screen_o->update_screen(PVAR->screen_o);
+		if (!config_read_file(PVAR->config, CONFIG_FILE))
+			exit(NO_CONF_FILE_FOUND);
 		find_profile_and_load(self, 0);
 	}
 	// Find matching profile
