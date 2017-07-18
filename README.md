@@ -24,8 +24,7 @@ For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/pa
 # Usage
 * Setup your monitor resolutions and positions using `xrandr` or related tools (`arandr` is a good one).
 * Run `umonitor --save <profile_name>`.
-* Run `umonitor --listen` to begin automatically applying monitor configuration.
-
+* Run `umonitor --listen` to begin automatically applying monitor setup.
 
 The configuration file is stored in `~/.config/umon2.conf`. You can load a
 profile manually by executing `umonitor --load <profile_name>`. Profiles can be deleted `umonitor --delete <profile_name>`.
@@ -78,7 +77,7 @@ exec i3 # your window manager of choice
 ```
 
 # Features
-This program has only been tested on my setup. I need testers and feedback!
+I think a couple people are using this program. Give me some feedback!
 
 What is saved and applied dynamically:
 * Monitor vendor name + model number
