@@ -13,7 +13,7 @@ For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/pa
 
 # Usage
 
-**Announcement: Breaking changes have been implemented 8/05/16**
+**Announcement: Breaking changes have been implemented 8/05/17**
 
 1. I have renamed the configuration file from `umon2.conf` to `umon.conf` because that extra '2' is unnecessary.
 1. The program daemonizes itself when called with `--listen`, so do not run the program in the background while called with the `--listen` flag anymore.
