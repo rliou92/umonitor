@@ -1,20 +1,10 @@
 # umonitor
 Manage monitor configuration automatically
 
-The goal of this project is to implement desktop environment independent dynamic monitor
+The goal of this project is to implement *desktop environment independent* dynamic monitor
 management. Dynamic monitor management means that the positions and resolutions
-of the monitors will be automatically be updated whenever monitors are
-hotplugged.
-
-Related projects:
-* [autorandr](https://github.com/phillipberndt/autorandr)
-* [srandrd](https://github.com/jceb/srandrd) and [screenconfig](https://github.com/jceb/screenconfig)
-
-This program is different from existing projects because it is written entirely
-in C using xcb calls and accomplishes dynamic monitor management in a single
-binary. Unlike autorandr, there is no need to install rules for udev or hooks
-for pmutils. Srandrd + screenconfig seems pretty promising to me, but there are
-features missing such as setting the crtc xy positions.
+of the monitors will automatically be updated whenever monitors are
+hotplugged. This program is written in C using XCB to directly communicate with the X11 server and consists of only one binary. This program is targeted at users who are using a window manager on a laptop who hotplug monitors frequently.
 
 # Installation
 Run `make`. `umonitor` binary will be created in `bin`.
@@ -22,6 +12,15 @@ Run `make`. `umonitor` binary will be created in `bin`.
 For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/packages/umonitor-git/).
 
 # Usage
+
+**Announcement: Breaking changes have been implemented 8/05/16**
+
+1. I have renamed the configuration file from `umon2.conf` to `umon.conf` because that extra '2' is unnecessary.
+1. The program daemonizes itself when called with `--listen`, so do not run the program in the background while called with the `--listen` flag anymore.
+
+**End announcement**
+
+
 * Setup your monitor resolutions and positions using `xrandr` or related tools (`arandr` is a good one).
 * Run `umonitor --save <profile_name>`.
 * Run `umonitor --listen` to begin automatically applying monitor setup.
@@ -72,25 +71,25 @@ $ cat ~/.xinitrc
 ...
 ...
 ...
-umonitor --listen --quiet &
+umonitor --listen --quiet
 exec i3 # your window manager of choice
 ```
 
 # Features
 I think a couple people are using this program. Give me some feedback!
 
-What is saved and applied dynamically:
-* Monitor vendor name + model number
-* Crtc x and y position
-* Resolution
-* Primary output
+* What is saved and applied dynamically:
+  * Monitor vendor name + model number
+  * Crtc x and y position
+  * Resolution
+  * Primary output
+* Daemonizes when called with `--listen`
 
 Future improvements:
 
 * Prevent duplicate profile from being saved
 * Prevent program from having multiple instances
 * Implement debug as compile option
-* Change configuration file name to umon.conf (trivial, but a breaking change)
 * More commandline options
   * Alternate configuration file location
 * Updating Doxygen documentation
@@ -108,6 +107,17 @@ The most popular program that manages monitor setups autorandr also has this pro
 
 I believed a better solution existed. By using the XCB library, I can communicate directly with the X11 server with this program running as just a single user. I do not need to rely on udev because the X11 server itself sends signals when monitors are hotplugged. Furthermore, using this program is as simple as including it in the .xinitrc, just like udiskie. For a Linux laptop user who uses a window manager only like me, I believe this software is almost a necessity for a good user experience!
 
+# Related Projects
+
+* [autorandr](https://github.com/phillipberndt/autorandr)
+* [srandrd](https://github.com/jceb/srandrd) and [screenconfig](https://github.com/jceb/screenconfig)
+
+This program is different from existing projects because it is written entirely
+in C using xcb calls and accomplishes dynamic monitor management in a single
+binary. Unlike autorandr, there is no need to install rules for udev or hooks
+for pmutils. Srandrd + screenconfig seems pretty promising to me, but there are
+features missing such as setting the crtc xy positions.
+
 # About
 This is my personal project. My motivation for writing this program comes from
 using i3 wm on my laptop. From writing this program I have learned a great
@@ -115,7 +125,7 @@ deal about how to interact with the X11 server, trying out OOP in C (even when
 it is overkill), and hope to continue learning even more in the future. I want
 to work on this project until I deem that it is "complete", fufilling its
 purpose of dynamic monitor management for those who do not use a desktop
-envorinment.
+environment.
 
 # Credits
 I borrowed the edid parsing code from [eds](https://github.com/compnerd/eds).

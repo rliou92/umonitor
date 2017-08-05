@@ -4,6 +4,7 @@
 #include "load.h"
 #include "autoload.h"
 #include <getopt.h>
+#include <unistd.h>
 /*! \mainpage Main Page
  *
  * \section intro_sec Introduction
@@ -47,7 +48,7 @@ static const char help_str[] =
     "\t-s,--save <profile_name>\tSaves current setup into profile_name\n"
     "\t-d,--delete <profile_name>\tRemoves profile_name from configuration file\n"
     "\t-l,--load <profile_name>\tLoads setup from profile name\n"
-    "\t-n,--listen\t\t\tListens for changes in the setup and applies the new"
+    "\t-n,--listen\t\t\tDaemonizes, listens for changes in the setup, and applies the new"
     " configuration automatically\n"
     "\t-a,--autoload\t\t\tLoad profile that matches with current configuration once\n"
     "\t--quiet\t\t\t\tSupress program output\n"
@@ -55,7 +56,7 @@ static const char help_str[] =
     "\t--version\t\t\tOutput version information and exit\n";
 
 static const char version_str[] =
-    "umonitor 20170518\n" "Written by Ricky Liou\n";
+    "umonitor 20170805\n" "Written by Ricky Liou\n";
 
 static screen_class screen_o;
 static config_t config;
@@ -118,7 +119,7 @@ void print_state(const char *format, ...)
 int main(int argc, char **argv)
 {
 	char *home_directory = getenv("HOME");
-	const char *conf_location = "/.config/umon2.conf";
+	const char *conf_location = "/.config/umon.conf";
 
 	config_init(&config);
 
@@ -199,10 +200,11 @@ static void start_listening()
 {
 	autoload_class *autoload_o;
 
-	// TODO Will not use new configuration file if it is changed
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);
 
+	// Daemonize
+	daemon(0,0);
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	umon_print("Autoloading\n");
 	autoload_o->wait_for_event(autoload_o);
