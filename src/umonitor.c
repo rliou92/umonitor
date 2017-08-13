@@ -5,6 +5,9 @@
 #include "autoload.h"
 #include <getopt.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/stat.h>
 /*! \mainpage Main Page
  *
  * \section intro_sec Introduction
@@ -34,6 +37,7 @@ typedef enum {
 static void set_argument_flags(int argc, char **argv);
 static void print_info(void);
 static void print_current_state(void);
+static void sigterm_handler(int signum);
 static void start_listening(void);
 static void start_load(char *profile_name);
 static void start_delete_and_save(save_or_delete_t save_or_delete,
@@ -57,6 +61,8 @@ static const char help_str[] =
 
 static const char version_str[] =
     "umonitor 20170805\n" "Written by Ricky Liou\n";
+
+static const char lockfile[] = "/tmp/umonitor.lock";
 
 static screen_class screen_o;
 static config_t config;
@@ -196,12 +202,41 @@ static void print_current_state()
 
 }
 
+static void sigterm_handler(int signum)
+{
+	// int pid_h;
+
+	// pid_h = open(lockfile, O_RDWR);
+	remove(lockfile);
+	exit(0);
+}
+
 static void start_listening()
 {
 	autoload_class *autoload_o;
+	int pid_h;
+	struct sigaction sa;
+	char pid_str[10];
 
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);
+
+	pid_h = open(lockfile, O_RDWR|O_CREAT|O_EXCL, 0600);
+	if (pid_h == -1) {
+		printf("umonitor process already running.\n");
+		printf("Please stop the existing process and try again.\n");
+		exit(DAEMON_ALREADY_RUNNING);
+
+	}
+
+	sprintf(pid_str,"%d\n",getpid());
+	write(pid_h, pid_str, strlen(pid_str));
+
+	sa.sa_handler = sigterm_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction (SIGINT, &sa, NULL);
+	sigaction (SIGTERM, &sa, NULL);
 
 	// Daemonize
 	daemon(0,0);
