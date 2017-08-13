@@ -88,7 +88,6 @@ I think a couple people are using this program. Give me some feedback!
 Future improvements:
 
 * Prevent duplicate profile from being saved
-* Prevent program from having multiple instances
 * Implement debug as compile option
 * More commandline options
   * Alternate configuration file location
