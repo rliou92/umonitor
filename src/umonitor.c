@@ -68,7 +68,7 @@ static screen_class screen_o;
 static config_t config;
 static int c;
 static int option_index = 0;
-static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0;
+static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0, save = 0;
 
 #ifdef LOG
 static FILE *log_file;
@@ -190,7 +190,7 @@ static void print_current_state()
 {
 	autoload_class *autoload_o;
 
-	if (help || version || autoload)
+	if (help || version || autoload || save)
 		return;
 	// Print current state
 	if (!config_read_file(&config, CONFIG_FILE))
@@ -274,8 +274,10 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 				  char *profile_name)
 {
 	save_class *save_o;
+	autoload_class *autoload_o;
 	config_setting_t *root, *profile_group;
-	int cfg_idx;
+	int cfg_idx, profile_found;
+	const char *cur_loaded_profile_name;
 
 	config_read_file(&config, CONFIG_FILE);
 	profile_group = config_lookup(&config, profile_name);
@@ -295,18 +297,29 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 
 	umon_print
 	    ("Saving current settings into profile: %s\n", profile_name);
+	umon_print("Checking if current setup matches a profile\n");
+
+	autoload_constructor(&autoload_o, &screen_o, &config);
+	autoload_o->find_profile_and_load(autoload_o, 1);
+	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
+	autoload_destructor(autoload_o);
 	/*
 	 * Always create the new profile group because above code has already
 	 * deleted it if it existed before
 	 */
-	root = config_root_setting(&config);
-	profile_group =
-	    config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);
+	if (profile_found) {
+		printf("Current profile is already saved under profile %s\n", cur_loaded_profile_name);
+	}
+	else {
+		root = config_root_setting(&config);
+		profile_group =
+		    config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);
 
-	save_class_constructor(&save_o, &screen_o, &config);
-	save_o->save_profile(save_o, profile_group);
-	save_class_destructor(save_o);
-	printf("Profile %s saved!\n", profile_name);
+		save_class_constructor(&save_o, &screen_o, &config);
+		save_o->save_profile(save_o, profile_group);
+		save_class_destructor(save_o);
+		printf("Profile %s saved!\n", profile_name);
+	}
 
 }
 
@@ -329,6 +342,7 @@ static void parse_arguments()
 {
 	switch (c) {
 	case 's':
+		save = 1;
 		start_delete_and_save(SAVE, optarg);
 		break;
 	case 'l':

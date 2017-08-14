@@ -11,6 +11,7 @@
 #define PVAR ((autoload_pvar *) (self->pvar))
 
 static void find_profile_and_load(autoload_class * self, int test_cur);
+static void get_profile_found(autoload_class * self, int * profile_found, const char **profile_name);
 static void determine_profile_match(autoload_class * self);
 static void wait_for_event(autoload_class * self);
 static void validate_timestamp_and_load(autoload_class * self);
@@ -42,6 +43,7 @@ typedef struct {
 	int test_cur;
 	int profile_found;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
+	const char *profile_name;
 
 } autoload_pvar;
 
@@ -60,6 +62,7 @@ void autoload_constructor(autoload_class ** self_p,
 	self->wait_for_event = wait_for_event;
 
 	self->find_profile_and_load = find_profile_and_load;
+	self->get_profile_found = get_profile_found;
 	load_class_constructor(&(PVAR->load_o), screen_o);
 
 	xcb_randr_select_input(screen_o->c, screen_o->screen->root,
@@ -80,6 +83,11 @@ void autoload_destructor(autoload_class * self)
 
 }
 
+static void get_profile_found(autoload_class * self, int * profile_found, const char **profile_name)
+{
+	*profile_found = PVAR->profile_found;
+	*profile_name = PVAR->profile_name;
+}
 /*! \brief Find which profile matches the current setup and load it
 
 Also prints out the list of configurations along with the current configuration.
@@ -90,16 +98,16 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 {
 	config_setting_t *root;
 
-	int num_profiles, profile_found, i;
+	int num_profiles, i;
 
 // #ifdef DEBUG
 	int j;
 	config_setting_t *group;
-	const char *conf_output, *conf_edid;
+	const char *conf_output, *conf_edid, *profile_name;
 // #endif
 
 	PVAR->test_cur = test_cur;
-	profile_found = 0;
+	PVAR->profile_found = 0;
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
 	umon_print("Number of profiles: %d\n", num_profiles);
@@ -114,10 +122,10 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 	for (i = 0; i < num_profiles; i++) {
 		PVAR->cur_profile = config_setting_get_elem(root, i);
 		umon_print("Looping over profile ");
-		print_state("%s", config_setting_name(PVAR->cur_profile));
+		profile_name = config_setting_name(PVAR->cur_profile);
+		//if (print)
+			print_state("%s", profile_name);
 		umon_print("\n");
-		if (profile_found)
-			break;
 		PVAR->output_match = 0;
 		PVAR->mon_group =
 		    config_setting_lookup(PVAR->cur_profile, "Monitors");
@@ -142,7 +150,9 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 				count_output_match);
 
 		determine_profile_match(self);
-
+		if (PVAR->profile_found) {
+			PVAR->profile_name = profile_name;
+		}
 		print_state("\n");
 	}
 	if (!PVAR->profile_found)
@@ -195,12 +205,7 @@ static void determine_profile_match(autoload_class * self)
 		PVAR->load_o->load_profile(PVAR->load_o, PVAR->cur_profile,
 					   PVAR->test_cur);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
-		if (cur_loaded == 1 && PVAR->test_cur) {
-			PVAR->profile_found = 1;
-			print_state("*");
-			umon_print("\n");
-		}
-		if (!PVAR->test_cur) {
+		if ((cur_loaded == 1 && PVAR->test_cur) || !PVAR->test_cur) {
 			PVAR->profile_found = 1;
 			print_state("*");
 			umon_print("\n");
