@@ -84,14 +84,14 @@ I think a couple people are using this program. Give me some feedback!
   * Resolution
   * Primary output
 * Daemonizes when called with `--listen`
+* Prevents saving of duplicate profiles
 
 Future improvements:
 
-* Prevent duplicate profile from being saved
 * Implement debug as compile option
 * More commandline options
-  * Alternate configuration file location
-* Updating Doxygen documentation
+  * Alternate configuration file location?
+* Updating Doxygen documentation?
 * Handling the case when multiple outputs are connected to same crtc?
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
