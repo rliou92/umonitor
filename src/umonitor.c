@@ -25,7 +25,8 @@
 /*! \file
 		\brief Main file
 
-		Contains the main function plus some helper functions that are shared by the classes
+		For indentation: indent -kr -i8 
+
 */
 
 typedef enum {
