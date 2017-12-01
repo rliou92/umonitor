@@ -11,6 +11,7 @@ typedef struct _set_crtc_param {
 	int pos_y;		/*!< y position of crtc */
 	int is_primary;		/*!< Whether or not the output associated with this
 				   crtc is the primary output */
+	int rotation;			/*!< crtc rotation */
 	xcb_randr_mode_t mode_id;	/*!< mode id of crtc */
 	xcb_randr_output_t *output_p;	/*!< to which output the crtc should be
 					   connected */
@@ -45,6 +46,7 @@ typedef struct {
 	int crtc_id;		/*!< the output's crtc id */
 	int mode_id;		/*!< the output's mode id */
 	int is_primary;		/*!< whether or not the output is the primary output */
+	int rotation;		/*!< the output's rotation */
 } umon_setting_output_t;
 
 /*! Settings that are stored for one profile*/
@@ -457,6 +459,8 @@ static void add_crtc_param(load_class * self,
 	new_crtc_param->is_primary =
 	    PVAR->umon_setting_val.outputs[param->
 					   conf_output_idx].is_primary;
+	new_crtc_param->rotation = PVAR->umon_setting_val.outputs[param->
+				       conf_output_idx].rotation;
 	new_crtc_param->mode_id = mode_info_iterator.data->id;
 	new_crtc_param->output_p = param->cur_output;
 	new_crtc_param->next = PVAR->crtc_param_head;
@@ -636,6 +640,7 @@ static void remove_matching_crtc_from_ll(load_class * self, struct remove_matchi
 	cur_crtc_param = *(param->cur_crtc_param_p);
 	if (cur_crtc_param->pos_x == param->crtc_info_reply->x &&
 	    cur_crtc_param->pos_y == param->crtc_info_reply->y &&
+	    cur_crtc_param->rotation == param->crtc_info_reply->rotation &&
 	    cur_crtc_param->mode_id ==
 	    param->crtc_info_reply->mode
 	    && cur_crtc_param->output_p[0] == param->conn_output[0]) {
@@ -763,7 +768,7 @@ static void apply_settings_enable_crtcs(load_class * self)
 					      cur_crtc_param->pos_x,
 					      cur_crtc_param->pos_y,
 					      cur_crtc_param->mode_id,
-					      XCB_RANDR_ROTATION_ROTATE_0,
+					      cur_crtc_param->rotation,
 					      1, cur_crtc_param->output_p);
 
 		if (cur_crtc_param->is_primary) {
@@ -840,6 +845,7 @@ static void load_config_val(load_class * self,
 					  &(PVAR->
 					    umon_setting_val.outputs[i].
 					    pos_y));
+		config_setting_lookup_int(group, "rotation", &(PVAR->umon_setting_val.outputs[i].rotation));
 
 	}
 

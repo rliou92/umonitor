@@ -36,6 +36,7 @@ typedef struct {
 	config_setting_t *output_group;	/*!< output group setting */
 	config_setting_t *pos_group;	/*!< position group setting */
 	config_setting_t *edid_setting;	/*!< edid setting */
+	config_setting_t *rotate_setting; /*!< rotation setting*/
 } umon_setting_t;
 
 typedef struct {
@@ -204,6 +205,9 @@ static void check_output_status(void *self_void,
 	PVAR->umon_setting.pos_y =
 	    config_setting_add(PVAR->umon_setting.pos_group, "y",
 			       CONFIG_TYPE_INT);
+	PVAR->umon_setting.rotate_setting =
+	    config_setting_add(PVAR->umon_setting.output_group, "rotation",
+			       CONFIG_TYPE_INT);
 
 	fetch_edid(PVAR->cur_output, PVAR->screen_t_p, &edid_string);
 	config_setting_set_string(PVAR->umon_setting.edid_setting,
@@ -255,6 +259,7 @@ static void output_info_to_config(save_class * self)
 			       PVAR->crtc_info_reply->x);
 	config_setting_set_int(PVAR->umon_setting.pos_y,
 			       PVAR->crtc_info_reply->y);
+	config_setting_set_int(PVAR->umon_setting.rotate_setting, PVAR->crtc_info_reply->rotation);
 
 	for_each_output_mode((void *) self, PVAR->output_info_reply,
 			     find_res_to_config);
