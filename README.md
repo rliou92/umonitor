@@ -13,17 +13,15 @@ For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/pa
 
 # Usage
 
-**Announcement: Breaking changes have been implemented 8/05/17**
-
+<!--
 1. I have renamed the configuration file from `umon2.conf` to `umon.conf` because that extra '2' is unnecessary.
 1. The program daemonizes itself when called with `--listen`, so do not run the program in the background while called with the `--listen` flag anymore.
-
-**End announcement**
+-->
 
 
 * Setup your monitor resolutions and positions using `xrandr` or related tools (`arandr` is a good one).
 * Run `umonitor --save <profile_name>`.
-* Run `umonitor --listen` to begin automatically applying monitor setup.
+* Run `umonitor --listen` to daemonize the program and begin automatically applying monitor setup.
 
 The configuration file is stored in `~/.config/umon2.conf`. You can load a
 profile manually by executing `umonitor --load <profile_name>`. Profiles can be deleted `umonitor --delete <profile_name>`.
@@ -88,13 +86,18 @@ I think a couple people are using this program. Give me some feedback!
 
 Future improvements:
 
-* Implement debug as compile option
+<!--* Implement debug as compile option -->
+* Encoding of resolution
 * More commandline options
   * Alternate configuration file location?
-* Updating Doxygen documentation?
+<!--* Updating Doxygen documentation? -->
 * Handling the case when multiple outputs are connected to same crtc?
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
+  * Need input validation <!-- Ex: umonitor --save --verbose -->
+  * Use valgrind to check for memory errors
+  * Saving will always display unknown profile
+  * After load the outputs display extra return
 * Any feature requests
 
 # Inspiration
