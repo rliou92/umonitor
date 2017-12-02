@@ -83,11 +83,13 @@ I think a couple people are using this program. Give me some feedback!
   * Primary output
 * Daemonizes when called with `--listen`
 * Prevents saving of duplicate profiles
+* Preliminary rotation support
 
 Future improvements:
 
 <!--* Implement debug as compile option -->
 * Encoding of resolution
+* Use valgrind to check for memory errors
 * More commandline options
   * Alternate configuration file location?
 <!--* Updating Doxygen documentation? -->
@@ -95,9 +97,9 @@ Future improvements:
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
   * Need input validation <!-- Ex: umonitor --save --verbose -->
-  * Use valgrind to check for memory errors
   * Saving will always display unknown profile
   * After load the outputs display extra return
+  * Prevent saving of two different profiles using the same displays
 * Any feature requests
 
 # Inspiration
