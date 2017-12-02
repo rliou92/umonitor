@@ -447,9 +447,10 @@ static void add_crtc_param(load_class * self,
 			    &(new_crtc_param->crtc));
 	umon_print("Queing up crtc to load: %d\n", new_crtc_param->crtc);
 	umon_print
-	    ("Crtc settings: x:%d, y:%d, is_primary: %d, mode_id: %d, output: %s\n",
+	    ("Crtc settings: x:%d, y:%d, rotation: %d, is_primary: %d, mode_id: %d, output: %s\n",
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x,
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_y,
+	     PVAR->umon_setting_val.outputs[param->conf_output_idx].rotation,
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].
 	     is_primary, mode_info_iterator.data->id, output_name);
 	new_crtc_param->pos_x =
@@ -606,9 +607,10 @@ static void modify_crtc_ll(load_class * self,
 	get_output_name(output_info_reply, &output_name);
 
 	umon_print
-	    ("Crtc: x:%d, y:%d, mode_id: %d, output: %s\n",
+	    ("Crtc: x:%d, y:%d, rotation: %d, mode_id: %d, output: %s\n",
 	     crtc_info_reply->x,
 	     crtc_info_reply->y,
+	     crtc_info_reply->rotation,
 	     crtc_info_reply->mode, output_name);
 	free(output_info_reply);
 	free(output_name);
@@ -845,7 +847,8 @@ static void load_config_val(load_class * self,
 					  &(PVAR->
 					    umon_setting_val.outputs[i].
 					    pos_y));
-		config_setting_lookup_int(group, "rotation", &(PVAR->umon_setting_val.outputs[i].rotation));
+		if(config_setting_lookup_int(group, "rotation", &(PVAR->umon_setting_val.outputs[i].rotation)) == CONFIG_FALSE)
+			PVAR->umon_setting_val.outputs[i].rotation = 1;
 
 	}
 
