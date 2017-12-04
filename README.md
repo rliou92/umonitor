@@ -23,7 +23,7 @@ For Arch Linux users there is an AUR package [here](https://aur.archlinux.org/pa
 * Run `umonitor --save <profile_name>`.
 * Run `umonitor --listen` to daemonize the program and begin automatically applying monitor setup.
 
-The configuration file is stored in `~/.config/umon2.conf`. You can load a
+The configuration file is stored in `~/.config/umon.conf`. You can load a
 profile manually by executing `umonitor --load <profile_name>`. Profiles can be deleted `umonitor --delete <profile_name>`.
 
 Example scenario: You are working on a laptop. You want to save just the monitor
@@ -83,7 +83,7 @@ I think a couple people are using this program. Give me some feedback!
   * Primary output
 * Daemonizes when called with `--listen`
 * Prevents saving of duplicate profiles
-* Preliminary rotation support
+* Rotation support
 
 Future improvements:
 
@@ -96,10 +96,7 @@ Future improvements:
 * Handling the case when multiple outputs are connected to same crtc?
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
-  * Need input validation <!-- Ex: umonitor --save --verbose -->
-  * Saving will always display unknown profile
-  * After load the outputs display extra return
-  * Prevent saving of two different profiles using the same displays
+  * After load the outputs display extra return character
 * Any feature requests
 
 # Inspiration
