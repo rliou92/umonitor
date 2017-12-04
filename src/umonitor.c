@@ -25,7 +25,7 @@
 /*! \file
 		\brief Main file
 
-		For indentation: indent -kr -i8 
+		For indentation: indent -kr -i8
 
 */
 
@@ -281,20 +281,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	const char *cur_loaded_profile_name;
 
 	config_read_file(&config, CONFIG_FILE);
-	profile_group = config_lookup(&config, profile_name);
-	if (profile_group != NULL) {
-		// Overwrite existing profile
-		cfg_idx = config_setting_index(profile_group);
-		root = config_root_setting(&config);
-		config_setting_remove_elem(root, cfg_idx);
-		umon_print("Deleted profile %s\n", profile_name);
-		if (save_or_delete == DELETE) {
-			printf("Profile %s deleted!\n", profile_name);
-			config_write_file(&config, CONFIG_FILE);
-			return;
-		}
 
-	}
 
 	umon_print
 	    ("Saving current settings into profile: %s\n", profile_name);
@@ -304,6 +291,10 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	autoload_o->find_profile_and_load(autoload_o, 1);
 	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
 	autoload_destructor(autoload_o);
+
+
+
+
 	/*
 	 * Always create the new profile group because above code has already
 	 * deleted it if it existed before
@@ -312,6 +303,21 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 		printf("Current profile is already saved under profile %s\n", cur_loaded_profile_name);
 	}
 	else {
+		profile_group = config_lookup(&config, profile_name);
+
+		if (profile_group != NULL) {
+			// Overwrite existing profile
+			cfg_idx = config_setting_index(profile_group);
+			root = config_root_setting(&config);
+			config_setting_remove_elem(root, cfg_idx);
+			umon_print("Deleted profile %s\n", profile_name);
+			if (save_or_delete == DELETE) {
+				printf("Profile %s deleted!\n", profile_name);
+				config_write_file(&config, CONFIG_FILE);
+				return;
+			}
+
+		}
 		root = config_root_setting(&config);
 		profile_group =
 		    config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);

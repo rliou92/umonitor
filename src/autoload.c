@@ -133,7 +133,6 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 //#ifdef DEBUG
 		umon_print("Configuration outputs: ");
 		for (j = 0; j < PVAR->num_out_pp; j++) {
-			// TODO Print edid as well
 			group =
 			    config_setting_get_elem(PVAR->mon_group, j);
 			conf_output = config_setting_name(group);
