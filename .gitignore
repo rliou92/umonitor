@@ -10,3 +10,4 @@ docs/ext
 *~
 *.SRCINFO
 *.log
+vgcore.*
