@@ -34,9 +34,9 @@ home you plug in an external monitor, and you want to save that configuration as
 ```
 # With only the laptop screen (no external monitors)
 $ umonitor --save home
-Profile home saved!
-home*
+Unknown profile*
 ---------------------------------
+Profile home saved!
 # Plug in external monitor
 
 # Setup your desired configuration
@@ -45,10 +45,10 @@ $ xrandr --output eDP1 --mode 1600x900 --pos 0x0
 
 # Save the current configuration into a profile
 $ umonitor --save docked
-Profile docked saved!
 home
-docked*
+Unknown profile*
 ---------------------------------
+Profile docked saved!
 # Begin autodetecting changes in monitor
 $ umonitor --listen
 home
@@ -81,9 +81,9 @@ I think a couple people are using this program. Give me some feedback!
   * Crtc x and y position
   * Resolution
   * Primary output
+  * Rotation
 * Daemonizes when called with `--listen`
 * Prevents saving of duplicate profiles
-* Rotation support
 
 Future improvements:
 
@@ -92,12 +92,12 @@ Future improvements:
 * Use valgrind to check for memory errors
 * More commandline options
   * Alternate configuration file location?
-<!--* Updating Doxygen documentation? -->
 * Handling the case when multiple outputs are connected to same crtc?
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
   * After load the outputs display extra return character
 * Any feature requests
+<!--* Updating Doxygen documentation? -->
 
 # Inspiration
 I drew inspiration of this program from [udiskie](https://github.com/coldfix/udiskie). I enjoy using only window managers. For me, udiskie is one essential program to automount removable storage media. I would just include it in my .xinitrc and not have to worry about mounting anything manually again. I thought to myself, "Why not have the same program but for managing monitor hotplugging?"
