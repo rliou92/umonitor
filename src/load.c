@@ -305,8 +305,10 @@ static void match_with_config(void *self_void,
 					    &PVAR->screen_o->e);
 
 	// Should fetch edid of every output, just the outputs that have connection
-	if (output_info_reply->connection)
+	if (output_info_reply->connection) {
+		free(output_info_reply);
 		return;
+	}
 
 	get_output_name(output_info_reply, &output_name);
 	fetch_edid(output_p, PVAR->screen_o, &edid_string);
@@ -336,6 +338,7 @@ static void match_with_config(void *self_void,
 	}
 	free(edid_string);
 	free(output_info_reply);
+	free(output_name);
 }
 
 /*! \brief After matching edid has been found, find the matching mode id from
@@ -453,6 +456,8 @@ static void add_crtc_param(load_class * self,
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].rotation,
 	     PVAR->umon_setting_val.outputs[param->conf_output_idx].
 	     is_primary, mode_info_iterator.data->id, output_name);
+
+	free(output_name);
 	new_crtc_param->pos_x =
 	    PVAR->umon_setting_val.outputs[param->conf_output_idx].pos_x;
 	new_crtc_param->pos_y =

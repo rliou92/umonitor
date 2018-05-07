@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 
 	screen_class_constructor(&screen_o);
 	CONFIG_FILE =
-	    umalloc((strlen(home_directory) + strlen(conf_location)));
+	    umalloc((strlen(home_directory) + strlen(conf_location))+1);
 	strcpy(CONFIG_FILE, home_directory);
 	strcat(CONFIG_FILE, conf_location);
 
@@ -437,7 +437,7 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 		char **edid_string)
 {
 
-	int i, j, model_name_found;
+	int i, j, model_name_found, edid_length;
 	uint8_t delete = 0;
 	uint8_t pending = 0;
 	xcb_randr_get_output_property_cookie_t output_property_cookie;
@@ -461,6 +461,11 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 						output_property_cookie,
 						&screen_t_p->e);
 
+	edid_length = xcb_randr_get_output_property_data_length(output_property_reply);
+	// umon_print("edid_length: %d", edid_length);
+	// edid = umalloc(edid_length *sizeof(uint8_t));
+
+
 	edid = xcb_randr_get_output_property_data(output_property_reply);
 
 	//umon_print("Starting edid_to_string\n");
@@ -477,6 +482,15 @@ void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
 	// *(*edid_string+z) = '\0';
 
 	*edid_string = (char *) umalloc(17 * sizeof(char));
+
+	if (edid_length == 0){
+		strcpy(vendor,"N/A");
+		strcpy(modelname, "unknown");
+		snprintf(*edid_string, 17, "%s %s", vendor, modelname);
+		free(output_property_reply);
+		return;
+	}
+
 	char sc = 'A' - 1;
 	vendor[0] = sc + (edid[8] >> 2);
 	vendor[1] = sc + (((edid[8] & 0x03) << 3) | (edid[9] >> 5));
