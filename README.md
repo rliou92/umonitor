@@ -87,17 +87,19 @@ I think a couple people are using this program. Give me some feedback!
 
 Future improvements:
 
+
 <!--* Implement debug as compile option -->
-* Encoding of resolution
+<!-- * Encoding of resolution -->
 * Use valgrind to check for memory errors
-* More commandline options
-  * Alternate configuration file location?
-* Handling the case when multiple outputs are connected to same crtc?
+<!-- * More commandline options
+  * Alternate configuration file location? -->
+<!-- * Handling the case when multiple outputs are connected to same crtc? -->
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
   * After load the outputs display extra return character
-* Any feature requests
 <!--* Updating Doxygen documentation? -->
+
+I'm open for any feature requests!
 
 # Inspiration
 I drew inspiration of this program from [udiskie](https://github.com/coldfix/udiskie). I enjoy using only window managers. For me, udiskie is one essential program to automount removable storage media. I would just include it in my .xinitrc and not have to worry about mounting anything manually again. I thought to myself, "Why not have the same program but for managing monitor hotplugging?"
