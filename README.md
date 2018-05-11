@@ -87,7 +87,7 @@ I think a couple people are using this program. Give me some feedback!
 
 Future improvements:
 
-
+<!-- TODO prevent loading of outputs that don't exist in the setup  -->
 <!--* Implement debug as compile option -->
 <!-- * Encoding of resolution -->
 * Use valgrind to check for memory errors
@@ -108,7 +108,7 @@ At first, I found that the most common solutions to managing monitor hotplugging
 
 The most popular program that manages monitor setups autorandr also has this problem, as it is setup to be run from a udev rule. It solves it by checking all processes not owned by root and seeing if the user of that process has a DISPLAY variable. For *all users* that do, it forks itself and changes its uid/guid to that user. Autorandr does not know which user you are, it just runs for all users!
 
-I believed a better solution existed. By using the XCB library, I can communicate directly with the X11 server with this program running as just a single user. I do not need to rely on udev because the X11 server itself sends signals when monitors are hotplugged. Furthermore, using this program is as simple as including it in the .xinitrc, just like udiskie. For a Linux laptop user who uses a window manager only like me, I believe this software is almost a necessity for a good user experience!
+I believed a better solution existed. By using the XCB library, I can communicate directly with the X11 server with this program running as just a single user. I do not need to rely on udev directly because the X11 server sends signals when monitors are hotplugged. Furthermore, using this program is as simple as including it in the .xinitrc, just like udiskie. For a Linux laptop user who uses a window manager only like me, I believe this software is almost a necessity for a good user experience!
 
 # Related Projects
 

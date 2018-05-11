@@ -198,7 +198,7 @@ static void print_current_state()
 		exit(NO_CONF_FILE_FOUND);
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	//autoload_o->find_profile_and_load(autoload_o);
-	autoload_o->find_profile_and_load(autoload_o, 1);
+	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, PRINT);
 	autoload_destructor(autoload_o);
 
 }
@@ -288,7 +288,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	umon_print("Checking if current setup matches a profile\n");
 
 	autoload_constructor(&autoload_o, &screen_o, &config);
-	autoload_o->find_profile_and_load(autoload_o, 1);
+	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, NO_PRINT);
 	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
 	autoload_destructor(autoload_o);
 
@@ -300,7 +300,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	 * deleted it if it existed before
 	 */
 	if (profile_found) {
-		printf("Current profile is already saved under profile %s\n", cur_loaded_profile_name);
+		print_state("Current profile is already saved under profile %s\n", cur_loaded_profile_name);
 	}
 	else {
 		profile_group = config_lookup(&config, profile_name);
@@ -312,35 +312,33 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 			config_setting_remove_elem(root, cfg_idx);
 			umon_print("Deleted profile %s\n", profile_name);
 			if (save_or_delete == DELETE) {
-				printf("Profile %s deleted!\n", profile_name);
+				umon_print("Profile %s deleted!\n", profile_name);
 				config_write_file(&config, CONFIG_FILE);
 				return;
 			}
 
 		}
 		root = config_root_setting(&config);
-		profile_group =
-		    config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);
+		profile_group = config_setting_add(root, profile_name, CONFIG_TYPE_GROUP);
 
 		save_class_constructor(&save_o, &screen_o, &config);
 		save_o->save_profile(save_o, profile_group);
 		save_class_destructor(save_o);
-		printf("Profile %s saved!\n", profile_name);
+		print_state("Profile %s saved!\n", profile_name);
 	}
 
 }
 
 static void start_autoload()
 {
+	// TODO Print which profile is detected and loaded
 	autoload_class *autoload_o;
 
 	autoload = 1;		// Flag to prevent printing state twice
-	// Will check for configuration file later, not now
-	// if (!config_read_file(&config, CONFIG_FILE))
-	// 	exit(NO_CONF_FILE_FOUND);
+	if (!config_read_file(&config, CONFIG_FILE))
+		exit(NO_CONF_FILE_FOUND);
 	autoload_constructor(&autoload_o, &screen_o, &config);
-	//autoload_o->find_profile_and_load(autoload_o);
-	autoload_o->find_profile_and_load(autoload_o, 0);
+	autoload_o->find_profile_and_load(autoload_o, LOAD, NO_PRINT);
 	autoload_destructor(autoload_o);
 
 }

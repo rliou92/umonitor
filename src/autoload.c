@@ -10,7 +10,7 @@
 
 #define PVAR ((autoload_pvar *) (self->pvar))
 
-static void find_profile_and_load(autoload_class * self, int test_cur);
+static void find_profile_and_load(autoload_class * self, int load, int print);
 static void get_profile_found(autoload_class * self, int * profile_found, const char **profile_name);
 static void determine_profile_match(autoload_class * self);
 static void wait_for_event(autoload_class * self);
@@ -40,7 +40,8 @@ typedef struct {
 	int output_match;
 	int num_out_pp;		/*!< Number of outputs per profile */
 	int num_conn_outputs;	/*!< number of connected outputs */
-	int test_cur;
+	int load;
+	int print;
 	int profile_found;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 	const char *profile_name;
@@ -88,13 +89,14 @@ static void get_profile_found(autoload_class * self, int * profile_found, const 
 	*profile_found = PVAR->profile_found;
 	*profile_name = PVAR->profile_name;
 }
-/*! \brief Find which profile matches the current setup and load it
+
+/*! \brief Find which profile matches the current setup and conditionally load it
 
 Also prints out the list of configurations along with the current configuration.
 The current configuration is either the current configuration (applying no
 settings), or the newly loaded configuration. */
 
-static void find_profile_and_load(autoload_class * self, int test_cur)
+static void find_profile_and_load(autoload_class * self, int load, int print)
 {
 	config_setting_t *root;
 
@@ -106,7 +108,8 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 	const char *conf_output, *conf_edid, *profile_name;
 // #endif
 
-	PVAR->test_cur = test_cur;
+	PVAR->load = load;
+	PVAR->print = print;
 	PVAR->profile_found = 0;
 	root = config_root_setting(PVAR->config);
 	num_profiles = config_setting_length(root);
@@ -123,7 +126,7 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 		PVAR->cur_profile = config_setting_get_elem(root, i);
 		umon_print("Looping over profile ");
 		profile_name = config_setting_name(PVAR->cur_profile);
-		//if (print)
+		if (PVAR->print == PRINT)
 			print_state("%s", profile_name);
 		umon_print("\n");
 		PVAR->output_match = 0;
@@ -152,11 +155,14 @@ static void find_profile_and_load(autoload_class * self, int test_cur)
 		if (PVAR->profile_found) {
 			PVAR->profile_name = profile_name;
 		}
-		print_state("\n");
+		if (PVAR->print == PRINT)
+			print_state("\n");
 	}
-	if (!PVAR->profile_found)
+	if (!PVAR->profile_found && PVAR->print == PRINT)
 		print_state("Unknown profile*\n");
-	print_state("---------------------------------\n");
+
+	if (PVAR->print == PRINT)
+		print_state("---------------------------------\n");
 
 }
 
@@ -202,11 +208,12 @@ static void determine_profile_match(autoload_class * self)
 		umon_print("Profile %s matches current setup\n",
 			   profile_name);
 		PVAR->load_o->load_profile(PVAR->load_o, PVAR->cur_profile,
-					   PVAR->test_cur);
+					   PVAR->load);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
-		if ((cur_loaded == 1 && PVAR->test_cur) || !PVAR->test_cur) {
+		if ((cur_loaded == 1 && PVAR->load) || !PVAR->load) {
 			PVAR->profile_found = 1;
-			print_state("*");
+			if (PVAR->print == PRINT)
+				print_state("*");
 			umon_print("\n");
 		}
 	}
@@ -220,7 +227,7 @@ static void wait_for_event(autoload_class * self)
 {
 
 	// In order to get an output the first time
-	find_profile_and_load(self, 0);
+	find_profile_and_load(self, LOAD, PRINT);
 	xcb_generic_event_t *evt;
 
 	while (1) {
@@ -270,7 +277,7 @@ static void validate_timestamp_and_load(autoload_class * self)
 		PVAR->screen_o->update_screen(PVAR->screen_o);
 		if (!config_read_file(PVAR->config, CONFIG_FILE))
 			exit(NO_CONF_FILE_FOUND);
-		find_profile_and_load(self, 0);
+		find_profile_and_load(self, LOAD, PRINT);
 	}
 	// Find matching profile
 	// Get total connected outputs
