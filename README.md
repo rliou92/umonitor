@@ -34,9 +34,8 @@ home you plug in an external monitor, and you want to save that configuration as
 ```
 # With only the laptop screen (no external monitors)
 $ umonitor --save home
-Unknown profile*
----------------------------------
 Profile home saved!
+
 # Plug in external monitor
 
 # Setup your desired configuration
@@ -45,10 +44,8 @@ $ xrandr --output eDP1 --mode 1600x900 --pos 0x0
 
 # Save the current configuration into a profile
 $ umonitor --save docked
-home
-Unknown profile*
----------------------------------
 Profile docked saved!
+
 # Begin autodetecting changes in monitor
 $ umonitor --listen
 home
@@ -84,19 +81,22 @@ I think a couple people are using this program. Give me some feedback!
   * Rotation
 * Daemonizes when called with `--listen`
 * Prevents saving of duplicate profiles
+* Valgrind clean
 
 Future improvements:
 
 <!-- TODO prevent loading of outputs that don't exist in the setup  -->
+<!-- TODO view profile contents -->
+<!-- TODO improve load output (Profile xxxx loaded!) -->
+<!-- TODO valgrind load, autoload -->
 <!--* Implement debug as compile option -->
 <!-- * Encoding of resolution -->
-* Use valgrind to check for memory errors
 <!-- * More commandline options
   * Alternate configuration file location? -->
 <!-- * Handling the case when multiple outputs are connected to same crtc? -->
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
-  * After load the outputs display extra return character
+  * After load the output displays an extra unknown character
 <!--* Updating Doxygen documentation? -->
 
 I'm open for any feature requests!

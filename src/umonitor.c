@@ -269,6 +269,9 @@ static void start_load(char *profile_name)
 	load_o->load_profile(load_o, profile_group, 0);
 	load_class_destructor(load_o);
 
+	print_state("Profile %s loaded!\n", profile_name);
+	print_state("---------------------------------\n");
+
 }
 
 static void start_delete_and_save(save_or_delete_t save_or_delete,
@@ -338,7 +341,7 @@ static void start_autoload()
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);
 	autoload_constructor(&autoload_o, &screen_o, &config);
-	autoload_o->find_profile_and_load(autoload_o, LOAD, NO_PRINT);
+	autoload_o->find_profile_and_load(autoload_o, LOAD, PRINT);
 	autoload_destructor(autoload_o);
 
 }

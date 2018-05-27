@@ -92,7 +92,7 @@ static void get_profile_found(autoload_class * self, int * profile_found, const 
 
 /*! \brief Find which profile matches the current setup and conditionally load it
 
-Also prints out the list of configurations along with the current configuration.
+Also conditionally prints out the list of configurations along with the current configuration.
 The current configuration is either the current configuration (applying no
 settings), or the newly loaded configuration. */
 
