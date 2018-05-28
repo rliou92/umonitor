@@ -87,8 +87,6 @@ Future improvements:
 
 <!-- TODO prevent loading of outputs that don't exist in the setup  -->
 <!-- TODO view profile contents -->
-<!-- TODO improve load output (Profile xxxx loaded!) -->
-<!-- TODO valgrind load, autoload -->
 <!--* Implement debug as compile option -->
 <!-- * Encoding of resolution -->
 <!-- * More commandline options

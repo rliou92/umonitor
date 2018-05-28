@@ -126,6 +126,8 @@ void print_state(const char *format, ...)
 int main(int argc, char **argv)
 {
 	char *home_directory = getenv("HOME");
+	if(home_directory == NULL)
+		exit(NO_HOME_DIR);
 	const char *conf_location = "/.config/umon.conf";
 
 	config_init(&config);
