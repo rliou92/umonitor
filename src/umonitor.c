@@ -211,7 +211,8 @@ static void sigterm_handler(int signum)
 
 	// pid_h = open(lockfile, O_RDWR);
 	remove(lockfile);
-	exit(0);
+	signal(signum, SIG_DFL);
+	kill(getpid(), signum);
 }
 
 static void start_listening()
@@ -240,6 +241,7 @@ static void start_listening()
 	sa.sa_flags = 0;
 	sigaction (SIGINT, &sa, NULL);
 	sigaction (SIGTERM, &sa, NULL);
+	sigaction (SIGQUIT, &sa, NULL);
 
 	// Daemonize
 	daemon(0,0);
