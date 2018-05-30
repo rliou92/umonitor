@@ -87,6 +87,7 @@ Future improvements:
 
 <!-- TODO prevent loading of outputs that don't exist in the setup  -->
 <!-- TODO view profile contents -->
+<!-- TODO print stderr messages -->
 <!--* Implement debug as compile option -->
 <!-- * Encoding of resolution -->
 <!-- * More commandline options

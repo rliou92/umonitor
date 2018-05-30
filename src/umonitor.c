@@ -250,6 +250,7 @@ static void start_listening()
 	sigaction (SIGINT, &sa, NULL);
 	sigaction (SIGTERM, &sa, NULL);
 	sigaction (SIGQUIT, &sa, NULL);
+	signal (SIGHUP, SIG_IGN);
 
 	// Daemonize
 	daemon(0,0);
