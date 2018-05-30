@@ -63,7 +63,9 @@ static const char help_str[] =
 static const char version_str[] =
     "umonitor 20170805\n" "Written by Ricky Liou\n";
 
-static const char lockfile[] = "/tmp/umonitor.lock";
+static const char lockfile_name[] = "/.umonitor.lock";
+char * home_directory;
+char * lockfile;
 
 static screen_class screen_o;
 static config_t config;
@@ -125,7 +127,7 @@ void print_state(const char *format, ...)
 
 int main(int argc, char **argv)
 {
-	char *home_directory = getenv("HOME");
+	home_directory = getenv("HOME");
 	if(home_directory == NULL)
 		exit(NO_HOME_DIR);
 	const char *conf_location = "/.config/umon.conf";
@@ -211,6 +213,7 @@ static void sigterm_handler(int signum)
 
 	// pid_h = open(lockfile, O_RDWR);
 	remove(lockfile);
+	free(lockfile);
 	signal(signum, SIG_DFL);
 	kill(getpid(), signum);
 }
@@ -225,6 +228,10 @@ static void start_listening()
 	if (!config_read_file(&config, CONFIG_FILE))
 		exit(NO_CONF_FILE_FOUND);
 
+	lockfile =
+	    umalloc((strlen(home_directory) + strlen(lockfile_name))+1);
+	strcpy(lockfile, home_directory);
+	strcat(lockfile, lockfile_name);
 	pid_h = open(lockfile, O_RDWR|O_CREAT|O_EXCL, 0600);
 	if (pid_h == -1) {
 		printf("umonitor process already running.\n");
@@ -235,6 +242,7 @@ static void start_listening()
 
 	sprintf(pid_str,"%d\n",getpid());
 	write(pid_h, pid_str, strlen(pid_str));
+	close(pid_h);
 
 	sa.sa_handler = sigterm_handler;
 	sigemptyset(&sa.sa_mask);
