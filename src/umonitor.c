@@ -315,7 +315,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	 * Always create the new profile group because above code has already
 	 * deleted it if it existed before
 	 */
-	if (profile_found) {
+	if (profile_found && (save_or_delete == SAVE)) {
 		print_state("Current profile is already saved under profile %s\n", cur_loaded_profile_name);
 	}
 	else {
