@@ -35,7 +35,7 @@ typedef enum {
 } save_or_delete_t;
 
 // private prototypes
-static void set_argument_flags(int argc, char **argv);
+static void preprocess_arguments(int argc, char **argv);
 static void print_info(void);
 static void print_current_state(void);
 static void sigterm_handler(int signum);
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	log_file = fopen("umonitor.log", "w");
 #endif
 
-	set_argument_flags(argc, argv);
+	preprocess_arguments(argc, argv);
 
 	print_info();
 
@@ -170,16 +170,29 @@ int main(int argc, char **argv)
 
 }
 
-static void set_argument_flags(int argc, char **argv)
+static void preprocess_arguments(int argc, char **argv)
 {
 	opterr = 0;
+	int arg_counter = 0;
 	while (1) {
 		c = getopt_long(argc, argv, short_options, long_options,
 				&option_index);
+		switch (c) {
+			case 's':
+			case 'l':
+			case 'd':
+			case 'n':
+			case 'a':
+			++arg_counter;
+			break;
+		}
 		if (c == -1)
 			break;
 	}
-
+	if (arg_counter > 1){
+		fprintf(stderr,"More than one action specified.\n");
+		exit(MULTIPLE_ACTION);
+	}
 }
 
 static void print_info()
@@ -379,7 +392,7 @@ static void parse_arguments()
 		start_autoload();
 		break;
 	case '?':
-		printf("No argument given\n");
+		fprintf(stderr, "No argument given\n");
 		exit(NO_ARGUMENT_GIVEN);
 		break;
 	case '0':		// just setting flags
