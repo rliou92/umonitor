@@ -128,8 +128,10 @@ void print_state(const char *format, ...)
 int main(int argc, char **argv)
 {
 	home_directory = getenv("HOME");
-	if(home_directory == NULL)
+	if(home_directory == NULL){
+		fprintf(stderr, "Home directory doesn't exist.\n");
 		exit(NO_HOME_DIR);
+	}
 	const char *conf_location = "/.config/umon.conf";
 
 	config_init(&config);
@@ -211,8 +213,10 @@ static void print_current_state()
 	if (help || version || autoload || save)
 		return;
 	// Print current state
-	if (!config_read_file(&config, CONFIG_FILE))
+	if (!config_read_file(&config, CONFIG_FILE)) {
+		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
+	}
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	//autoload_o->find_profile_and_load(autoload_o);
 	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, PRINT);
@@ -238,8 +242,10 @@ static void start_listening()
 	struct sigaction sa;
 	char pid_str[10];
 
-	if (!config_read_file(&config, CONFIG_FILE))
+	if (!config_read_file(&config, CONFIG_FILE)) {
+		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
+	}
 
 	lockfile =
 	    umalloc((strlen(home_directory) + strlen(lockfile_name))+1);
@@ -247,8 +253,8 @@ static void start_listening()
 	strcat(lockfile, lockfile_name);
 	pid_h = open(lockfile, O_RDWR|O_CREAT|O_EXCL, 0600);
 	if (pid_h == -1) {
-		printf("umonitor process already running.\n");
-		printf("Please stop the existing process and try again.\n");
+		fprintf(stderr, "umonitor process already running.\n");
+		fprintf(stderr, "Please stop the existing process and try again.\n");
 		exit(DAEMON_ALREADY_RUNNING);
 
 	}
@@ -281,15 +287,19 @@ static void start_load(char *profile_name)
 	load_class *load_o;
 	config_setting_t *profile_group;
 
-	if (!config_read_file(&config, CONFIG_FILE))
+	if (!config_read_file(&config, CONFIG_FILE)) {
+		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
+	}
 
 	umon_print("Loading profile: %s\n", profile_name);
 	// Load profile
 	profile_group = config_lookup(&config, profile_name);
 
-	if (profile_group == NULL)
+	if (profile_group == NULL) {
+		fprintf(stderr, "Trying to load nonexistant profile.\n");
 		exit(NO_PROFILE_FOUND);
+	}
 
 	load_class_constructor(&load_o, &screen_o);
 	load_o->load_profile(load_o, profile_group, 0);
@@ -364,8 +374,10 @@ static void start_autoload()
 	autoload_class *autoload_o;
 
 	autoload = 1;		// Flag to prevent printing state twice
-	if (!config_read_file(&config, CONFIG_FILE))
+	if (!config_read_file(&config, CONFIG_FILE)) {
+		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
+	}
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	autoload_o->find_profile_and_load(autoload_o, LOAD, PRINT);
 	autoload_destructor(autoload_o);
@@ -572,8 +584,10 @@ void *umalloc(size_t size)
 {
 	void *mem_addr;
 	mem_addr = malloc(size);
-	if (mem_addr == NULL)
+	if (mem_addr == NULL){
+		fprintf(stderr, "Insufficient memory.\n");
 		exit(INSUFFICIENT_MEMORY);
+	}
 	return mem_addr;
 }
 

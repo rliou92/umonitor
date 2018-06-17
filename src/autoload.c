@@ -275,8 +275,10 @@ static void validate_timestamp_and_load(autoload_class * self)
 	if (PVAR->randr_evt->timestamp >= load_last_time) {
 		umon_print("Now I should load\n");
 		PVAR->screen_o->update_screen(PVAR->screen_o);
-		if (!config_read_file(PVAR->config, CONFIG_FILE))
+		if (!config_read_file(PVAR->config, CONFIG_FILE)) {
+			fprintf(stderr, "Configuration file not found.\n");
 			exit(NO_CONF_FILE_FOUND);
+		}
 		find_profile_and_load(self, LOAD, PRINT);
 	}
 	// Find matching profile
@@ -373,7 +375,7 @@ static void determine_output_match(autoload_class * self,
 		PVAR->output_match++;
 	}
 	else if(output_match_unique > 1) {
-		umon_print("ERROR: Found more than one edid/output combo in configuration file that matches current setup\n");
+		fprintf(stderr,"ERROR: Found more than one edid/output combo in configuration file that matches current setup\n");
 		exit(DUPLICATE_OUTPUT);
 	}
 
