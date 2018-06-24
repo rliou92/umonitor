@@ -26,7 +26,8 @@ void screen_class_constructor(screen_class * self)
 	self->c = xcb_connect(NULL, &screenNum);
 	conn_error = xcb_connection_has_error(self->c);
 	if (conn_error) {
-		printf("Connection error!\n");
+		// TODO conn_error might overlap with my predefined errors
+		fprintf(stderr, "Connection error!\n");
 		exit(conn_error);
 	}
 
