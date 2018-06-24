@@ -284,8 +284,11 @@ static void start_listening()
 
 static void start_load(char *profile_name)
 {
+	int profile_found;
 	load_class *load_o;
 	config_setting_t *profile_group;
+	autoload_class *autoload_o;
+	const char *cur_loaded_profile_name;
 
 	if (!config_read_file(&config, CONFIG_FILE)) {
 		fprintf(stderr, "Configuration file not found.\n");
@@ -301,12 +304,24 @@ static void start_load(char *profile_name)
 		exit(NO_PROFILE_FOUND);
 	}
 
-	load_class_constructor(&load_o, &screen_o);
-	load_o->load_profile(load_o, profile_group, 0);
-	load_class_destructor(load_o);
+	// Check to see if the current configuration matches the output
+	// Just have to check if the output from configuration and profile match
+	autoload_constructor(&autoload_o, &screen_o, &config);
+	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, NO_PRINT);
+	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
+	autoload_destructor(autoload_o);
 
-	print_state("Profile %s loaded!\n", profile_name);
+	if (strcmp(cur_loaded_profile_name, profile_name)) {
+		load_class_constructor(&load_o, &screen_o);
+		load_o->load_profile(load_o, profile_group, 0);
+		load_class_destructor(load_o);
+		print_state("Profile %s loaded!\n", profile_name);
+	}
+	else {
+		print_state("Currently connected outputs do not match with those listed in profile.\n");
+	}
 	print_state("---------------------------------\n");
+
 
 }
 
@@ -319,8 +334,10 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	int cfg_idx, profile_found;
 	const char *cur_loaded_profile_name;
 
-	config_read_file(&config, CONFIG_FILE);
-
+	if (!config_read_file(&config, CONFIG_FILE)) {
+		fprintf(stderr, "Configuration file not found.\n");
+		exit(NO_CONF_FILE_FOUND);
+	}
 
 	umon_print
 	    ("Saving current settings into profile: %s\n", profile_name);
@@ -330,9 +347,6 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, NO_PRINT);
 	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
 	autoload_destructor(autoload_o);
-
-
-
 
 	/*
 	 * Always create the new profile group because above code has already
