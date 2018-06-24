@@ -60,6 +60,7 @@ void autoload_constructor(autoload_class ** self_p,
 
 	PVAR->screen_o = screen_o;
 	PVAR->config = config;
+	PVAR->profile_name = NULL;
 	self->wait_for_event = wait_for_event;
 
 	self->find_profile_and_load = find_profile_and_load;
