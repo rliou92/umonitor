@@ -71,7 +71,7 @@ exec i3 # your window manager of choice
 ```
 
 # Features
-I think a couple people are using this program. Give me some feedback!
+Give me some feedback!
 
 * What is saved and applied dynamically:
   * Monitor vendor name + model number
@@ -85,9 +85,8 @@ I think a couple people are using this program. Give me some feedback!
 
 Future improvements:
 
-<!-- TODO prevent loading of outputs that don't exist in the setup  -->
+<!-- TODO only load when configuration matches profile  -->
 <!-- TODO view profile contents -->
-<!-- TODO print stderr messages -->
 <!--* Implement debug as compile option -->
 <!-- * Encoding of resolution -->
 <!-- * More commandline options
@@ -95,7 +94,7 @@ Future improvements:
 <!-- * Handling the case when multiple outputs are connected to same crtc? -->
 * Bugs:
   * Tell me! Run umonitor with the `--verbose` flag to get debugging output
-  * After load the output displays an extra unknown character
+  <!-- * After umonitor -a the output displays an extra unknown character -->
 <!--* Updating Doxygen documentation? -->
 
 I'm open for any feature requests!
