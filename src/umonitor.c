@@ -306,20 +306,32 @@ static void start_load(char *profile_name)
 
 	// Check to see if the current configuration matches the output
 	// Just have to check if the output from configuration and profile match
-	autoload_constructor(&autoload_o, &screen_o, &config);
-	autoload_o->find_profile_and_load(autoload_o, NO_LOAD, NO_PRINT);
-	autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
-	autoload_destructor(autoload_o);
+	// autoload_constructor(&autoload_o, &screen_o, &config);
+	// autoload_o->find_profile_and_load(autoload_o, NO_LOAD, NO_PRINT);
+	// autoload_o->get_profile_found(autoload_o, &profile_found, &cur_loaded_profile_name);
+	// autoload_destructor(autoload_o);
 
-	if (strcmp(cur_loaded_profile_name, profile_name)) {
-		load_class_constructor(&load_o, &screen_o);
-		load_o->load_profile(load_o, profile_group, 0);
-		load_class_destructor(load_o);
-		print_state("Profile %s loaded!\n", profile_name);
-	}
-	else {
-		print_state("Currently connected outputs do not match with those listed in profile.\n");
-	}
+	// if (profile_found){
+	// 	if (cur_loaded_profile_name == NULL) {
+	// 		fprintf(stderr, "Current loaded profile has no name.\n");
+	// 		exit(NO_PROFILE_FOUND);
+	// 	}
+	//
+	// 	umon_print("%s, %s", cur_loaded_profile_name, profile_name);
+	// 	if (!strcmp(cur_loaded_profile_name, profile_name)) {
+			load_class_constructor(&load_o, &screen_o);
+			load_o->load_profile(load_o, profile_group, 0);
+			load_class_destructor(load_o);
+			print_state("Profile %s loaded!\n", profile_name);
+	// 	}
+	// 	else {
+	// 		print_state("Currently connected outputs do not match with those listed in profile.\n");
+	// 	}
+	// }
+	//
+	// else {
+	// 	print_state("Currently connected outputs do not match with those listed in profile.\n");
+	// }
 	print_state("---------------------------------\n");
 
 
