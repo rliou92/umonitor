@@ -275,6 +275,7 @@ static void start_listening()
 	daemon(0,0);
 	autoload_constructor(&autoload_o, &screen_o, &config);
 	umon_print("Autoloading\n");
+	autoload_o->set_force_load(autoload_o, force_load);
 	autoload_o->wait_for_event(autoload_o);
 	autoload_destructor(autoload_o);
 

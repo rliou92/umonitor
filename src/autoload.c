@@ -11,6 +11,7 @@
 #define PVAR ((autoload_pvar *) (self->pvar))
 
 static void find_profile_and_load(autoload_class * self, int load, int print);
+static void set_force_load(autoload_class * self, int force_load);
 static void get_profile_found(autoload_class * self, int * profile_found, const char **profile_name);
 static void determine_profile_match(autoload_class * self);
 static void wait_for_event(autoload_class * self);
@@ -43,6 +44,7 @@ typedef struct {
 	int load;
 	int print;
 	int profile_found;
+	int force_load;
 	xcb_randr_screen_change_notify_event_t *randr_evt;
 	const char *profile_name;
 
@@ -61,6 +63,7 @@ void autoload_constructor(autoload_class ** self_p,
 	PVAR->screen_o = screen_o;
 	PVAR->config = config;
 	PVAR->profile_name = NULL;
+	self->set_force_load = set_force_load;
 	self->wait_for_event = wait_for_event;
 
 	self->find_profile_and_load = find_profile_and_load;
@@ -83,6 +86,11 @@ void autoload_destructor(autoload_class * self)
 	free(PVAR);
 	free(self);
 
+}
+
+static void set_force_load(autoload_class * self, int force_load)
+{
+	PVAR->force_load = force_load;
 }
 
 static void get_profile_found(autoload_class * self, int * profile_found, const char **profile_name)
@@ -208,6 +216,10 @@ static void determine_profile_match(autoload_class * self)
 		profile_name = config_setting_name(PVAR->cur_profile);
 		umon_print("Profile %s matches current setup\n",
 			   profile_name);
+		if (!PVAR->load) {
+			// If loading, force it if necessary
+			PVAR->load_o->set_force_load(PVAR->load_o, PVAR->force_load);
+		}
 		PVAR->load_o->load_profile(PVAR->load_o, PVAR->cur_profile,
 					   PVAR->load);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);

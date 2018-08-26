@@ -13,6 +13,7 @@ typedef struct _autoload_class {
 	/*! waits for the screen change event, then calls find_profile_and_load */
 	void (*wait_for_event) (struct _autoload_class * self);
 	void (*get_profile_found) (struct _autoload_class * self, int * profile_found, const char **profile_name);
+	void (*set_force_load) (struct _autoload_class * self, int force_load);
 
 
 } autoload_class;
