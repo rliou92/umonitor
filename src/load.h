@@ -8,6 +8,7 @@ typedef struct _load_class {
 			      int);
 	void (*get_last_time) (struct _load_class *, xcb_timestamp_t *);
 	void (*get_cur_loaded) (struct _load_class *, int *cur_loaded);
+	void (*set_force_load) (struct _load_class *, int force_load);
 } load_class;
 
 void load_class_constructor(load_class ** self, screen_class * screen_o);

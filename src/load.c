@@ -70,6 +70,7 @@ struct remove_matching_crtc_from_ll_param_t {
 	set_crtc_param **cur_crtc_param_p;
 	xcb_randr_get_crtc_info_reply_t *crtc_info_reply;
 	xcb_randr_output_t *conn_output;
+	xcb_randr_crtc_t crtc;
 };
 
 struct find_mode_id_param_t {
@@ -102,6 +103,7 @@ struct determine_crtc_match_param_t {
 	xcb_randr_crtc_t *crtc_p, *available_crtcs, *output_crtcs;
 };
 
+static void set_force_load(load_class * self, int force_load);
 static void get_cur_loaded(load_class * self, int *cur_loaded);
 static void get_last_time(load_class * self, xcb_timestamp_t * last_time);
 static void free_crtc_param_ll(set_crtc_param * head);
@@ -155,6 +157,7 @@ typedef struct {
 	int cur_loaded;
 	int num_out_pp;
 	xcb_timestamp_t last_time;	/*!< last time the crtc setting was changed */
+	int force_load;
 } load_pvar;
 
 /*! load constructor*/
@@ -169,6 +172,7 @@ void load_class_constructor(load_class ** self_p, screen_class * screen_o)
 	self->load_profile = load_profile;
 	self->get_last_time = get_last_time;
 	self->get_cur_loaded = get_cur_loaded;
+	self->set_force_load = set_force_load;
 
 	PVAR->screen_o = screen_o;
 	PVAR->crtc_param_head = NULL;
@@ -176,6 +180,7 @@ void load_class_constructor(load_class ** self_p, screen_class * screen_o)
 	PVAR->last_time = (xcb_timestamp_t) 0;
 	PVAR->cur_loaded = 0;
 	PVAR->assigned_crtc_head = NULL;
+	PVAR->force_load = 0;
 
 	*self_p = self;
 
@@ -190,6 +195,11 @@ void load_class_destructor(load_class * self)
 	free(PVAR);
 	free(self);
 
+}
+
+static void set_force_load(load_class * self, int force_load)
+{
+	PVAR->force_load = force_load;
 }
 
 static void get_cur_loaded(load_class * self, int *cur_loaded)
@@ -624,7 +634,9 @@ static void modify_crtc_ll(load_class * self,
 	remove_crtc_param.cur_crtc_param_p = &cur_crtc_param;
 	remove_crtc_param.crtc_info_reply = crtc_info_reply;
 	remove_crtc_param.conn_output = conn_output;
-	while (cur_crtc_param) {
+	remove_crtc_param.crtc = param->crtcs_p[i];
+	// TODO if using force load, determining currently loaded profile might be affected
+	while (cur_crtc_param && !PVAR->force_load) {
 		remove_matching_crtc_from_ll(self, &remove_crtc_param);
 	}
 
@@ -650,7 +662,8 @@ static void remove_matching_crtc_from_ll(load_class * self, struct remove_matchi
 	    cur_crtc_param->rotation == param->crtc_info_reply->rotation &&
 	    cur_crtc_param->mode_id ==
 	    param->crtc_info_reply->mode
-	    && cur_crtc_param->output_p[0] == param->conn_output[0]) {
+	    && cur_crtc_param->output_p[0] == param->conn_output[0] &&
+	    cur_crtc_param->crtc == param->crtc) {
 		*(param->should_disable_p) = 0;
 		//Remove current crtc_param from linked list
 		umon_print("Queued crtc %d matches! ", cur_crtc_param->crtc);

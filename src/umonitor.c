@@ -71,7 +71,7 @@ static screen_class screen_o;
 static config_t config;
 static int c;
 static int option_index = 0;
-static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0, save = 0;
+static int verbose = 0, version = 0, help = 0, autoload = 0, quiet = 0, save = 0, force_load = 0;
 
 #ifdef LOG
 static FILE *log_file;
@@ -87,8 +87,8 @@ static const struct option long_options[] = {
 	{"quiet", no_argument, &quiet, 1},
 	{"help", no_argument, &help, 1},
 	{"version", no_argument, &version, 1},
-	{"verbose", no_argument, &verbose, 1}
-
+	{"verbose", no_argument, &verbose, 1},
+	{"force-load", no_argument, &force_load, 1}
 };
 
 
@@ -320,7 +320,8 @@ static void start_load(char *profile_name)
 	// 	umon_print("%s, %s", cur_loaded_profile_name, profile_name);
 	// 	if (!strcmp(cur_loaded_profile_name, profile_name)) {
 			load_class_constructor(&load_o, &screen_o);
-			load_o->load_profile(load_o, profile_group, 0);
+			load_o->set_force_load(load_o, force_load);
+			load_o->load_profile(load_o, profile_group, LOAD);
 			load_class_destructor(load_o);
 			print_state("Profile %s loaded!\n", profile_name);
 	// 	}
