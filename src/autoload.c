@@ -212,6 +212,9 @@ static void determine_profile_match(autoload_class * self)
 					   PVAR->load);
 		PVAR->load_o->get_cur_loaded(PVAR->load_o, &cur_loaded);
 		if ((cur_loaded == 1 && PVAR->load) || !PVAR->load) {
+			// LOAD = 0, NO_LOAD = 1
+			// If loading, then the current profile has become loaded profile
+			// If not loading, use load class to determine whether or not current profile is the currently loaded profile
 			PVAR->profile_found = 1;
 			if (PVAR->print == PRINT)
 				print_state("*");
