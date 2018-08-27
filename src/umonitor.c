@@ -407,6 +407,7 @@ static void start_autoload()
 		exit(NO_CONF_FILE_FOUND);
 	}
 	autoload_constructor(&autoload_o, &screen_o, &config);
+	autoload_o->set_force_load(autoload_o, force_load);
 	autoload_o->find_profile_and_load(autoload_o, LOAD, PRINT);
 	autoload_destructor(autoload_o);
 
