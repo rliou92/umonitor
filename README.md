@@ -117,7 +117,7 @@ This program is different from existing projects because it is written entirely
 in C using xcb calls and accomplishes dynamic monitor management in a single
 binary. Unlike autorandr, there is no need to install rules for udev or hooks
 for pmutils. Srandrd + screenconfig seems pretty promising to me, but there are
-features missing such as setting the crtc xy positions.
+features missing such as setting the crtc xy positions. Maybe if you combine srandrd with autorandr I would view the solution as not hacky.
 
 # About
 This is my personal project. My motivation for writing this program comes from
