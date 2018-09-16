@@ -285,11 +285,11 @@ static void start_listening()
 
 static void start_load(char *profile_name)
 {
-	int profile_found;
+	// int profile_found;
 	load_class *load_o;
 	config_setting_t *profile_group;
-	autoload_class *autoload_o;
-	const char *cur_loaded_profile_name;
+	// autoload_class *autoload_o;
+	// const char *cur_loaded_profile_name;
 
 	if (!config_read_file(&config, CONFIG_FILE)) {
 		fprintf(stderr, "Configuration file not found.\n");
@@ -348,7 +348,7 @@ static void start_delete_and_save(save_or_delete_t save_or_delete,
 	int cfg_idx, profile_found;
 	const char *cur_loaded_profile_name;
 
-	if (!config_read_file(&config, CONFIG_FILE)) {
+	if (!config_read_file(&config, CONFIG_FILE) && save_or_delete == DELETE) {
 		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
 	}
