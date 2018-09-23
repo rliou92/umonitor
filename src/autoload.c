@@ -163,6 +163,7 @@ static void find_profile_and_load(autoload_class * self, int load, int print)
 		determine_profile_match(self);
 		if (PVAR->profile_found) {
 			PVAR->profile_name = profile_name;
+			PVAR->load = NO_LOAD;
 		}
 		if (PVAR->print == PRINT)
 			print_state("\n");
@@ -355,7 +356,7 @@ static void count_output_match(void *self_void,
 }
 
 static void determine_output_match(autoload_class * self,
-				   xcb_randr_output_t * output_p,
+	xcb_randr_output_t * output_p,
 				   char *output_name)
 {
 	int j, output_match_unique;
