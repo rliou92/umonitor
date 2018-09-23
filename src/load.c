@@ -613,7 +613,7 @@ static void determine_crtc_match(load_class * self, struct determine_crtc_match_
 				 *param)
 {
 	int i, already_assigned;
-	crtc_ll *cur_assigned_crtc;
+	crtc_ll *cur_assigned_crtc, *new_assigned_crtc;
 
 	for (i = 0; i < param->num_crtcs; ++i) {
 		already_assigned = 0;
@@ -629,6 +629,12 @@ static void determine_crtc_match(load_class * self, struct determine_crtc_match_
 		}
 		if (already_assigned == 0) {
 			*(param->crtc_p) = param->output_crtcs[i];
+			// Add newly assigned crtc to the list
+			new_assigned_crtc = (crtc_ll *)
+			    umalloc(sizeof(crtc_ll));
+			new_assigned_crtc->crtc = param->output_crtcs[i];
+			new_assigned_crtc->next = PVAR->assigned_crtc_head;
+			PVAR->assigned_crtc_head = new_assigned_crtc;
 			return;
 		}
 	}
