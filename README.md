@@ -122,8 +122,7 @@ features missing such as setting the crtc xy positions. Maybe if you combine sra
 # About
 This is my personal project. My motivation for writing this program comes from
 using i3 wm on my laptop. From writing this program I have learned a great
-deal about how to interact with the X11 server, trying out OOP in C (even when
-it is overkill), and hope to continue learning even more in the future. I want
+deal about how to interact with the X11 server, trying out OOP in C, and hope to continue learning even more in the future. I want
 to work on this project until I deem that it is "complete", fufilling its
 purpose of dynamic monitor management for those who do not use a desktop
 environment.
