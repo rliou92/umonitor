@@ -61,7 +61,7 @@ static const char help_str[] =
     "\t--version\t\t\tOutput version information and exit\n";
 
 static const char version_str[] =
-    "umonitor 20170805\n" "Written by Ricky Liou\n";
+    "umonitor 20180922\n" "Written by Ricky Liou\n";
 
 static const char lockfile_name[] = "/.umonitor.lock";
 char * home_directory;
