@@ -37,6 +37,7 @@ typedef enum {
 // private prototypes
 static void preprocess_arguments(int argc, char **argv);
 static void print_info(void);
+static void check_for_lock(void);
 static void print_current_state(void);
 static void sigterm_handler(int signum);
 static void start_listening(void);
@@ -66,6 +67,7 @@ static const char version_str[] =
 static const char lockfile_name[] = "/.umonitor.lock";
 char * home_directory;
 char * lockfile;
+int pid_h;
 
 static screen_class screen_o;
 static config_t config;
@@ -197,6 +199,21 @@ static void preprocess_arguments(int argc, char **argv)
 	}
 }
 
+static void check_for_lock()
+{
+	lockfile =
+	    umalloc((strlen(home_directory) + strlen(lockfile_name))+1);
+	strcpy(lockfile, home_directory);
+	strcat(lockfile, lockfile_name);
+	pid_h = open(lockfile, O_RDONLY);
+	if (pid_h != -1) {
+		fprintf(stderr, "umonitor process already running.\n");
+		fprintf(stderr, "Please stop the existing process and try again.\n");
+		fprintf(stderr, "If umonitor is not running, remove the lock file called .umonitor.lock underneath your home directory.\n");
+		exit(DAEMON_ALREADY_RUNNING);
+	}
+}
+
 static void print_info()
 {
 	if (version)
@@ -238,25 +255,18 @@ static void sigterm_handler(int signum)
 static void start_listening()
 {
 	autoload_class *autoload_o;
-	int pid_h;
 	struct sigaction sa;
 	char pid_str[10];
+
+	pid_h = open(lockfile, O_RDWR | O_CREAT | O_EXCL);
+	if (pid_h == -1) {
+		fprintf(stderr, "Could not create lock file .umonitor.lock under home directory.\n");
+		exit(CANNOT_CREATE_LOCK);
+	}
 
 	if (!config_read_file(&config, CONFIG_FILE)) {
 		fprintf(stderr, "Configuration file not found.\n");
 		exit(NO_CONF_FILE_FOUND);
-	}
-
-	lockfile =
-	    umalloc((strlen(home_directory) + strlen(lockfile_name))+1);
-	strcpy(lockfile, home_directory);
-	strcat(lockfile, lockfile_name);
-	pid_h = open(lockfile, O_RDWR|O_CREAT|O_EXCL, 0600);
-	if (pid_h == -1) {
-		fprintf(stderr, "umonitor process already running.\n");
-		fprintf(stderr, "Please stop the existing process and try again.\n");
-		exit(DAEMON_ALREADY_RUNNING);
-
 	}
 
 	sprintf(pid_str,"%d\n",getpid());
@@ -421,15 +431,18 @@ static void parse_arguments()
 		start_delete_and_save(SAVE, optarg);
 		break;
 	case 'l':
+		check_for_lock();
 		start_load(optarg);
 		break;
 	case 'd':
 		start_delete_and_save(DELETE, optarg);
 		break;
 	case 'n':
+		check_for_lock();
 		start_listening();
 		break;
 	case 'a':
+		check_for_lock();
 		start_autoload();
 		break;
 	case '?':
