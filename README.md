@@ -6,6 +6,8 @@ management. Dynamic monitor management means that the positions and resolutions
 of the monitors will automatically be updated whenever monitors are
 hotplugged. This program is written in C using XCB to directly communicate with the X11 server and consists of only one binary. This program is targeted at users who are using a window manager on a laptop who hotplug monitors frequently.
 
+I encourage you to look at a rewrite of this program in Cython/Python here called [python-umonitor](https://github.com/rliou92/python-umonitor). A higher level language such as Python allows quicker development times and easier maintenance, and using Cython allows me to continue using XCB's API. The program also has several additional features.
+
 # Installation
 Run `make`. `umonitor` binary will be created in `bin`.
 
