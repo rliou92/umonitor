@@ -93,6 +93,8 @@ static const struct option long_options[] = {
 	{"force-load", no_argument, &force_load, 1}
 };
 
+/* Definition checked against declaration in umonitor.h */
+char* CONFIG_FILE;
 
 void umon_print(const char *format, ...)
 {

@@ -1,5 +1,5 @@
 // Global variables
-char *CONFIG_FILE;		/*!< Configuration file path name */
+extern char *CONFIG_FILE;		/*!< Configuration file path name */
 
 // Some helper functions
 void fetch_edid(xcb_randr_output_t * output_p, screen_class * screen_t_p,
